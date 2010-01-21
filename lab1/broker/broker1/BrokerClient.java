@@ -39,7 +39,7 @@ public class BrokerClient {
 		}
 
 		BufferedReader stdIn = new BufferedReader(new InputStreamReader(
-				System.in));https://mail.google.com/mail/?shva=1#inbox
+				System.in));
 		String userInput;
 
 		System.out.println("Enter queries or x for exit:");
