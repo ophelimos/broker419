@@ -1,3 +1,5 @@
+package broker.broker3;
+
 import java.io.Serializable;
  /**
  * BrokerPacket
