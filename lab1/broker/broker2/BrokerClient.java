@@ -2,33 +2,32 @@ package broker.broker2;
 
 import java.io.*;
 import java.net.*;
-//comment
+
 public class BrokerClient {
 	public static void main(String[] args) throws IOException,
 			ClassNotFoundException {
 
-		Socket brokerSocket = null;
+		Socket clientSocket = null;
 		ObjectOutputStream out = null;
 		ObjectInputStream in = null;
 
 		try {
 			/* variables for hostname/port */
-			// Hardcoded not allowed, but these will _never_ be used, and only
-			// exist for debugging
-			String hostname = "localhost";
-			int port = 4444;
-
-			if (args.length == 2) {
-				hostname = args[0];
-				port = Integer.parseInt(args[1]);
+			BrokerLocation serverinfo = new BrokerLocation("localhost", 4444);
+			//serverinfo.broker_host = "localhost";
+			//serverinfo.broker_port = 4444;
+			
+			if(args.length == 2 ) {
+				serverinfo.broker_host = args[0];
+				serverinfo.broker_port = Integer.parseInt(args[1]);
 			} else {
 				System.err.println("ERROR: Invalid arguments!");
 				System.exit(-1);
 			}
-			brokerSocket = new Socket(hostname, port);
+			clientSocket = new Socket(serverinfo.broker_host, serverinfo.broker_port);
 
-			out = new ObjectOutputStream(brokerSocket.getOutputStream());
-			in = new ObjectInputStream(brokerSocket.getInputStream());
+			out = new ObjectOutputStream(clientSocket.getOutputStream());
+			in = new ObjectInputStream(clientSocket.getInputStream());
 
 		} catch (UnknownHostException e) {
 			System.err.println("ERROR: Don't know where to connect!!");
@@ -38,61 +37,40 @@ public class BrokerClient {
 			System.exit(1);
 		}
 
-		BufferedReader stdIn = new BufferedReader(new InputStreamReader(
-				System.in));
+		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 		String userInput;
 
-		System.out.println("Enter queries or x for exit:");
-		System.out.print("> ");
-		
-		try {
-			while ((userInput = stdIn.readLine()) != null
-					&& userInput.toLowerCase().indexOf("bye") == -1) {
-
-				// If we receive "x", quit
-				if (userInput.equalsIgnoreCase("x")) {
-					break;
-				}
-
-				/* make a new request packet */
-				BrokerPacket packetToServer = new BrokerPacket();
-				packetToServer.type = BrokerPacket.BROKER_REQUEST;
-				packetToServer.symbol = userInput;
-				out.writeObject(packetToServer);
-
-				/* print server reply */
-				BrokerPacket packetFromServer;
-				packetFromServer = (BrokerPacket) in.readObject();
-
-				String printQuote = "0";
-				if (packetFromServer.type == BrokerPacket.BROKER_QUOTE) {
-					// Sanitize received quote
-					if (packetFromServer.quote != null) {
-						printQuote = String.valueOf(packetFromServer.quote);
-					}
-						
-					System.out.println("Quote from broker: "
-							+ printQuote);
-				}
-					
-
-				/* re-print console prompt */
-				System.out.print("> ");
-			}
-
-			/* tell server that i'm quitting */
+		System.out.print(">");
+		while ((userInput = stdIn.readLine()) != null && userInput.toLowerCase().indexOf("x") == -1) {
+			/* make a new request packet */
 			BrokerPacket packetToServer = new BrokerPacket();
-			packetToServer.type = BrokerPacket.BROKER_BYE;
-			packetToServer.symbol = "Bye!";
+			packetToServer.type = BrokerPacket.BROKER_REQUEST;
+			packetToServer.symbol = userInput;
 			out.writeObject(packetToServer);
 
-		} catch (SocketException e) {
-			System.out.println("Server has disconnected");
+			/* print server reply */
+			BrokerPacket packetFromServer;
+			packetFromServer = (BrokerPacket) in.readObject();
+
+			if (packetFromServer.type == BrokerPacket.BROKER_QUOTE) {
+				System.out.println("Quote from broker: " + packetFromServer.quote);
+			}
+			if (packetFromServer.type == BrokerPacket.ERROR_OUT_OF_RANGE) {
+				System.out.println(packetFromServer.quote + " invalid.\n");
+			}
+			/* re-print console prompt */
+			System.out.print(">");
 		}
+
+		/* tell server that i'm quitting */
+		BrokerPacket packetToServer = new BrokerPacket();
+		packetToServer.type = BrokerPacket.BROKER_BYE;
+		//packetToServer.message = "Bye!";
+		out.writeObject(packetToServer);
 
 		out.close();
 		in.close();
 		stdIn.close();
-		brokerSocket.close();
+		clientSocket.close();
 	}
 }
