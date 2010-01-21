@@ -15,11 +15,13 @@ import java.io.Serializable;
 class BrokerLocation implements Serializable {
 	public String  broker_host;
 	public Integer broker_port;
+	public String  broker_name;
 	
 	/* constructor */
-	public BrokerLocation(String host, Integer port) {
+	public BrokerLocation(String host, Integer port, String name) {
 		this.broker_host = host;
 		this.broker_port = port;
+		this.broker_name = name;
 	}
 	
 	/* printable output */
