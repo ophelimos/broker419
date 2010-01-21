@@ -21,8 +21,7 @@ public class BrokerServerHandlerThread extends Thread {
 	public void run() {
 
 		// Initial DB read and setup
-		QuoteDB quoteDB = new QuoteDB;
-		OnlineBroker.readQuoteDB(quoteDBFileName);
+		QuoteDB quoteDB = new QuoteDB("quoteDBFileName");
 
 		boolean gotByePacket = false;
 
@@ -42,7 +41,6 @@ public class BrokerServerHandlerThread extends Thread {
 				packetToClient.type = BrokerPacket.BROKER_QUOTE;
 
 				/* process message */
-				/* just echo in this example */
 				if (packetFromClient.type == BrokerPacket.BROKER_REQUEST) {
 					
 					// For sanity, copy the symbol over

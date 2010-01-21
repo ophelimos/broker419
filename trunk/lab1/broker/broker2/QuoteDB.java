@@ -2,6 +2,7 @@ package broker.broker2;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -25,24 +26,41 @@ public class QuoteDB {
 
 	private String persistentFileName;
 
+	// Platform independent newline
+	public static String newline = System.getProperty("line.separator");
+
 	QuoteDB(String fileName) {
-		this.open(fileName);
+		try {
+			this.open(fileName);
+		} catch (IOException e) {
+			System.out.println("Failed to open database file " + fileName);
+			System.exit(-1);
+		}
+	}
+	
+	QuoteDB() {
+		// Don't open anything
+		persistentFileName = null;
+		DB = null;
 	}
 
 	/**
-	 * Open the flat file containing the key-value pairs
+	 * Open the flat file containing the key-value pairs createTempFi
 	 * 
 	 * @param fileName
 	 */
-	public void open(String fileName) {
-
-		// Make sure it's not already open - if so, close it
-
-		// Set the persistent file name
-		persistentFileName = fileName;
-
-		// Read the quotes file into an internal hash table
+	public void open(String fileName) throws IOException {
 		try {
+			// Make sure it's not already open - if so, close it
+			if (DB != null) {
+				close();
+			}
+
+			// Set the persistent file name
+			persistentFileName = fileName;
+
+			// Read the quotes file into an internal hash table
+
 			Scanner quoteInput = new Scanner(new BufferedReader(new FileReader(
 					fileName)));
 
@@ -67,9 +85,15 @@ public class QuoteDB {
 		}
 	}
 
-	public void close() {
+	public void close() throws IOException {
 		// Flush database contents to disk
-		this.flush();
+		try {
+			this.flush();
+		} catch (IOException e) {
+			System.out.println("Failed to flush database!");
+			System.out.println("Error: e.getMessage()");
+			throw e;
+		}
 		// Null out the pointer
 		DB = null;
 		// Clear the file name
@@ -78,22 +102,50 @@ public class QuoteDB {
 
 	public void flush() throws IOException {
 
-		File temp = File.createTempFile("pattern", ".suffix"); 
-		BufferedWriter quoteOutput = new BufferedWriter(new FileWriter());
-		
+		// Write the DB to a temporary file first, and then overwrite, rather
+		// than accidentally truncating it
+		File tempFile = File.createTempFile("dbtemp", "tmp");
+		BufferedWriter quoteOutput = new BufferedWriter(
+				new FileWriter(tempFile));
+
 		// Pull the key-value pairs out of the database
 		Enumeration<String> keys = DB.keys();
 		
-		for (String curKey = keys.nextElement();
-			keys.hasMoreElements();
-			curKey = keys.nextElement()) {
-			
+
+		for (String curKey = keys.nextElement(); keys.hasMoreElements(); curKey = keys
+				.nextElement()) {
+
 			Long curValue = DB.get(curKey);
 			// Print it to the file
-			quoteOutput.write(str)
-			
-			
+			quoteOutput.write(curKey + " " + curValue + newline);
 		}
 
+		// Now, move the old DB to a backup file
+		File dbFile = new File(persistentFileName);
+		String backupFileName = persistentFileName.concat(".bak");
+		File backupFile = new File(backupFileName);
+		boolean success = dbFile.renameTo(backupFile);
+		if (!success) {
+			IOException noRename = new IOException("Failed to rename file"
+					+ persistentFileName + " to " + backupFileName);
+			throw noRename;
+		}
+
+		// Rename the temporary file to the database file
+		success = tempFile.renameTo(dbFile);
+		if (!success) {
+			IOException noRename = new IOException(
+					"Failed to rename temp file to " + persistentFileName);
+			throw noRename;
+		}
+
+	}
+	
+	public Long get(String key) {
+		return DB.get(key);
+	}
+	
+	public void put(String key, Long value) {
+		DB.put(key, value);
 	}
 }
