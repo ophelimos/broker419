@@ -1,5 +1,11 @@
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 public class BrokerClient {
 	public static void main(String[] args) throws IOException,
@@ -38,7 +44,7 @@ public class BrokerClient {
 		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 		String userInput;
 
-		System.out.print(">");
+		System.out.print("> ");
 		while ((userInput = stdIn.readLine()) != null && userInput.toLowerCase().indexOf("x") == -1) {
 			/* make a new request packet */
 			BrokerPacket packetToServer = new BrokerPacket();
@@ -57,14 +63,18 @@ public class BrokerClient {
 				System.out.println(packetFromServer.quote + " invalid.\n");
 			}
 			/* re-print console prompt */
-			System.out.print(">");
+			System.out.print("> ");
 		}
 
 		/* tell server that i'm quitting */
 		BrokerPacket packetToServer = new BrokerPacket();
 		packetToServer.type = BrokerPacket.BROKER_BYE;
 		//packetToServer.message = "Bye!";
-		out.writeObject(packetToServer);
+		try {
+			out.writeObject(packetToServer);
+		} catch (SocketException e) {
+			System.out.println("Server died");
+		}
 
 		out.close();
 		in.close();

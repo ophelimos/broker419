@@ -59,6 +59,9 @@ public class QuoteDB {
 				close();
 			}
 
+			// Now, make a new one
+			DB = new Hashtable<String, Long>();
+			
 			// Set the persistent file name
 			persistentFileName = fileName;
 
