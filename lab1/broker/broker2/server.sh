@@ -6,8 +6,4 @@ JAVA_HOME=${ECE419_HOME}/java/jdk1.6.0/
 # arguments to OnlineBroker
 # $1 = listening port
 
-${JAVA_HOME}/bin/java broker/broker2/OnlineBroker $1
-
-
-
-
+${JAVA_HOME}/bin/java OnlineBroker $1
