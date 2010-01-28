@@ -1,6 +1,11 @@
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Scanner;
 
 public class BrokerExchange {
 	public static void main(String[] args) throws IOException,
@@ -38,41 +43,31 @@ public class BrokerExchange {
 
 		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 		String userInput;
-		boolean validnum = false;
+		
 //		end of int validation
 		System.out.print("> ");
 		while ((userInput = stdIn.readLine()) != null && userInput.toLowerCase().indexOf("x") == -1) {
+			
+			// Scan through the input line
+			Scanner inputLine = new Scanner(userInput);
+//			FIX THIS PART - Implement proper argument passing
+			if (!inputLine.hasNext()) {
+				String curword = inputLine.next();
+			}
+			
+			
 			/* make a new request packet */
 			BrokerPacket packetToServer = new BrokerPacket();
 			packetToServer.symbol = userInput;
 			
-			//validate the integer value if present
-			StringTokenizer str = new StringTokenizer(userInput);
-			validnum = false;
-			
-			int i = -1;
-			
-			while(str.hasMoreElements()) {
-			    //extract the number here, IF found
-				i = Integer.parseInt(str.nextToken());
-			}
-			
-			if ((i <= 300) && (i >= 0)) {
-				validnum = true;
-			}
-			else {
-				validnum = false;
-			}
-			//end of int validation
-			
 			//Check what does the user want to do: ADD, UPDATE, REMOVE
-			if ((userInput.toLowerCase().indexOf("add") != -1) && validnum == true) {
+			if ((userInput.toLowerCase().indexOf("add") != -1)) {
 				packetToServer.type = BrokerPacket.EXCHANGE_ADD;
 				out.writeObject(packetToServer);
 			}
-			else if ((userInput.toLowerCase().indexOf("update") != -1) && validnum == true) {
+			else if ((userInput.toLowerCase().indexOf("update") != -1)) {
 				packetToServer.type = BrokerPacket.EXCHANGE_UPDATE;
-				out.writeObject(packetToServer);
+				out.writeObject(packetToServer);			
 			}
 			else if (userInput.toLowerCase().indexOf("remove") != -1) {
 				packetToServer.type = BrokerPacket.EXCHANGE_REMOVE;
