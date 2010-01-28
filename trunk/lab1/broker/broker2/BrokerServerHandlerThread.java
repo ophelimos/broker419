@@ -96,6 +96,7 @@ public class BrokerServerHandlerThread extends Thread {
 									packetFromClient.quote);
 
 					/* send reply back to client */
+					packetToClient.exchange = "added.";
 					toClient.writeObject(packetToClient);
 
 					/* wait for next packet */
@@ -118,6 +119,7 @@ public class BrokerServerHandlerThread extends Thread {
 							.remove(packetFromClient.symbol);
 
 					/* send reply back to client */
+					packetToClient.exchange = "removed.";
 					toClient.writeObject(packetToClient);
 
 					/* wait for next packet */
@@ -150,6 +152,7 @@ public class BrokerServerHandlerThread extends Thread {
 									packetFromClient.quote);
 
 					/* send reply back to client */
+					packetToClient.exchange = "updated.";
 					toClient.writeObject(packetToClient);
 
 					/* wait for next packet */
