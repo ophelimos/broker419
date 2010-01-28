@@ -81,7 +81,8 @@ public class QuoteDB {
 			quoteInput.close();
 
 		} catch (FileNotFoundException e) {
-			System.out.println("Can't find database file " + fileName);
+			System.out.println("Can't find database file: " + e.getMessage()
+					+ " in directory " + System.getProperty("user.dir"));
 			System.exit(-1);
 		} catch (NoSuchElementException e) {
 			System.out.println("Error reading database file " + fileName);
@@ -154,7 +155,7 @@ public class QuoteDB {
 					"Failed to rename temp file to " + persistentFileName);
 			throw noRename;
 		}
-		
+
 		// Unlock it
 		lock.writeLock().unlock();
 
@@ -172,19 +173,19 @@ public class QuoteDB {
 		DB.put(key, value);
 		lock.readLock().unlock();
 	}
-	
+
 	public boolean containsKey(String key) {
 		lock.readLock().lock();
 		boolean tmp = DB.containsKey(key);
 		lock.readLock().unlock();
 		return tmp;
 	}
-	
+
 	public Long remove(String key) {
 		lock.readLock().lock();
 		Long tmp = DB.remove(key);
 		lock.readLock().unlock();
 		return tmp;
 	}
-	
+
 }
