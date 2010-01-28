@@ -16,7 +16,7 @@ public class BrokerExchange {
 			//serverinfo.broker_host = "localhost";
 			//serverinfo.broker_port = 4444;
 			
-			if(args.length == 3 ) {
+			if(args.length == 2 ) {
 				serverinfo.broker_host = args[0];
 				serverinfo.broker_port = Integer.parseInt(args[1]);
 			} else {
@@ -40,7 +40,7 @@ public class BrokerExchange {
 		String userInput;
 		boolean validnum = false;
 //		end of int validation
-		System.out.print(">");
+		System.out.print("> ");
 		while ((userInput = stdIn.readLine()) != null && userInput.toLowerCase().indexOf("x") == -1) {
 			/* make a new request packet */
 			BrokerPacket packetToServer = new BrokerPacket();
@@ -102,7 +102,7 @@ public class BrokerExchange {
 					System.out.println(packetFromServer.symbol + " exists.\n");
 				}
 				/* re-print console prompt */
-				System.out.print(">");
+				System.out.print("> ");
 			}
 		}
 		

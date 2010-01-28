@@ -8,11 +8,13 @@ public class OnlineBroker {
 	
 	public static void main(String[] args) throws IOException {
 
+		int port = 0;
 		ServerSocket serverSocket = null;
 		boolean listening = true;
 		try {
 			if (args.length == 1) {
-				serverSocket = new ServerSocket(Integer.parseInt(args[0]));
+				port = Integer.parseInt(args[0]);
+				serverSocket = new ServerSocket(port);
 			} else {
 				System.err.println("Usage: OnlineBroker <port>");
 				System.exit(-1);
@@ -25,6 +27,7 @@ public class OnlineBroker {
 		// Open the local database
 		QuoteDB quoteDB = new QuoteDB(quoteDBFileName);
 
+		System.out.println("Accepting new connections on port " + port);
 		while (listening) {
 			new BrokerServerHandlerThread(serverSocket.accept(), quoteDB).start();
 		}

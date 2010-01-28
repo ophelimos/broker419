@@ -1,16 +1,21 @@
-import java.net.*;
-import java.io.*;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 
 public class BrokerServerHandlerThread extends Thread {
-	
+
 	private Socket socket = null;
+
 	private QuoteDB quoteDB = null;
 
 	public BrokerServerHandlerThread(Socket socket, QuoteDB quoteDB) {
 		super("BrokerServerHandlerThread");
 		this.socket = socket;
 		this.quoteDB = quoteDB;
-		System.out.println("Created new Thread to handle client");
+		System.out.println("Created new thread " + this.getId()
+				+ " to handle client");
 	}
 
 	public void run() {
@@ -32,7 +37,8 @@ public class BrokerServerHandlerThread extends Thread {
 				BrokerPacket packetToClient = new BrokerPacket();
 				// For sanity, always copy the symbol and quote over
 				packetToClient.symbol = packetFromClient.symbol;
-				packetToClient.quote = packetFromClient.quote;
+				// Default quote of 0
+				packetToClient.quote = Long.getLong("0");
 				packetToClient.error_code = 0;
 
 				/* process message */
@@ -44,6 +50,8 @@ public class BrokerServerHandlerThread extends Thread {
 					packetToClient.quote = quoteDB.get(packetFromClient.symbol);
 
 					if (packetToClient.quote == null) {
+						// Return 0, not anything real
+						packetToClient.quote = Long.getLong("0");
 						packetToClient.error_code = BrokerPacket.ERROR_INVALID_SYMBOL;
 					}
 
@@ -74,7 +82,8 @@ public class BrokerServerHandlerThread extends Thread {
 					}
 
 					// Check if the quote is in range
-					if (packetFromClient.quote > 300
+					if (packetFromClient.quote == null
+							|| packetFromClient.quote > 300
 							|| packetFromClient.quote < 1) {
 						packetToClient.error_code = BrokerPacket.ERROR_OUT_OF_RANGE;
 						toClient.writeObject(packetToClient);
@@ -103,8 +112,10 @@ public class BrokerServerHandlerThread extends Thread {
 						break;
 					}
 
-					// If so, delete it - final value put in packet for error-checking
-					packetToClient.quote = quoteDB.remove(packetFromClient.symbol);
+					// If so, delete it - final value put in packet for
+					// error-checking
+					packetToClient.quote = quoteDB
+							.remove(packetFromClient.symbol);
 
 					/* send reply back to client */
 					toClient.writeObject(packetToClient);
@@ -112,7 +123,7 @@ public class BrokerServerHandlerThread extends Thread {
 					/* wait for next packet */
 					continue;
 				}
-				
+
 				if (packetFromClient.type == BrokerPacket.EXCHANGE_UPDATE) {
 					packetToClient.type = BrokerPacket.EXCHANGE_REPLY;
 
@@ -124,7 +135,8 @@ public class BrokerServerHandlerThread extends Thread {
 					}
 
 					// Check if the quote is in range
-					if (packetFromClient.quote > 300
+					if (packetFromClient.quote == null
+							|| packetFromClient.quote > 300
 							|| packetFromClient.quote < 1) {
 						packetToClient.error_code = BrokerPacket.ERROR_OUT_OF_RANGE;
 						toClient.writeObject(packetToClient);
@@ -153,13 +165,17 @@ public class BrokerServerHandlerThread extends Thread {
 			fromClient.close();
 			toClient.close();
 			socket.close();
-			
+
 			try {
 				quoteDB.close();
 			} catch (IOException e) {
 				System.err.println("ERROR: Couldn't close database file!");
 			}
 
+		} catch (EOFException e) {
+			System.out.println("Client disconnected due to EOF, thread "
+					+ this.getId() + " exiting");
+			return;
 		} catch (IOException e) {
 			if (!gotByePacket)
 				e.printStackTrace();
@@ -167,5 +183,8 @@ public class BrokerServerHandlerThread extends Thread {
 			if (!gotByePacket)
 				e.printStackTrace();
 		}
+
+		System.out.println("Client disconnected, thread " + this.getId()
+				+ " exiting");
 	}
 }
