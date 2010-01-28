@@ -1,5 +1,3 @@
-package broker.broker2;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 
