@@ -39,74 +39,95 @@ public class BrokerExchange {
 
 		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 		String userInput;
-		boolean validnum = false;
-//		end of int validation
-		System.out.print(">");
-		while ((userInput = stdIn.readLine()) != null && userInput.toLowerCase().indexOf("x") == -1) {
-			/* make a new request packet */
-			BrokerPacket packetToServer = new BrokerPacket();
-			packetToServer.symbol = userInput;
-			
-			//validate the integer value if present
-			StringTokenizer str = new StringTokenizer(userInput);
-			validnum = false;
-			
-			int i = -1;
-			
-			while(str.hasMoreElements()) {
-			    //extract the number here, IF found
-				i = Integer.parseInt(str.nextToken());
-			}
-			
-			if ((i <= 300) && (i >= 0)) {
-				validnum = true;
-			}
-			else {
-				validnum = false;
-			}
-			//end of int validation
-			
-			//Check what does the user want to do: ADD, UPDATE, REMOVE
-			if ((userInput.toLowerCase().indexOf("add") != -1) && validnum == true) {
-				packetToServer.type = BrokerPacket.EXCHANGE_ADD;
-				out.writeObject(packetToServer);
-			}
-			else if ((userInput.toLowerCase().indexOf("update") != -1) && validnum == true) {
-				packetToServer.type = BrokerPacket.EXCHANGE_UPDATE;
-				out.writeObject(packetToServer);
-			}
-			else if (userInput.toLowerCase().indexOf("remove") != -1) {
-				packetToServer.type = BrokerPacket.EXCHANGE_REMOVE;
-				out.writeObject(packetToServer);
-			}
-			else { //Error for invalid input
-				//packetToServer.type = BrokerPacket.ERROR_INVALID_EXCHANGE; // mark as such so that we dont expect a packet later, because we wont send any
-				System.out.println("Invalid command.\nUsage: add | update | remove <stock name>\n");
-			}
 		
-			//sending to server
-			if (packetToServer.type == BrokerPacket.EXCHANGE_REMOVE || packetToServer.type == BrokerPacket.EXCHANGE_UPDATE || packetToServer.type == BrokerPacket.EXCHANGE_ADD) {
-				/* print server reply */
-				BrokerPacket packetFromServer;
-				packetFromServer = (BrokerPacket) in.readObject();
-	
-				if (packetFromServer.type == BrokerPacket.EXCHANGE_REPLY) { // will print only if non-NULL has been sent
-					System.out.println(packetFromServer.quote);
+		System.out.println("Enter command or 'x' to exit:");
+		System.out.print("> ");
+		while ((userInput = stdIn.readLine()) != null) {
+
+			try {
+				// Scan through the input line
+				Scanner inputLine = new Scanner(userInput);
+
+				String curword = inputLine.next();
+
+				/* make a new request packet */
+				BrokerPacket packetToServer = new BrokerPacket();
+
+				// Check what does the user want to do: ADD, UPDATE, REMOVE
+				if (curword.equalsIgnoreCase("add")) {
+					packetToServer.type = BrokerPacket.EXCHANGE_ADD;
+
+					// Get the symbol
+					packetToServer.symbol = inputLine.next();
+
+					out.writeObject(packetToServer);
+				} else if (curword.equalsIgnoreCase("update")) {
+					packetToServer.type = BrokerPacket.EXCHANGE_UPDATE;
+
+					// Pull the input
+					packetToServer.symbol = inputLine.next();
+					packetToServer.quote = inputLine.nextLong();
+
+					out.writeObject(packetToServer);
+				} else if (curword.equalsIgnoreCase("remove")) {
+					packetToServer.type = BrokerPacket.EXCHANGE_REMOVE;
+
+					// Get the symbol
+					packetToServer.symbol = inputLine.next();
+
+					out.writeObject(packetToServer);
+				} else if (curword.equalsIgnoreCase("x")
+						|| curword.equalsIgnoreCase("q")
+						|| curword.equalsIgnoreCase("quit")) {
+					break;
+				} else {// Error for invalid input
+					InputMismatchException invalid = new InputMismatchException(
+							curword);
+					throw invalid;
 				}
-				else if (packetFromServer.type == BrokerPacket.ERROR_INVALID_SYMBOL){
-					System.out.println(packetFromServer.symbol + " invalid.\n");
+
+				// sending to server
+				if (packetToServer.type == BrokerPacket.EXCHANGE_REMOVE
+						|| packetToServer.type == BrokerPacket.EXCHANGE_UPDATE
+						|| packetToServer.type == BrokerPacket.EXCHANGE_ADD) {
+					/* print server reply */
+					BrokerPacket packetFromServer;
+					packetFromServer = (BrokerPacket) in.readObject();
+
+					if ((packetFromServer.type == BrokerPacket.EXCHANGE_REPLY)) {
+
+						if (packetFromServer.error_code == BrokerPacket.ERROR_INVALID_SYMBOL) {
+							System.out.println(packetFromServer.symbol
+									+ " invalid.");
+						} else if (packetFromServer.error_code == BrokerPacket.ERROR_OUT_OF_RANGE) {
+							System.out.println(packetFromServer.symbol
+									+ " out of range.");
+						} else if (packetFromServer.error_code == BrokerPacket.ERROR_SYMBOL_EXISTS) {
+							System.out.println(packetFromServer.symbol
+									+ " exists.");
+						} else {
+							System.out.println(packetFromServer.symbol + " "
+									+ packetFromServer.exchange);
+						}
+					} else {
+						System.out.println("Strange packet received...");
+					}
 				}
-				else if (packetFromServer.type == BrokerPacket.ERROR_OUT_OF_RANGE){
-					System.out.println(packetFromServer.symbol + " out of range.\n");
-				}
-				else if(packetFromServer.type == BrokerPacket.ERROR_SYMBOL_EXISTS){
-					System.out.println(packetFromServer.symbol + " exists.\n");
-				}
+				
 				/* re-print console prompt */
-				System.out.print(">");
+				System.out.print("> ");
+
+			} catch (NoSuchElementException e) {
+				// Also covers InputMismatchException
+				System.out.print("Usage: add <symbol> "
+						+ "|| update <symbol> <value> "
+						+ "|| remove <symbol>\n");
+				/* re-print console prompt */
+				System.out.print("> ");
+				continue;
 			}
 		}
-		
+
 		/* tell server that i'm quitting */
 		BrokerPacket packetToServer = new BrokerPacket();
 		packetToServer.type = BrokerPacket.BROKER_BYE;
@@ -118,3 +139,4 @@ public class BrokerExchange {
 		clientSocket.close();
 	}
 }
+
