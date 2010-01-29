@@ -26,12 +26,16 @@ public class OnlineBroker {
 		
 		// Open the local database
 		QuoteDB quoteDB = new QuoteDB(quoteDBFileName);
+		
+		// Make things gets closed properly on exit
+		Runtime.getRuntime().addShutdownHook(new ShutdownThread(serverSocket, quoteDB));
 
 		System.out.println("Accepting new connections on port " + port);
 		while (listening) {
 			new BrokerServerHandlerThread(serverSocket.accept(), quoteDB).start();
 		}
 
-		serverSocket.close();
+		// Done in the shutdown thread
+		//serverSocket.close();
 	}
 }

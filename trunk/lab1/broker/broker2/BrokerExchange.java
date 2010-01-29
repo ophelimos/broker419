@@ -10,6 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class BrokerExchange {
+	
 	public static void main(String[] args) throws IOException,
 			ClassNotFoundException {
 
@@ -107,15 +108,15 @@ public class BrokerExchange {
 
 						if (packetFromServer.error_code == BrokerPacket.ERROR_INVALID_SYMBOL) {
 							System.out.println(packetFromServer.symbol
-									+ " invalid.\n");
+									+ " invalid.");
 						} else if (packetFromServer.error_code == BrokerPacket.ERROR_OUT_OF_RANGE) {
-							System.out.println(packetFromServer.quote
-									+ " out of range.\n");
+							System.out.println(packetFromServer.symbol
+									+ " out of range.");
 						} else if (packetFromServer.error_code == BrokerPacket.ERROR_SYMBOL_EXISTS) {
 							System.out.println(packetFromServer.symbol
-									+ " exists.\n");
+									+ " exists.");
 						} else {
-							System.out.print(packetFromServer.symbol
+							System.out.println(packetFromServer.symbol + " "
 									+ packetFromServer.exchange);
 						}
 					} else {
