@@ -38,11 +38,8 @@ public class BrokerServerHandlerThread extends Thread {
 				/* create a packet to send reply back to client */
 				BrokerPacket packetToClient = new BrokerPacket();
 
-				// For sanity, always copy the symbol and quote over
+				// For sanity, always copy the symbol over
 				packetToClient.symbol = packetFromClient.symbol;
-
-				// Immediately lowercase whatever symbol we got
-				packetFromClient.symbol = packetFromClient.symbol.toLowerCase();
 
 				// Default quote of 0
 				packetToClient.quote = (long) 0;
@@ -81,6 +78,9 @@ public class BrokerServerHandlerThread extends Thread {
 
 				if (packetFromClient.type == BrokerPacket.EXCHANGE_ADD) {
 					packetToClient.type = BrokerPacket.EXCHANGE_REPLY;
+					
+					// Lower-case the symbol
+					packetFromClient.symbol = packetFromClient.symbol.toLowerCase();
 
 					// Check if the symbol exists
 					if (quoteDB.containsKey(packetFromClient.symbol)) {
@@ -104,6 +104,9 @@ public class BrokerServerHandlerThread extends Thread {
 
 				if (packetFromClient.type == BrokerPacket.EXCHANGE_REMOVE) {
 					packetToClient.type = BrokerPacket.EXCHANGE_REPLY;
+					
+					// Lower-case the symbol
+					packetFromClient.symbol = packetFromClient.symbol.toLowerCase();
 
 					// Check if the symbol exists
 					if (!quoteDB.containsKey(packetFromClient.symbol)) {
@@ -127,6 +130,9 @@ public class BrokerServerHandlerThread extends Thread {
 
 				if (packetFromClient.type == BrokerPacket.EXCHANGE_UPDATE) {
 					packetToClient.type = BrokerPacket.EXCHANGE_REPLY;
+					
+					// Lower-case the symbol
+					packetFromClient.symbol = packetFromClient.symbol.toLowerCase();
 
 					// Check if the symbol exists
 					if (!quoteDB.containsKey(packetFromClient.symbol)) {
