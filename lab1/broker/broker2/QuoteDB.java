@@ -61,7 +61,7 @@ public class QuoteDB {
 
 			// Now, make a new one
 			DB = new Hashtable<String, Long>();
-			
+
 			// Set the persistent file name
 			persistentFileName = fileName;
 
@@ -73,7 +73,7 @@ public class QuoteDB {
 			while (quoteInput.hasNext()) {
 
 				String symbol = quoteInput.next();
-				symbol.toLowerCase();
+				symbol = symbol.toLowerCase();
 				Long value = Long.parseLong(quoteInput.next());
 
 				DB.put(symbol, value);
@@ -108,7 +108,7 @@ public class QuoteDB {
 
 		} catch (IOException e) {
 			System.out.println("Failed to flush database!");
-			System.out.println("Error: e.getMessage()");
+			System.out.println("ERROR: " + e.getMessage());
 			throw e;
 		} finally {
 			lock.writeLock().unlock();
@@ -123,20 +123,23 @@ public class QuoteDB {
 
 		// Write the DB to a temporary file first, and then overwrite, rather
 		// than accidentally truncating it
-		File tempFile = File.createTempFile("dbtemp", "tmp");
+		File cwd = new File(System.getProperty("user.dir"));
+		File tempFile = File.createTempFile("dbtemp", ".tmp", cwd);
 		BufferedWriter quoteOutput = new BufferedWriter(
 				new FileWriter(tempFile));
 
 		// Pull the key-value pairs out of the database
 		Enumeration<String> keys = DB.keys();
 
-		for (String curKey = keys.nextElement(); keys.hasMoreElements(); curKey = keys
-				.nextElement()) {
-
+		while (keys.hasMoreElements()) {
+			String curKey = keys.nextElement();
 			Long curValue = DB.get(curKey);
 			// Print it to the file
 			quoteOutput.write(curKey + " " + curValue + newline);
 		}
+
+		// Flush the temporary file
+		quoteOutput.flush();
 
 		// Now, move the old DB to a backup file
 		File dbFile = new File(persistentFileName);
