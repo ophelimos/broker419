@@ -26,13 +26,11 @@ public class BrokerServerHandlerThread extends Thread {
 
 		try {
 			/* stream to read from client */
-			ObjectInputStream fromClient = new ObjectInputStream(socket
-					.getInputStream());
+			ObjectInputStream fromClient = new ObjectInputStream(socket.getInputStream());
 			BrokerPacket packetFromClient;
 
 			/* stream to write back to client */
-			ObjectOutputStream toClient = new ObjectOutputStream(socket
-					.getOutputStream());
+			ObjectOutputStream toClient = new ObjectOutputStream(socket.getOutputStream());
 
 			while ((packetFromClient = (BrokerPacket) fromClient.readObject()) != null) {
 				/* create a packet to send reply back to client */
@@ -152,13 +150,10 @@ public class BrokerServerHandlerThread extends Thread {
 
 					// Update means remove and re-add
 					quoteDB.remove(packetFromClient.symbol);
-					quoteDB
-							.put(packetFromClient.symbol,
-									packetFromClient.quote);
+					quoteDB.put(packetFromClient.symbol,packetFromClient.quote);
 
 					/* send reply back to client */
-					packetToClient.exchange = "updated to "
-							+ quoteDB.get(packetFromClient.symbol) + ".";
+					packetToClient.exchange = "updated to " + quoteDB.get(packetFromClient.symbol) + ".";
 					toClient.writeObject(packetToClient);
 
 					/* wait for next packet */
