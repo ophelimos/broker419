@@ -113,6 +113,7 @@ public class BrokerLookupServer {
 							packetToClient.num_locations = 1;
 							packetToClient.locations[0] = NSEBroker;
 							packetToClient.symbol = "exchangelocated";
+							//does not check if hte servers have registered yet first.... just sends
 						}
 						if (packetFromClient.symbol.compareToIgnoreCase("tsebrokerreq") == 0) {
 							
