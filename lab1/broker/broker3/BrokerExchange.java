@@ -3,12 +3,22 @@ import java.net.*;
 import java.util.*;
 
 public class BrokerExchange {
+	
+	// Global I/O streams
+	private static Socket lookupSocket = null;
+
+	private static ObjectOutputStream lookupServerOut = null;
+
+	private static ObjectInputStream lookupServerIn = null;
+
+	private static Socket brokerSocket = null;
+
+	private static ObjectOutputStream brokerServerOut = null;
+
+	private static ObjectInputStream brokerServerIn = null;
+	
 	public static void main(String[] args) throws IOException,
 			ClassNotFoundException {
-
-		Socket clientSocket = null;
-		ObjectOutputStream out = null;
-		ObjectInputStream in = null;
 
 		try {
 			/* variables for hostname/port */
@@ -22,17 +32,62 @@ public class BrokerExchange {
 				System.err.println("ERROR: Invalid arguments!");
 				System.exit(-1);
 			}
-			clientSocket = new Socket(serverinfo.broker_host, serverinfo.broker_port);
+			lookupSocket = new Socket(serverinfo.broker_host, serverinfo.broker_port);
 
-			out = new ObjectOutputStream(clientSocket.getOutputStream());
-			in = new ObjectInputStream(clientSocket.getInputStream());
+			lookupServerOut = new ObjectOutputStream(lookupSocket.getOutputStream());
+			lookupServerIn = new ObjectInputStream(lookupSocket.getInputStream());
 
 		} catch (UnknownHostException e) {
-			System.err.println("ERROR: Don't know where to connedelimct!!");
+			System.err.println("ERROR: Don't know where to connect!!");
 			System.exit(1);
 		} catch (IOException e) {
 			System.err.println("ERROR: Couldn't get I/O for the connection.");
 			System.exit(1);
+		}
+		
+		String reqBroker = args[2];
+		
+		/* Now, use the lookup server to connect to the exchange server */
+		try {
+			BrokerPacket connectionPacket = new BrokerPacket();
+			connectionPacket.type = BrokerPacket.EXCHANGE_ADD;
+			connectionPacket.symbol = reqBroker + "brokerreq";
+			lookupServerOut.writeObject(connectionPacket);
+
+			// now we receive the response from lookup server
+			BrokerPacket lookupResponse;
+			lookupResponse = (BrokerPacket) lookupServerIn.readObject();
+			if (lookupResponse.type == BrokerPacket.EXCHANGE_REPLY) {
+				// Use the given broker location object
+				BrokerLocation curBroker = lookupResponse.locations[0];
+
+				try {
+					// Connect to the given server
+					brokerSocket = new Socket(curBroker.broker_host,
+							curBroker.broker_port);
+
+					brokerServerOut = new ObjectOutputStream(brokerSocket
+							.getOutputStream());
+					brokerServerIn = new ObjectInputStream(brokerSocket
+							.getInputStream());
+				} catch (IOException e) {
+					System.out
+							.println("Failed to connect to give broker server.  Nameserver failure?");
+				}
+
+				System.out.println(curBroker.broker_name + "is local");
+			} else {
+				
+				// Just print an error message
+				System.out.println("Strange packet received from "
+						+ lookupResponse.symbol);
+			}
+
+		} catch (IOException e) {
+			System.err.println("Failed to connect to lookup server!");
+			System.exit(1);
+		} catch (ClassNotFoundException e) {
+			System.err.println("Don't understand input data");
 		}
 
 		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
@@ -58,7 +113,7 @@ public class BrokerExchange {
 					// Get the symbol
 					packetToServer.symbol = inputLine.next();
 
-					out.writeObject(packetToServer);
+					brokerServerOut.writeObject(packetToServer);
 				} else if (curword.equalsIgnoreCase("update")) {
 					packetToServer.type = BrokerPacket.EXCHANGE_UPDATE;
 
@@ -66,14 +121,14 @@ public class BrokerExchange {
 					packetToServer.symbol = inputLine.next();
 					packetToServer.quote = inputLine.nextLong();
 
-					out.writeObject(packetToServer);
+					brokerServerOut.writeObject(packetToServer);
 				} else if (curword.equalsIgnoreCase("remove")) {
 					packetToServer.type = BrokerPacket.EXCHANGE_REMOVE;
 
 					// Get the symbol
 					packetToServer.symbol = inputLine.next();
 
-					out.writeObject(packetToServer);
+					brokerServerOut.writeObject(packetToServer);
 				} else if (curword.equalsIgnoreCase("x")
 						|| curword.equalsIgnoreCase("q")
 						|| curword.equalsIgnoreCase("quit")) {
@@ -90,7 +145,7 @@ public class BrokerExchange {
 						|| packetToServer.type == BrokerPacket.EXCHANGE_ADD) {
 					/* print server reply */
 					BrokerPacket packetFromServer;
-					packetFromServer = (BrokerPacket) in.readObject();
+					packetFromServer = (BrokerPacket) brokerServerIn.readObject();
 
 					if ((packetFromServer.type == BrokerPacket.EXCHANGE_REPLY)) {
 
@@ -125,16 +180,22 @@ public class BrokerExchange {
 				continue;
 			}
 		}
-
-		/* tell server that i'm quitting */
+		
+		/* tell broker server that i'm quitting */
+		/* tell lookup server that i'm quitting */
 		BrokerPacket packetToServer = new BrokerPacket();
 		packetToServer.type = BrokerPacket.BROKER_BYE;
-		out.writeObject(packetToServer);
-
-		out.close();
-		in.close();
+		brokerServerOut.writeObject(packetToServer);
+		lookupServerOut.writeObject(packetToServer);
+		
+		brokerServerOut.close();
+		brokerServerIn.close();
+		brokerSocket.close();
+		
+		lookupServerOut.close();
+		lookupServerIn.close();
 		stdIn.close();
-		clientSocket.close();
+		lookupSocket.close();
 	}
 }
 
