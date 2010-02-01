@@ -105,10 +105,17 @@ public class BrokerClient {
 			System.out.print("> ");
 		}
 
-		/* tell server that i'm quitting */
+		/* tell both servers that i'm quitting */
 		BrokerPacket packetToServer = new BrokerPacket();
 		packetToServer.type = BrokerPacket.BROKER_BYE;
 		// packetToServer.message = "Bye!";
+		if (brokerServerOut != null) {
+			brokerServerOut.writeObject(packetToServer);
+			// Disconnect from the current broker
+			brokerServerOut.close();
+			brokerServerIn.close();
+			brokerSocket.close();
+		}
 		lookupServerOut.writeObject(packetToServer);
 
 		lookupServerOut.close();
@@ -162,7 +169,7 @@ public class BrokerClient {
 				// Error: the Broker server is probably not up yet
 
 				// Just print an error message
-				System.out.println("Failed to contact lookup server "
+				System.out.println("Strange packet received from "
 						+ lookupResponse.symbol);
 			}
 
