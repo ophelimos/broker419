@@ -8,7 +8,6 @@ import java.io.Serializable;
  * 
  */
 
-
 /* inline class to describe host/port combo */
 class BrokerLocation implements Serializable {
 	public String  broker_host;
@@ -26,7 +25,6 @@ class BrokerLocation implements Serializable {
 	public String toString() {
 		return " HOST: " + broker_host + " PORT: " + broker_port; 
 	}
-	
 }
 
 public class BrokerPacket implements Serializable {
