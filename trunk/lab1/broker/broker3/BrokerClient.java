@@ -35,9 +35,28 @@ public class BrokerClient {
 
 		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 		String userInput;
-
-		//serverinfo.broker_host = "localhost";
-		//serverinfo.broker_port = 4444;
+		
+		// Now we get the actual broker information
+		// We will use the argc[2] to determine which broker server to request to the lookup server
+		if (args[2].compareToIgnoreCase("nse") == 0) {
+			//Send a NSE request
+			BrokerPacket connectionPacket = new BrokerPacket();
+			connectionPacket.type = BrokerPacket.EXCHANGE_ADD;
+			connectionPacket.symbol = args[2];
+			out.writeObject(connectionPacket);
+			
+			//now we receive the responce from lookup server
+			BrokerPacket lookupresponse;
+			lookupresponse = (BrokerPacket) in.readObject();
+			if (lookupresponse.type == BrokerPacket.EXCHANGE_REPLY) {
+				//Use the given broker location object
+			}
+			if (lookupresponse.type == BrokerPacket.ERROR_INVALID_EXCHANGE) {
+				// Error: the Broker server is probably not up yet
+				//Do we connect to the other vroker server incase the defualt one doesnt connect?
+			}
+		}
+		
 		System.out.print(">");
 		while ((userInput = stdIn.readLine()) != null && userInput.toLowerCase().indexOf("x") == -1) {
 			/* make a new request packet */
