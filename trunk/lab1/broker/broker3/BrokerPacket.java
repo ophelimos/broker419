@@ -10,6 +10,10 @@ import java.io.Serializable;
 
 /* inline class to describe host/port combo */
 class BrokerLocation implements Serializable {
+	
+	// Since "serializable" evidently wants it, and we get warnings otherwise
+	public static final long serialVersionUID = 1;
+	
 	public String  broker_host;
 	public Integer broker_port;
 	public String  broker_name;
@@ -28,7 +32,10 @@ class BrokerLocation implements Serializable {
 }
 
 public class BrokerPacket implements Serializable {
-
+	
+	// Since "serializable" evidently wants it, and we get warnings otherwise
+	public static final long serialVersionUID = 1;
+	
 	/* define constants */
 	/* for part 1/2/3 */
 	public static final int BROKER_NULL    = 0;
