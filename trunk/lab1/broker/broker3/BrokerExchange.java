@@ -13,9 +13,7 @@ public class BrokerExchange {
 		try {
 			/* variables for hostname/port */
 			BrokerLocation serverinfo = new BrokerLocation("localhost", 4444, "tse");
-			//serverinfo.broker_host = "localhost";
-			//serverinfo.broker_port = 4444;
-			
+
 			if(args.length == 3 ) {
 				serverinfo.broker_host = args[0];
 				serverinfo.broker_port = Integer.parseInt(args[1]);
