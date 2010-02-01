@@ -42,7 +42,7 @@ public class BrokerClient {
 			//Send a NSE request
 			BrokerPacket connectionPacket = new BrokerPacket();
 			connectionPacket.type = BrokerPacket.EXCHANGE_ADD;
-			connectionPacket.symbol = args[2];
+			connectionPacket.symbol = "nsebrokerreq";
 			out.writeObject(connectionPacket);
 			
 			//now we receive the responce from lookup server
@@ -50,6 +50,8 @@ public class BrokerClient {
 			lookupresponse = (BrokerPacket) in.readObject();
 			if (lookupresponse.type == BrokerPacket.EXCHANGE_REPLY) {
 				//Use the given broker location object
+				BrokerLocation newboss= lookupresponse.locations[0];
+				
 			}
 			if (lookupresponse.type == BrokerPacket.ERROR_INVALID_EXCHANGE) {
 				// Error: the Broker server is probably not up yet
