@@ -149,16 +149,12 @@ public class BrokerClient {
 
 				try {
 					// Connect to the given server
-					brokerSocket = new Socket(curBroker.broker_host,
-							curBroker.broker_port);
+					brokerSocket = new Socket(curBroker.broker_host,curBroker.broker_port);
 
-					brokerServerOut = new ObjectOutputStream(brokerSocket
-							.getOutputStream());
-					brokerServerIn = new ObjectInputStream(brokerSocket
-							.getInputStream());
+					brokerServerOut = new ObjectOutputStream(brokerSocket.getOutputStream());
+					brokerServerIn = new ObjectInputStream(brokerSocket.getInputStream());
 				} catch (IOException e) {
-					System.out
-							.println("Failed to connect to give broker server.  Nameserver failure?");
+					System.out.println("Failed to connect to give broker server.  Nameserver failure?");
 				}
 
 				System.out.println(curBroker.broker_name + "is local");
@@ -169,8 +165,7 @@ public class BrokerClient {
 				// Error: the Broker server is probably not up yet
 
 				// Just print an error message
-				System.out.println("Strange packet received from "
-						+ lookupResponse.symbol);
+				System.out.println("Strange packet received from " + lookupResponse.symbol);
 			}
 
 		} catch (IOException e) {

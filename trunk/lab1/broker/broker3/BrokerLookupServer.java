@@ -73,6 +73,9 @@ public class BrokerLookupServer {
 						
 						if (packetFromClient.symbol.compareToIgnoreCase("nseexchangereq") == 0) {
 							
+							if (NSEEx == null) {
+								packetToClient.symbol = "notlocated";
+							}
 							packetToClient.num_locations = 1;
 							packetToClient.locations[0] = NSEEx;
 							packetToClient.symbol = "exchangelocated";
