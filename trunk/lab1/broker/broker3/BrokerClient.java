@@ -42,6 +42,11 @@ public class BrokerClient {
 					.getOutputStream());
 			lookupServerIn = new ObjectInputStream(lookupSocket
 					.getInputStream());
+			
+			// Close connection immediately
+//			lookupServerOut.close();
+//			lookupServerIn.close();
+//			lookupSocket.close();
 
 		} catch (UnknownHostException e) {
 			System.err.println("ERROR: Don't know where to connect!!");
@@ -56,6 +61,7 @@ public class BrokerClient {
 		String userInput;
 
 		System.out.print("> ");
+
 		while ((userInput = stdIn.readLine()) != null
 				&& userInput.toLowerCase().indexOf("x") == -1) {
 
@@ -66,10 +72,13 @@ public class BrokerClient {
 				inputLine.next();
 
 				if (inputLine.hasNext()) {
-					lookupBroker(inputLine.next());
+					String broker = inputLine.next();
+					lookupBroker(broker);
 				}
 
 				// Wait for more input
+				/* Reprint prompt on loop */
+				System.out.print("> ");
 				continue;
 			}
 
@@ -78,6 +87,8 @@ public class BrokerClient {
 				System.out
 						.println("Need to select a broker (use the 'local' command)");
 				// Wait for more input
+				/* Reprint prompt on loop */
+				System.out.print("> ");
 				continue;
 			}
 
@@ -87,12 +98,14 @@ public class BrokerClient {
 			BrokerPacket packetToServer = new BrokerPacket();
 			packetToServer.type = BrokerPacket.BROKER_REQUEST;
 			packetToServer.symbol = userInput;
+			// To keep things consistent, even though should be unused
+			packetToServer.exchange = "0";
 
-			lookupServerOut.writeObject(packetToServer);
+			brokerServerOut.writeObject(packetToServer);
 
 			/* print server reply */
 			BrokerPacket packetFromServer;
-			packetFromServer = (BrokerPacket) lookupServerIn.readObject();
+			packetFromServer = (BrokerPacket) brokerServerIn.readObject();
 
 			if (packetFromServer.type == BrokerPacket.BROKER_QUOTE) {
 				System.out.println("Quote from broker: "
@@ -101,27 +114,24 @@ public class BrokerClient {
 			if (packetFromServer.type == BrokerPacket.ERROR_OUT_OF_RANGE) {
 				System.err.println(packetFromServer.quote + " invalid.\n");
 			}
-			/* re-print console prompt */
+
+			/* Reprint prompt on loop */
 			System.out.print("> ");
 		}
 
-		/* tell both servers that i'm quitting */
+		/* tell the broker that i'm quitting (NOT the lookup server) */
 		BrokerPacket packetToServer = new BrokerPacket();
 		packetToServer.type = BrokerPacket.BROKER_BYE;
 		// packetToServer.message = "Bye!";
-		if (brokerServerOut != null) {
+		if (curBroker != null) {
 			brokerServerOut.writeObject(packetToServer);
 			// Disconnect from the current broker
 			brokerServerOut.close();
 			brokerServerIn.close();
 			brokerSocket.close();
 		}
-		lookupServerOut.writeObject(packetToServer);
 
-		lookupServerOut.close();
-		lookupServerIn.close();
 		stdIn.close();
-		lookupSocket.close();
 	}
 
 	private static void lookupBroker(String reqBroker) {
@@ -139,25 +149,32 @@ public class BrokerClient {
 			BrokerPacket lookupResponse;
 			lookupResponse = (BrokerPacket) lookupServerIn.readObject();
 			if (lookupResponse.type == BrokerPacket.EXCHANGE_REPLY) {
+
+				// Disconnect from the current broker
+				if (curBroker != null) {
+					brokerServerOut.close();
+					brokerServerIn.close();
+					brokerSocket.close();
+				}
+				
 				// Use the given broker location object
 				curBroker = lookupResponse.locations[0];
 
-				// Disconnect from the current broker
-				brokerServerOut.close();
-				brokerServerIn.close();
-				brokerSocket.close();
-
 				try {
 					// Connect to the given server
-					brokerSocket = new Socket(curBroker.broker_host,curBroker.broker_port);
+					brokerSocket = new Socket(curBroker.broker_host,
+							curBroker.broker_port);
 
-					brokerServerOut = new ObjectOutputStream(brokerSocket.getOutputStream());
-					brokerServerIn = new ObjectInputStream(brokerSocket.getInputStream());
+					brokerServerOut = new ObjectOutputStream(brokerSocket
+							.getOutputStream());
+					brokerServerIn = new ObjectInputStream(brokerSocket
+							.getInputStream());
 				} catch (IOException e) {
-					System.out.println("Failed to connect to give broker server.  Nameserver failure?");
+					System.out
+							.println("Failed to connect to give broker server.  Nameserver failure?");
 				}
 
-				System.out.println(curBroker.broker_name + "is local");
+				System.out.println(curBroker.broker_name + " is local");
 			} else /*
 					 * if (lookupResponse.type ==
 					 * BrokerPacket.ERROR_INVALID_EXCHANGE)
@@ -165,7 +182,8 @@ public class BrokerClient {
 				// Error: the Broker server is probably not up yet
 
 				// Just print an error message
-				System.out.println("Strange packet received from " + lookupResponse.symbol);
+				System.out.println("Strange packet received from "
+						+ lookupResponse.symbol);
 			}
 
 		} catch (IOException e) {

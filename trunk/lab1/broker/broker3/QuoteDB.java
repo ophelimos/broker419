@@ -26,7 +26,7 @@ public class QuoteDB {
 	// Actual database used to store key-value pairs
 	private Hashtable<String, Long> DB;
 
-	private String persistentFileName;
+	public String persistentFileName;
 
 	// Platform independent newline
 	public static String newline = System.getProperty("line.separator");

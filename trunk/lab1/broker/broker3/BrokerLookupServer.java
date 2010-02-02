@@ -60,7 +60,7 @@ public class BrokerLookupServer {
 	
 						packetToClient.type = BrokerPacket.BROKER_QUOTE;
 						
-						if (packetFromClient.symbol.compareToIgnoreCase("nseregister") == 0) {
+						if (packetFromClient.symbol.compareToIgnoreCase("nasdaqregister") == 0) {
 							
 							NSEBroker = packetFromClient.locations[0];
 							packetToClient.symbol = "registered";
@@ -71,18 +71,20 @@ public class BrokerLookupServer {
 							packetToClient.symbol = "registered";
 						}
 						
-						if (packetFromClient.symbol.compareToIgnoreCase("nseexchangereq") == 0) {
+						if (packetFromClient.symbol.compareToIgnoreCase("nasdaqexchangereq") == 0) {
 							
 							if (NSEEx == null) {
 								packetToClient.symbol = "notlocated";
 							}
 							packetToClient.num_locations = 1;
+							packetToClient.locations = new BrokerLocation[1];
 							packetToClient.locations[0] = NSEEx;
 							packetToClient.symbol = "exchangelocated";
 						}
 						if (packetFromClient.symbol.compareToIgnoreCase("tseexchangereq") == 0) {
 							
 							packetToClient.num_locations = 1;
+							packetToClient.locations = new BrokerLocation[1];
 							packetToClient.locations[0] = TSEEx;
 							packetToClient.symbol = "exchangelocated";
 						}
@@ -103,7 +105,7 @@ public class BrokerLookupServer {
 						packetToClient.type = BrokerPacket.EXCHANGE_REPLY;
 	
 						// Look up the given symbol in the table
-						if (packetFromClient.symbol.compareToIgnoreCase("nseregister") == 0) {
+						if (packetFromClient.symbol.compareToIgnoreCase("nasdaqregister") == 0) {
 							
 							NSEEx = packetFromClient.locations[0];
 							packetToClient.symbol = "registered";
@@ -114,9 +116,10 @@ public class BrokerLookupServer {
 							packetToClient.symbol = "registered";
 						}
 						
-						if (packetFromClient.symbol.compareToIgnoreCase("nsebrokerreq") == 0) {
+						if (packetFromClient.symbol.compareToIgnoreCase("nasdaqbrokerreq") == 0) {
 							
 							packetToClient.num_locations = 1;
+							packetToClient.locations = new BrokerLocation[1];
 							packetToClient.locations[0] = NSEBroker;
 							packetToClient.symbol = "exchangelocated";
 							//does not check if hte servers have registered yet first.... just sends
@@ -124,6 +127,7 @@ public class BrokerLookupServer {
 						if (packetFromClient.symbol.compareToIgnoreCase("tsebrokerreq") == 0) {
 							
 							packetToClient.num_locations = 1;
+							packetToClient.locations = new BrokerLocation[1];
 							packetToClient.locations[0] = TSEBroker;
 							packetToClient.symbol = "exchangelocated";
 						}
