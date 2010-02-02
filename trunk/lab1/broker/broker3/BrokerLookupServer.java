@@ -89,8 +89,11 @@ public class BrokerLookupServer {
 	
 						/* send reply back to client */
 						toClient.writeObject(packetToClient);
-	
-						/* wait for next packet */
+
+						//Close all client connections now
+						toClient.close();
+						fromClient.close();
+						clientsocket.close();
 						continue;
 					}
 					
@@ -126,8 +129,11 @@ public class BrokerLookupServer {
 						}
 						/* send reply back to client */
 						toClient.writeObject(packetToClient);
-	
-						/* wait for next packet */
+
+						//Close all client connections now
+						toClient.close();
+						fromClient.close();
+						clientsocket.close();
 						continue;
 					}
 					
@@ -136,17 +142,13 @@ public class BrokerLookupServer {
 						gotByePacket = true;
 						packetToClient.type = BrokerPacket.BROKER_BYE;
 						toClient.writeObject(packetToClient);
-						break;
+						continue;
 					}
 					
 					/* if code comes here, there is an error in the packet */
 					System.err.println("ERROR: Unknown ECHO_* packet!!");
 					System.exit(-1);
 				}
-				//Close all client connections now
-				toClient.close();
-				fromClient.close();
-				clientsocket.close();
 			}
 			catch (IOException e) {
 				if (!gotByePacket)
