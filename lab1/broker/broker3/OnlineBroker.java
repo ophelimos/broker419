@@ -9,7 +9,9 @@ import java.net.UnknownHostException;
 public class OnlineBroker {
 
 	// Table of quotes file
-	private static final String quoteDBFileName = "nasdaq";
+	public static String quoteDBFileName = "nasdaq";
+	
+	public static BrokerLocation lookupServerInfo;
 
 	public static void main(String[] args) throws IOException {
 
@@ -32,6 +34,7 @@ public class OnlineBroker {
 		}
 
 		// Next open the local database
+		quoteDBFileName = args[3];
 		QuoteDB quoteDB = new QuoteDB(quoteDBFileName);
 
 		// Finally, let the lookup server know where we are
@@ -39,7 +42,7 @@ public class OnlineBroker {
 			Socket lookupSocket = null;
 			ObjectOutputStream lookupServerOut = null;
 			ObjectInputStream lookupServerIn = null;
-			BrokerLocation lookupServerInfo = new BrokerLocation("localhost",
+			lookupServerInfo = new BrokerLocation("localhost",
 					4444, "BrokerLookupServer");
 
 			lookupServerInfo.broker_host = args[0];
@@ -57,7 +60,7 @@ public class OnlineBroker {
 			BrokerPacket serverRegistration = new BrokerPacket();
 			serverRegistration.type = BrokerPacket.BROKER_REQUEST;
 			if (args[3].equalsIgnoreCase("nasdaq")) {
-				serverRegistration.symbol = "nseregister";
+				serverRegistration.symbol = "nasdaqregister";
 			} else if (args[3].equalsIgnoreCase("tse")) {
 				serverRegistration.symbol = "tseregister";
 			} else {

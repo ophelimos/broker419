@@ -83,7 +83,7 @@ public class BrokerExchange {
 							.println("Failed to connect to give broker server.  Nameserver failure?");
 				}
 
-				System.out.println(curBroker.broker_name + "is local");
+				System.out.println(curBroker.broker_name + " is local");
 			} else {
 
 				// Just print an error message

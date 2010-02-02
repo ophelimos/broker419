@@ -12,12 +12,24 @@ public class BrokerServerHandlerThread extends Thread {
 
 	private QuoteDB quoteDB = null;
 
+	private Socket brokerSocket = null;
+
+	private Socket lookupSocket = null;
+
+	private ObjectOutputStream lookupServerOut = null;
+
+	private ObjectInputStream lookupServerIn = null;
+
+	private ObjectOutputStream brokerServerOut = null;
+
+	private ObjectInputStream brokerServerIn = null;
+
 	public BrokerServerHandlerThread(Socket socket, QuoteDB quoteDB) {
 		super("BrokerServerHandlerThread");
 		this.socket = socket;
 		this.quoteDB = quoteDB;
 		System.out.println("Created new thread " + this.getId()
-				+ " to handle client");
+				+ " on exchange " + " to handle client");
 	}
 
 	public void run() {
@@ -26,11 +38,13 @@ public class BrokerServerHandlerThread extends Thread {
 
 		try {
 			/* stream to read from client */
-			ObjectInputStream fromClient = new ObjectInputStream(socket.getInputStream());
+			ObjectInputStream fromClient = new ObjectInputStream(socket
+					.getInputStream());
 			BrokerPacket packetFromClient;
 
 			/* stream to write back to client */
-			ObjectOutputStream toClient = new ObjectOutputStream(socket.getOutputStream());
+			ObjectOutputStream toClient = new ObjectOutputStream(socket
+					.getOutputStream());
 
 			while ((packetFromClient = (BrokerPacket) fromClient.readObject()) != null) {
 				/* create a packet to send reply back to client */
@@ -52,9 +66,18 @@ public class BrokerServerHandlerThread extends Thread {
 					packetToClient.quote = quoteDB.get(packetFromClient.symbol);
 
 					if (packetToClient.quote == null) {
-						// Return 0, not anything real
-						packetToClient.quote = (long) 0;
-						packetToClient.error_code = BrokerPacket.ERROR_INVALID_SYMBOL;
+
+						// Look up the symbol in the other exchange (only if it
+						// didn't originally come from an exchange)
+						if (!packetFromClient.exchange.equalsIgnoreCase("1")) {
+							packetToClient.quote = lookupInOtherExchange(packetFromClient.symbol);
+						}
+
+						if (packetToClient.quote == null) {
+							// Return 0, not anything real
+							packetToClient.quote = (long) 0;
+							packetToClient.error_code = BrokerPacket.ERROR_INVALID_SYMBOL;
+						}
 					}
 
 					/* send reply back to client */
@@ -76,9 +99,10 @@ public class BrokerServerHandlerThread extends Thread {
 
 				if (packetFromClient.type == BrokerPacket.EXCHANGE_ADD) {
 					packetToClient.type = BrokerPacket.EXCHANGE_REPLY;
-					
+
 					// Lower-case the symbol
-					packetFromClient.symbol = packetFromClient.symbol.toLowerCase();
+					packetFromClient.symbol = packetFromClient.symbol
+							.toLowerCase();
 
 					// Check if the symbol exists
 					if (quoteDB.containsKey(packetFromClient.symbol)) {
@@ -102,9 +126,10 @@ public class BrokerServerHandlerThread extends Thread {
 
 				if (packetFromClient.type == BrokerPacket.EXCHANGE_REMOVE) {
 					packetToClient.type = BrokerPacket.EXCHANGE_REPLY;
-					
+
 					// Lower-case the symbol
-					packetFromClient.symbol = packetFromClient.symbol.toLowerCase();
+					packetFromClient.symbol = packetFromClient.symbol
+							.toLowerCase();
 
 					// Check if the symbol exists
 					if (!quoteDB.containsKey(packetFromClient.symbol)) {
@@ -128,9 +153,10 @@ public class BrokerServerHandlerThread extends Thread {
 
 				if (packetFromClient.type == BrokerPacket.EXCHANGE_UPDATE) {
 					packetToClient.type = BrokerPacket.EXCHANGE_REPLY;
-					
+
 					// Lower-case the symbol
-					packetFromClient.symbol = packetFromClient.symbol.toLowerCase();
+					packetFromClient.symbol = packetFromClient.symbol
+							.toLowerCase();
 
 					// Check if the symbol exists
 					if (!quoteDB.containsKey(packetFromClient.symbol)) {
@@ -150,10 +176,13 @@ public class BrokerServerHandlerThread extends Thread {
 
 					// Update means remove and re-add
 					quoteDB.remove(packetFromClient.symbol);
-					quoteDB.put(packetFromClient.symbol,packetFromClient.quote);
+					quoteDB
+							.put(packetFromClient.symbol,
+									packetFromClient.quote);
 
 					/* send reply back to client */
-					packetToClient.exchange = "updated to " + quoteDB.get(packetFromClient.symbol) + ".";
+					packetToClient.exchange = "updated to "
+							+ quoteDB.get(packetFromClient.symbol) + ".";
 					toClient.writeObject(packetToClient);
 
 					/* wait for next packet */
@@ -193,4 +222,96 @@ public class BrokerServerHandlerThread extends Thread {
 		System.out.println("Client disconnected, thread " + this.getId()
 				+ " exiting");
 	}
+
+	private Long lookupInOtherExchange(String symbol) {
+		// Find out who I am
+		String otherExchange = "nasdaq";
+		if (quoteDB.persistentFileName.equalsIgnoreCase("tse")) {
+			otherExchange = "nasdaq";
+		} else {
+			otherExchange = "tse";
+		}
+
+		// Connect to the name server
+		try {
+			lookupSocket = new Socket(
+					OnlineBroker.lookupServerInfo.broker_host,
+					OnlineBroker.lookupServerInfo.broker_port);
+			lookupServerOut = new ObjectOutputStream(lookupSocket
+					.getOutputStream());
+			lookupServerIn = new ObjectInputStream(lookupSocket
+					.getInputStream());
+		} catch (IOException e) {
+			System.out.println("Failed to connect to lookup server");
+		}
+
+		// Look up the broker server
+		try {
+			BrokerPacket connectionPacket = new BrokerPacket();
+			connectionPacket.type = BrokerPacket.EXCHANGE_ADD;
+			connectionPacket.symbol = otherExchange + "brokerreq";
+			lookupServerOut.writeObject(connectionPacket);
+
+			// now we receive the response from lookup server
+			BrokerPacket lookupResponse;
+			lookupResponse = (BrokerPacket) lookupServerIn.readObject();
+
+			if (lookupResponse.locations != null) {
+				// Use the given broker location object
+				BrokerLocation curBroker = lookupResponse.locations[0];
+
+				try {
+					// Connect to the given server
+					brokerSocket = new Socket(curBroker.broker_host,
+							curBroker.broker_port);
+
+					brokerServerOut = new ObjectOutputStream(brokerSocket
+							.getOutputStream());
+					brokerServerIn = new ObjectInputStream(brokerSocket
+							.getInputStream());
+
+					// Now, talk to the other exchange like a client
+
+					/* make a new request packet */
+					BrokerPacket packetToServer = new BrokerPacket();
+					packetToServer.type = BrokerPacket.BROKER_REQUEST;
+					packetToServer.symbol = symbol;
+
+					// Make sure it's self-identified as coming from an
+					// exchange, not a client
+					packetToServer.exchange = "1";
+
+					brokerServerOut.writeObject(packetToServer);
+
+					/* print server reply */
+					BrokerPacket packetFromServer;
+					packetFromServer = (BrokerPacket) brokerServerIn
+							.readObject();
+					return packetFromServer.quote;
+
+				} catch (IOException e) {
+					System.out
+							.println("Failed to connect to broker server.  Nameserver failure?");
+					return (long) 0;
+				}
+
+				// System.out.println(curBroker.broker_name + " is local");
+			} else {
+
+				// Just print an error message
+				System.out
+						.println("Failed to look up " + lookupResponse.symbol);
+				System.exit(1);
+			}
+
+		} catch (IOException e) {
+			System.err.println("Failed to connect to lookup server!");
+			return (long) 0;
+		} catch (ClassNotFoundException e) {
+			System.err.println("Don't understand input data");
+			return (long) 0;
+		}
+		return (long) 0;
+	}
+
 }
