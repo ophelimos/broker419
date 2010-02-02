@@ -64,19 +64,20 @@ public class OnlineBroker {
 				serverRegistration.symbol = args[3] + "register";
 			}
 
-			// Get my hostname
+			// Get my registration info
 			try {
 				InetAddress addr = InetAddress.getLocalHost();
 				// Get hostname
-				serverRegistration.locations[0].broker_host = addr
-						.getHostName();
+				String hostname = addr.getCanonicalHostName();
+				Integer serverPort = Integer.parseInt(args[2]);
+				String exchangeName = args[3];
+				serverRegistration.locations = new BrokerLocation[1];
+				serverRegistration.locations[0] = new BrokerLocation(hostname,
+						serverPort, exchangeName);
 			} catch (UnknownHostException e) {
 				System.err.println("ERR: I don't know who I am!");
 				System.exit(1);
 			}
-			
-			serverRegistration.locations[0].broker_name = args[3];
-			serverRegistration.locations[0].broker_port = Integer.parseInt(args[2]);
 
 			lookupServerOut.writeObject(serverRegistration);
 			// Receive the ack
