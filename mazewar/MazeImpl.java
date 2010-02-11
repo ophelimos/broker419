@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.concurrent.locks.*;
 
 /**
  * A concrete implementation of a {@link Maze}.  
@@ -42,8 +43,10 @@ import java.util.HashMap;
  * @version $Id: MazeImpl.java 371 2004-02-10 21:55:32Z geoffw $
  */
 
-public class MazeImpl extends Maze implements Serializable, ClientListener, Runnable {
+public class MazeImpl extends Maze implements Serializable, CommListener, Runnable {
 
+	
+   
         /**
          * Create a {@link Maze}.
          * @param point Treat the {@link Point} as a magintude specifying the
@@ -55,6 +58,11 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 assert(maxX > 0);
                 maxY = point.getY();
                 assert(maxY > 0);
+                
+                //this.isConnected = false;
+                this.lock = new ReentrantLock();
+                this.isConnected = lock.newCondition();
+                
                 
                 // Initialize the maze matrix of cells
                 mazeVector = new Vector(maxX);
@@ -75,9 +83,26 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 
                 // Build the maze starting at the corner
                 buildMaze(new Point(0,0));
-
+                
                 thread.start();
         }
+       
+        public boolean isConnected()
+        {
+        	lock.lock();
+        	try{
+        	isConnected.await();
+        	} catch (Exception ex) {
+        		ex.printStackTrace();
+        	}
+        	
+        	
+        	lock.unlock();
+        
+        	return true;
+        	
+        }
+     
        
         /** 
          * Create a maze from a serialized {@link MazeImpl} object written to a file.
@@ -203,9 +228,22 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                         point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
                         cell = getCellImpl(point);
                 } 
-                addClient(client, point);
+                
+                Direction d = Direction.random();
+                while(cell.isWall(d)) {
+                  d = Direction.random();
+                }
+                
+                addClient(client, point, d);
         }
         
+        public synchronized void addRemoteClient(Client c, Point p, Direction o) {
+            assert(c != null);
+            assert(p != null);
+            assert(o != null);
+            
+            addClient(c,p,o);
+    }
         public synchronized Point getClientPoint(Client client) {
                 assert(client != null);
                 Object o = clientMap.get(client);
@@ -229,9 +267,11 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 CellImpl cell = getCellImpl(point);
                 cell.setContents(null);
                 clientMap.remove(client);
+                
                 client.unregisterMaze();
-                client.removeClientListener(this);
+                //client.removeClientListener(this);
                 update();
+                name2clientLookup.remove(client.getName());
                 notifyClientRemove(client);
         }
 
@@ -318,15 +358,109 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
          * @param c The {@link Client} that acted.
          * @param ce The action the {@link Client} performed.
          */
-        public void clientUpdate(Client c, ClientEvent ce) {
-                // When a client turns, update our state.
-                if(ce == ClientEvent.turnLeft) {
-                        rotateClientLeft(c);
-                } else if(ce == ClientEvent.turnRight) {
-                        rotateClientRight(c);
-                }
-        }
 
+
+        public void commClientUpdate(CommClientWrapper cw, ClientEvent ce, CommClientWrapper cw_optional) 
+        { 
+                
+        	if (ce.equals(ClientEvent.client_added_fin))   
+        	{
+                	lock.lock();
+                	isConnected.signal();
+                	lock.unlock();
+            }
+        	else if (ce.equals(ClientEvent.turnLeft))
+        	{
+        		if (!cw.name.equals(this.name))
+        		{
+        			Client c = (Client)name2clientLookup.get(cw.name);
+        			rotateClientLeft(c);
+        		}
+        	}
+        	else if (ce.equals(ClientEvent.turnRight))
+        	{        		
+        		if (!cw.name.equals(this.name))
+        		{
+	    			Client c = (Client)name2clientLookup.get(cw.name);
+	    			rotateClientRight(c);
+    		
+        		}
+        	}
+        	else if (ce.equals(ClientEvent.moveForward))
+        	{
+        		if (!cw.name.equals(this.name))
+        		{
+	    			Client c = (Client)name2clientLookup.get(cw.name);
+	    			moveClientForward(c);
+    		
+        		}
+        	}
+        	else if (ce.equals(ClientEvent.moveBackward))
+        	{
+        		if (!cw.name.equals(this.name))
+        		{
+	    			Client c = (Client)name2clientLookup.get(cw.name);
+	    			moveClientBackward(c);
+    		
+        		}
+        	}
+        	else if (ce.equals(ClientEvent.fire))
+        	{
+        		if (!cw.name.equals(this.name))
+        		{
+	    			Client c = (Client)name2clientLookup.get(cw.name);
+	    			clientFire(c);
+    		
+        		}
+        	}
+        	else if(ce.equals(ClientEvent.client_added))
+        	{
+        		if (!cw.name.equals(this.name))
+        		{
+	        		//this.addRemoteClient(c);
+	        		Client c = new RemoteClient(cw.name);
+	        		this.addRemoteClient(c,cw.point,cw.orientation);
+	        		System.out.println("MazeImpl: Remote Client to be added: "+ c.getName());
+        		}
+        	}
+        	else if(ce.equals(ClientEvent.client_removed))
+        	{
+        		if (!cw.name.equals(this.name))
+        		{
+        			Client c = (Client)name2clientLookup.get(cw.name);
+        			this.removeClient(c);
+        		}
+        	}
+        	else if (ce.equals(ClientEvent.client_killed))
+        	{
+        		Client target = (Client)name2clientLookup.get(cw_optional.name);
+        		Client source = (Client)name2clientLookup.get(cw.name);
+        		if (target instanceof GUIClient)
+			    {
+				  // do nothing
+			    }
+        		else
+        		{
+			    	this.killRemoteClient(source,target, cw_optional.point, cw_optional.orientation);
+			  
+        		}
+        	}
+            	
+            update();
+        
+        }
+               
+        
+        
+
+        /**
+         * Set the name of the maze client (null if server)
+         */
+        
+        public void setName(String name)
+        {
+        	this.name = name; 
+        }
         /**
          * Control loop for {@link Projectile}s.
          */
@@ -420,19 +554,18 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
          * @param client The {@link Client} to be added.
          * @param point The location the {@link Client} should be added.
          */
-        private synchronized void addClient(Client client, Point point) {
+        private synchronized void addClient(Client client, Point point, Direction d) {
                 assert(client != null);
                 assert(checkBounds(point));
                 CellImpl cell = getCellImpl(point);
-                Direction d = Direction.random();
-                while(cell.isWall(d)) {
-                  d = Direction.random();
-                }
+                
                 cell.setContents(client);
                 clientMap.put(client, new DirectedPoint(point, d));
                 client.registerMaze(this);
-                client.addClientListener(this);
+                //client.addClientListener(this);
                 update();
+                
+                name2clientLookup.put(client.getName(), client);
                 notifyClientAdd(client);
         }
         
@@ -441,58 +574,96 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
          * @param source The {@link Client} that fired the projectile.
          * @param target The {@link Client} that was killed.
          */
+        
+        //this killClient only executes if target = GUIclient, that is
+        //the target decides if they got killed
+        private synchronized void killRemoteClient(Client source, Client target, Point p, Direction d)
+        {
+            Mazewar.consolePrintLn(source.getName() + " just vaporized " + 
+                    target.getName());
+            
+        	//     	this will always be done here
+            Object o = clientMap.remove(target);
+            assert(o instanceof Point);
+         
+            Point point = (Point)o;
+            CellImpl cell = getCellImpl(point);
+            cell.setContents(null);
+                        
+            cell = getCellImpl(p);
+            cell.setContents(target);
+            clientMap.put(target, new DirectedPoint(p, d));
+            update();
+            
+            notifyClientKilled(source, target);
+        	
+        }
+        
+        
         private synchronized void killClient(Client source, Client target) {
                 assert(source != null);
                 assert(target != null);
-                Mazewar.consolePrintLn(source.getName() + " just vaporized " + 
-                                target.getName());
-                Object o = clientMap.remove(target);
-                assert(o instanceof Point);
-                Point point = (Point)o;
-                CellImpl cell = getCellImpl(point);
-                cell.setContents(null);
-                // Pick a random starting point, and check to see if it is already occupied
-                point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
-                cell = getCellImpl(point);
-                // Repeat until we find an empty cell
-                while(cell.getContents() != null) {
-                        point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
-                        cell = getCellImpl(point);
+                if (target instanceof GUIClient)
+                {
+	                Mazewar.consolePrintLn(source.getName() + " just vaporized " + 
+	                                target.getName());
+	                
+	                //this will always be done here
+	                Object o = clientMap.remove(target);
+	                assert(o instanceof Point);
+	             
+	                Point point = (Point)o;
+	                CellImpl cell = getCellImpl(point);
+	                cell.setContents(null);
+	                
+	                //this is only done if the target is LocalClient 
+	                // Pick a random starting point, and check to see if it is already occupied
+	                point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
+	                cell = getCellImpl(point);
+	                // Repeat until we find an empty cell
+	                while(cell.getContents() != null) {
+	                        point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
+	                        cell = getCellImpl(point);
+	                }
+	                Direction d = Direction.random();
+	                while(cell.isWall(d)) {
+	                        d = Direction.random();
+	                }
+	                
+//	              this will be done by the callback
+	                cell.setContents(target);
+	                clientMap.put(target, new DirectedPoint(point, d));
+	                update();
+	                
+	                notifyClientKilled(source, target);
+
                 }
-                Direction d = Direction.random();
-                while(cell.isWall(d)) {
-                        d = Direction.random();
-                }
-                cell.setContents(target);
-                clientMap.put(target, new DirectedPoint(point, d));
-                update();
-                notifyClientKilled(source, target);
         }
         
         /**
          * Internal helper called when a {@link Client} emits a turnLeft action.
          * @param client The {@link Client} to rotate.
          */
-        private synchronized void rotateClientLeft(Client client) {
+        public synchronized void rotateClientLeft(Client client) {
                 assert(client != null);
                 Object o = clientMap.get(client);
                 assert(o instanceof DirectedPoint);
                 DirectedPoint dp = (DirectedPoint)o;
                 clientMap.put(client, new DirectedPoint(dp, dp.getDirection().turnLeft()));
-                update();
+               // update();
         }
         
         /**
          * Internal helper called when a {@link Client} emits a turnRight action.
          * @param client The {@link Client} to rotate.
          */
-        private synchronized void rotateClientRight(Client client) {
+        public synchronized void rotateClientRight(Client client) {
                 assert(client != null);
                 Object o = clientMap.get(client);
                 assert(o instanceof DirectedPoint);
                 DirectedPoint dp = (DirectedPoint)o;
                 clientMap.put(client, new DirectedPoint(dp, dp.getDirection().turnRight()));
-                update();
+              // update();
         }
         
         /**
@@ -534,10 +705,19 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 /* Clear the old cell */
                 oldCell.setContents(null);	
                 
-                update();
+                //update();
                 return true; 
         }
        
+        private Lock lock;
+        private Condition isConnected;
+        
+        //private boolean  isConnected = false;
+        private final Map name2clientLookup = new HashMap();
+        /**
+         * Client name (null if server)
+         */
+        private  String name;
         /**
          * The random number generator used by the {@link Maze}.
          */

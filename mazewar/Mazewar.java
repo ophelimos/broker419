@@ -27,7 +27,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import javax.swing.BorderFactory;
 import java.io.Serializable;
-
+import java.io.*;
 /**
  * The entry point and glue code for the game.  It also contains some helpful
  * global utility methods.
@@ -37,6 +37,7 @@ import java.io.Serializable;
 
 public class Mazewar extends JFrame {
 
+		private MazewarComm comm = null;
         /**
          * The default width of the {@link Maze}.
          */
@@ -111,7 +112,6 @@ public class Mazewar extends JFrame {
                 // Put any network clean-up code you might have here.
                 // (inform other implementations on the network that you have 
                 //  left, etc.)
-                
 
                 System.exit(0);
         }
@@ -127,6 +127,7 @@ public class Mazewar extends JFrame {
                 maze = new MazeImpl(new Point(mazeWidth, mazeHeight), mazeSeed);
                 assert(maze != null);
                 
+
                 // Have the ScoreTableModel listen to the maze to find
                 // out how to adjust scores.
                 ScoreTableModel scoreModel = new ScoreTableModel();
@@ -141,19 +142,33 @@ public class Mazewar extends JFrame {
                 
                 // You may want to put your network initialization code somewhere in
                 // here.
+                comm = new MazewarComm("localhost", 10101); //128.100.13.55
+                comm.addCommListener((MazeImpl)maze);
+                comm.start();                
+
+                
+                maze.addMazeListener(comm);
+               
+                
+                //wait until all remote clients have connected
+                //maze.isConnected();
                 
                 // Create the GUIClient and connect it to the KeyListener queue
-                guiClient = new GUIClient(name);
+                guiClient = new GUIClient(name); 
+                maze.setName(name);
                 maze.addClient(guiClient);
+
                 this.addKeyListener(guiClient);
                 
+                //comm needs to listen to GUIClient to update the server 
+                guiClient.addClientListener(comm);
                 // Use braces to force constructors not to be called at the beginning of the
                 // constructor.
                 {
-                        maze.addClient(new RobotClient("Norby"));
-                        maze.addClient(new RobotClient("Robbie"));
-                        maze.addClient(new RobotClient("Clango"));
-                        maze.addClient(new RobotClient("Marvin"));
+                        //maze.addClient(new RobotClient("Norby"));
+                        //maze.addClient(new RobotClient("Robbie"));
+                        //maze.addClient(new RobotClient("Clango"));
+                        //maze.addClient(new RobotClient("Marvin"));
                 }
 
                 
@@ -222,8 +237,14 @@ public class Mazewar extends JFrame {
          * @param args Command-line arguments.
          */
         public static void main(String args[]) {
+        	try { 
 
                 /* Create the GUI */
                 new Mazewar();
+        	}
+        	catch (Exception e)
+        	{
+        		e.printStackTrace();
+        	}
         }
 }

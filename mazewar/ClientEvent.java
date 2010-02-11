@@ -35,6 +35,12 @@ public class ClientEvent {
         private static final int TURN_RIGHT = 3;
         private static final int FIRE = 4;
         
+        private static final int CLIENT_ADMIN = 100;
+        private static final int CLIENT_ADDED = 101;
+        private static final int CLIENT_REMOVED = 102;
+        private static final int CLIENT_ADDED_FIN = 103;
+        
+        private static final int CLIENT_KILLED = 104;
         /**
          * Default to 0, to be invalid.
          */
@@ -75,5 +81,11 @@ public class ClientEvent {
          */
         public static final ClientEvent fire = new ClientEvent(FIRE);
         
+        public static final ClientEvent client_added = new ClientEvent(CLIENT_ADDED);
         
+        public static final ClientEvent client_removed = new ClientEvent(CLIENT_REMOVED);
+        
+        public static final ClientEvent client_added_fin= new ClientEvent(CLIENT_ADDED_FIN);
+        
+        public static final ClientEvent client_killed = new ClientEvent(CLIENT_KILLED);
 }
