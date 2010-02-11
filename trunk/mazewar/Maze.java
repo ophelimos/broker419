@@ -30,6 +30,9 @@ public abstract class Maze {
 
     /* Maze Information ****************************************************/
 
+	public abstract boolean isConnected(); 
+	
+	public abstract void setName(String name);
     /** 
      * Obtain a {@link Point} describing the size of the {@link Maze}.
      * @return A {@link Point} where the method <code>getX</code> returns the maximum X 
@@ -97,6 +100,8 @@ public abstract class Maze {
      */
     public abstract boolean moveClientBackward(Client client);
 
+    public abstract void rotateClientRight(Client client);
+    public abstract void rotateClientLeft(Client client);
     /**
      * Obtain an {@link Iterator} over all {@link Client}s in the {@link Maze} 
      * @return {@link Iterator} over clients in the {@link Maze}. 
