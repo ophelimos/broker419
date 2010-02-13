@@ -40,6 +40,12 @@ public class GUIClient extends LocalClient implements KeyListener {
          * Handle a key press.
          * @param e The {@link KeyEvent} that occurred.
          */
+        
+        /* TODO - When the key is pressed, we add this event to the queue first, and also MC it to the
+        other remote clients
+        - Wait for all the other clients to send ACK and then permit keyPressed to update the local mazewar
+        */
+        
         public void keyPressed(KeyEvent e) {
                 // If the user pressed Q, invoke the cleanup code and quit. 
                 if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
