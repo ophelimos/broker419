@@ -39,7 +39,8 @@ public abstract class LocalClient extends Client {
                 assert(name != null);
         }
 
-        /**
-         * Fill in here??
-         */
+        /* created vector timestamp here */
+        vectorobj personalinfo = new vectorobj(0, getName());
+        timestamp localtimestamp = new timestamp(personalinfo);
+        
 }

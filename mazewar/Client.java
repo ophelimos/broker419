@@ -55,7 +55,7 @@ public abstract class Client implements Serializable  {
          * Get the name of this {@link Client}.
          * @return A {@link String} naming the {@link Client}.
          */
-        public String getName() {
+        public static String getName() {
                 return name;
         }
       
@@ -112,7 +112,7 @@ public abstract class Client implements Serializable  {
         /**
          * Name of the client.
          */
-        private String name = null;
+        private static String name = null;
        
         /** 
          * Create a new client with the specified name.
