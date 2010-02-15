@@ -30,7 +30,7 @@ import java.awt.event.KeyEvent;
 public class GUIClient extends LocalClient implements KeyListener {
 
         /**
-         * Create a GUI controlled {@link LocalClient}.  
+         * Create a GUI controlled {@link LocalClient}.
          */
         public GUIClient(String name) {
                 super(name);
