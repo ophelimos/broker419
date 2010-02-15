@@ -1,9 +1,8 @@
-import java.lang.*;
 //this is a simple object that holds the name of the player and its timestamp value
 
 public class vectorobj {
 	
-	public int timeval;
+	private int timeval;
 	protected String playername;
 	
 	//Constructor

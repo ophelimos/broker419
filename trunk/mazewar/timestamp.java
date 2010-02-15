@@ -50,7 +50,8 @@ public class timestamp extends Thread {
 	public void increment(String thename) {
 		for (int i =0; i < mytimestamp.size(); i++){
 			if (mytimestamp.get(i).playername.equalsIgnoreCase(thename)){
-				mytimestamp.get(i).timeval++;
+				int temp = mytimestamp.get(i).gettime();
+				mytimestamp.get(i).settime(temp+1);
 			}
 		}
 	}
