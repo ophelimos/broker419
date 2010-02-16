@@ -27,20 +27,23 @@ USA.
  * @version $Id: LocalClient.java 343 2004-01-24 03:43:45Z geoffw $
  */
 
-
 public abstract class LocalClient extends Client {
 
-        /** 
-         * Create a {@link Client} local to this machine.
-         * @param name The name of this {@link Client}.
-         */
-        public LocalClient(String name) {
-                super(name);
-                assert(name != null);
-        }
-
-        /* created vector timestamp here */
-        vectorobj personalinfo = new vectorobj(0, getName());
-        timestamp localtimestamp = new timestamp(personalinfo);
-        
+	/** 
+	 * Create a {@link Client} local to this machine.
+	 * @param name The name of this {@link Client}.
+	 */
+	public LocalClient(String name) {
+	        super(name);
+	        assert(name != null);
+	}
+	//1001010B
+	/* created vector timestamp here */
+	vectorobj personalinfo = new vectorobj(0, getName());
+	
+	//Why cant i print this here?
+	//System.out.println("Player: " + personalinfo.getname() + ", timestamp: " + personalinfo.gettime());
+	   
+	timestamp localtimestamp = new timestamp(personalinfo);
+	//1001010E
 }

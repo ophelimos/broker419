@@ -1,6 +1,9 @@
 import java.util.*;
 
-public class timestamp extends Thread {
+/* TODO WE MUST ensure that the order in which the players are added in a 
+ * vector timestamp is the same order for all players' vectortimestamp 
+ */
+public class timestamp {
 
 	//A vector timestamp is owned by a client which has a player name
 	//Fixed size of 4
@@ -92,7 +95,7 @@ public class timestamp extends Thread {
 	/**
 	 * A vector timestamp, other, can be delivered to this process if:
 	 * 
-	 *   for 0 <= i < size(), i != other.id(), i != id(): other[i] <= this[i], and
+	 *   for 0 <= i < size(), i != other.id(), i != id(): other[i] <= this[i] &&
 	 *   other[other.id()] == this[other.id()] + 1
 	 * 
 	 * E.g., if this vector timestamp is [3, 4, 7] and id() == 2 then 
@@ -106,7 +109,21 @@ public class timestamp extends Thread {
 	 * @return true if other is causally next
 	 * 
 	 */
-	public boolean canDeliver(timestamp other) throws IllegalArgumentException {
+	public boolean canDeliver(String myname, vectorobj other) throws IllegalArgumentException {
+		int i =0;
+		for (i =0; i< mytimestamp.size(); i++){
+			if (myname.equalsIgnoreCase(other.getplayer())){
+				//Invalid, other player is trying to update my timestamp
+				return false;
+			}
+			else if (mytimestamp.get(i).getplayer().equalsIgnoreCase(other.getplayer())){
+				//Current location on vector is pointing to same name as other player's
+				if ((mytimestamp.get(i).gettime()+1) == other.gettime()){
+					//other player's timestamp is my timestamp+1
+					return true;
+				}
+			}
+		}
 		return false;
 	}
 
