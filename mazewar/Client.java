@@ -28,7 +28,10 @@ import java.io.Serializable;
  */
 public abstract class Client implements Serializable  {
 
-        /**
+      // To surpress warnings
+	private static final long serialVersionUID = 1L;
+
+		/**
          * Register this {@link Client} as being contained by the specified
          * {@link Maze}.  Naturally a {@link Client} cannot be registered with
          * more than one {@link Maze} at a time.
@@ -55,7 +58,7 @@ public abstract class Client implements Serializable  {
          * Get the name of this {@link Client}.
          * @return A {@link String} naming the {@link Client}.
          */
-        public static String getName() {
+        public String getName() {
                 return name;
         }
       
