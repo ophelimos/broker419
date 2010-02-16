@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.*;
 import java.util.*;
 
 public class MazewarComm extends Thread implements ClientListener, MazeListener {
@@ -13,7 +12,7 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 	/**
      * Maintain a set of listeners.
      */
-    private Set listenerSet = new HashSet();
+    private Set<CommListener> listenerSet = new HashSet<CommListener>();
     
 	private int sequenceLastEx = -1; 
 	
@@ -196,7 +195,7 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 	    			break;    			
     	}
     	
-        Iterator i = listenerSet.iterator();
+        Iterator<CommListener> i = listenerSet.iterator();
         while (i.hasNext()) {
                 Object o = i.next();
                 assert(o instanceof CommListener);
