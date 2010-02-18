@@ -28,58 +28,108 @@ import java.awt.event.KeyEvent;
  */
 
 public class GUIClient extends LocalClient implements KeyListener {
-
-        /**
-         * Create a GUI controlled {@link LocalClient}.
-         */
-        public GUIClient(String name) {
-                super(name);
+	//1001010B
+	//personalinfo is only used once, when the timestamp for htis player is created
+	vectorobj personalinfo = new vectorobj(0, getName());
+	
+	//This is our local timestamp
+	/* ==== HANDLE WITH CARE ==== */
+	timestamp localtimestamp = new timestamp(personalinfo);
+	
+	//This is our local queue to do things on my side of the world
+	/* ==== HANDLE WITH CARE ==== */
+	clientQueue mytodoList = new clientQueue();
+	/*TODO Do we need to increment our timestamp here in the sense that we just successfully created a 
+	local player and think of it as an event?
+	*/
+	//1001010E
+	
+    /**
+     * Create a GUI controlled {@link LocalClient}.
+     */
+    public GUIClient(String name) {
+            super(name);
+    }
+    
+    /**
+     * Handle a key press.
+     * @param e The {@link KeyEvent} that occurred.
+     */
+    
+    /* The procedure for below is as follows
+    - Wait for all the other clients to send ACK and then permit keyPressed to update the local mazewar
+    */
+    
+    public void keyPressed(KeyEvent e) {
+        // If the user pressed Q, invoke the cleanup code and quit. 
+        if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
+        	//Increment our own timestamp
+        	localtimestamp.increment(getName());
+        	//Add this event to queue
+        	//Wait in Queue for the ACK
+        	
+        	//Continue
+            System.exit(0);
+        // Up-arrow moves forward.
+        } else if(e.getKeyCode() == KeyEvent.VK_UP) {
+        	//Increment our own timestamp
+    		localtimestamp.increment(getName());
+        	//Add this event to queue
+        	//Wait in Queue for the ACK
+        	
+        	//Continue
+            forward();
+        // Down-arrow moves backward.
+        } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
+        	//Increment our own timestamp
+    		localtimestamp.increment(getName());
+        	//Add this event to queue
+        	//Wait in Queue for the ACK
+        	
+        	//Continue
+            backup();
+        // Left-arrow turns left.
+        } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
+        	//Increment our own timestamp
+    		localtimestamp.increment(getName());
+        	//Add this event to queue
+        	//Wait in Queue for the ACK
+        	
+        	//Continue
+    		turnLeft();
+        // Right-arrow turns right.
+        } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
+        	//Increment our own timestamp
+    		localtimestamp.increment(getName());
+        	//Add this event to queue
+        	//Wait in Queue for the ACK
+        	
+        	//Continue
+    		turnRight();
+        // Spacebar fires.
+        } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+        	//Increment our own timestamp
+    		localtimestamp.increment(getName());
+        	//Add this event to queue
+        	//Wait in Queue for the ACK
+        	
+        	//Continue
+    		fire();
         }
-        
-        /**
-         * Handle a key press.
-         * @param e The {@link KeyEvent} that occurred.
-         */
-        
-        /* TODO - When the key is pressed, we add this event to the queue first, and also MC it to the
-        other remote clients
-        - Wait for all the other clients to send ACK and then permit keyPressed to update the local mazewar
-        */
-        
-        public void keyPressed(KeyEvent e) {
-            // If the user pressed Q, invoke the cleanup code and quit. 
-            if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
-                    System.exit(0);
-            // Up-arrow moves forward.
-            } else if(e.getKeyCode() == KeyEvent.VK_UP) {
-                    forward();
-            // Down-arrow moves backward.
-            } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
-                    backup();
-            // Left-arrow turns left.
-            } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
-                    turnLeft();
-            // Right-arrow turns right.
-            } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
-                    turnRight();
-            // Spacebar fires.
-            } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
-                    fire();
-            }
-        }
-        
-        /**
-         * Handle a key release. Not needed by {@link GUIClient}.
-         * @param e The {@link KeyEvent} that occurred.
-         */
-        public void keyReleased(KeyEvent e) {
-        }
-        
-        /**
-         * Handle a key being typed. Not needed by {@link GUIClient}.
-         * @param e The {@link KeyEvent} that occurred.
-         */
-        public void keyTyped(KeyEvent e) {
-        }
+    }
+    
+    /**
+     * Handle a key release. Not needed by {@link GUIClient}.
+     * @param e The {@link KeyEvent} that occurred.
+     */
+    public void keyReleased(KeyEvent e) {
+    }
+    
+    /**
+     * Handle a key being typed. Not needed by {@link GUIClient}.
+     * @param e The {@link KeyEvent} that occurred.
+     */
+    public void keyTyped(KeyEvent e) {
+    }
 
 }

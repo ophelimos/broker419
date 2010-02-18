@@ -34,16 +34,10 @@ public abstract class LocalClient extends Client {
 	 * @param name The name of this {@link Client}.
 	 */
 	public LocalClient(String name) {
-	        super(name);
-	        assert(name != null);
+		
+        super(name);
+        assert(name != null);
+        
 	}
-	//1001010B
-	/* created vector timestamp here */
-	vectorobj personalinfo = new vectorobj(0, getName());
 	
-	//Why cant i print this here?
-	//System.out.println("Player: " + personalinfo.getname() + ", timestamp: " + personalinfo.gettime());
-	   
-	timestamp localtimestamp = new timestamp(personalinfo);
-	//1001010E
 }

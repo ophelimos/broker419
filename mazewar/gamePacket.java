@@ -1,12 +1,17 @@
 //We will use this packet to transmit across players
-/* TODO It consist of:- vector timestamps
- * 				- type of movement the player has made 
+/*It consists of:- vector timestamps
+ * 				 - type of movement the player has made 
  */
 
 public class gamePacket {
 	
 	public int action;
-	
+	public String senderName;
 	public timestamp tosend;
 	
+	//True if this packet requires an ACK in return
+	boolean wantACK = true;
+	
+	//True if this packet is returning an ACK
+	boolean ACK = false;
 }

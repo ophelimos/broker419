@@ -135,6 +135,7 @@ public abstract class Client implements Serializable  {
                 
             if(maze.moveClientForward(this)) {
                     notifyMoveForward();
+                    
                     return true;
             } else {
                     return false;
@@ -232,6 +233,9 @@ public abstract class Client implements Serializable  {
         /**
          * Send a the specified {@link ClientEvent} to all registered listeners
          * @param ce Event to be sent.
+         * 
+         * All other players must be listening to this.
+         * We shall increment our own timestamp everytime notifyListener is called 
          */
         private void notifyListeners(ClientEvent ce) {
                 assert(ce != null);
