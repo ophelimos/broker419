@@ -1,24 +1,31 @@
 /*
-Copyright (C) 2004 Geoffrey Alan Washburn
-   
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-   
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-   
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
-USA.
+ Copyright (C) 2004 Geoffrey Alan Washburn
+ 
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version 2
+ of the License, or (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
+ USA.
  */
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -26,6 +33,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextPane;
+
+import java.util.Scanner;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -39,12 +48,19 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Mazewar extends JFrame {	
 
+	// The global port everything's running on
+	public static int port = 2048;
+
+	// SLP properties file name (constant)
+	public static final String slpPropertiesFileName = "jslp.properties";
+
+	// Jay's stuff
 	private static vectorobj personalinfo;
 	private static timestamp localtimestamp;
-	
+
 	// To get rid of silly warnings
 	private static final long serialVersionUID = (long) 1;
-	
+
 	// Locks (for communication with networking)
 	public static ReentrantLock nameLock = new ReentrantLock();
 
@@ -58,28 +74,32 @@ public class Mazewar extends JFrame {
 	// We're going to make name global
 	public static String name = null;
 
-	private MazewarComm comm = null;
+	// SLP and middleware servers
+	public static MazewarSLP slpServer = null;
+
+	public static MazewarComm middlewareServer = null;
+
+	/**
+	 * The {@link Maze} that the game uses.
+	 */
+	public static MazeImpl maze = null;
+
 	/**
 	 * The default width of the {@link Maze}.
 	 */
-	private final int mazeWidth = 20;
+	private static final int mazeWidth = 20;
 
 	/**
 	 * The default height of the {@link Maze}.
 	 */
-	private final int mazeHeight = 10;
+	private static final int mazeHeight = 10;
 
 	/**
 	 * The default random seed for the {@link Maze}. All implementations of the
 	 * same protocol must use the same seed value, or your mazes will be
 	 * different.
 	 */
-	private final int mazeSeed = 42;
-
-	/**
-	 * The {@link Maze} that the game uses.
-	 */
-	private Maze maze = null;
+	private static final int mazeSeed = 42;
 
 	/**
 	 * The {@link GUIClient} for the game.
@@ -142,15 +162,11 @@ public class Mazewar extends JFrame {
 	}
 
 	/**
-	 * The place where all the pieces are put together.
+	 * GUI code
 	 */
 	public Mazewar() {
 		super("ECE419 Mazewar");
 		consolePrintLn("Mazewar started!");
-
-		// Create the maze
-		maze = new MazeImpl(new Point(mazeWidth, mazeHeight), mazeSeed);
-		assert (maze != null);
 
 		// Have the ScoreTableModel listen to the maze to find
 		// out how to adjust scores.
@@ -184,18 +200,6 @@ public class Mazewar extends JFrame {
 		clientQueue incoming = new clientQueue();
 		//1001010E
 		
-		// You may want to put your network initialization code somewhere in
-		// here.
-
-		comm = new MazewarComm("localhost", 10101); // 128.100.13.55
-		comm.addCommListener((MazeImpl) maze);
-		comm.start();
-
-		maze.addMazeListener(comm);
-
-		// wait until all remote clients have connected
-		// maze.isConnected();
-
 		// Create the GUIClient and connect it to the KeyListener queue
 		guiClient = new GUIClient(name);
 		maze.setName(name);
@@ -203,9 +207,11 @@ public class Mazewar extends JFrame {
 
 		this.addKeyListener(guiClient);
 
-		// comm needs to listen to GUIClient to update the server
-		guiClient.addClientListener(comm);
-		// Use braces to force constructors not to be called at the beginning of the constructor.
+		// the middleware needs to listen to GUIClient to update the server
+		guiClient.addClientListener(middlewareServer);
+
+		// Use braces to force constructors not to be called at the beginning of
+		// the constructor.
 		{
 			// maze.addClient(new RobotClient("Norby"));
 			// maze.addClient(new RobotClient("Robbie"));
@@ -270,9 +276,77 @@ public class Mazewar extends JFrame {
 		pack();
 
 		// Let the magic begin.
-			setVisible(true);
-			overheadPanel.repaint();
-			this.requestFocusInWindow();
+		setVisible(true);
+		overheadPanel.repaint();
+		this.requestFocusInWindow();
+	}
+
+	public static void writePort(int port) {
+
+		try {
+			try {
+				// Read a line at a time
+				Scanner slpConfigInput = new Scanner(new BufferedReader(
+						new FileReader(slpPropertiesFileName)))
+						.useDelimiter("\n");
+
+				// Write the file to a temporary file first, and then overwrite,
+				// rather
+				// than accidentally truncating it
+				File cwd = new File(System.getProperty("user.dir"));
+				File tempFile = File.createTempFile("slpprop", ".tmp", cwd);
+				BufferedWriter slpConfigOutput = new BufferedWriter(
+						new FileWriter(tempFile));
+
+				while (slpConfigInput.hasNext()) {
+
+					// Copy from input to output
+					String input = slpConfigInput.next();
+
+					if (input.contains("net.slp.port")) {
+						slpConfigOutput.write("net.slp.port = " + port);
+					} else {
+						slpConfigOutput.write(input);
+					}
+
+				}
+
+				// Flush the temporary file
+				slpConfigOutput.flush();
+
+				// Now, move the old file to a backup file
+				File propFile = new File(slpPropertiesFileName);
+				String backupFileName = slpPropertiesFileName.concat(".bak");
+				File backupFile = new File(backupFileName);
+				boolean success = propFile.renameTo(backupFile);
+				if (!success) {
+					IOException noRename = new IOException(
+							"Failed to rename file" + slpPropertiesFileName
+									+ " to " + backupFileName);
+					throw noRename;
+				}
+
+				// Rename the temporary file to the database file
+				success = tempFile.renameTo(propFile);
+				if (!success) {
+					IOException noRename = new IOException(
+							"Failed to rename temp file to "
+									+ slpPropertiesFileName);
+					throw noRename;
+				}
+
+			} catch (FileNotFoundException e) {
+				System.out
+						.println("jslp.properties not found or invalid, creating new one...");
+				BufferedWriter slpConfigOutput = new BufferedWriter(
+						new FileWriter(slpPropertiesFileName));
+				slpConfigOutput.write("net.slp.port = " + port);
+				slpConfigOutput.flush();
+			}
+		} catch (IOException e) {
+			System.out
+					.println("Failed to mess with the jslp.properties file correctly");
+		}
 	}
 
 	/**
@@ -282,7 +356,7 @@ public class Mazewar extends JFrame {
 	 *            Command-line arguments.
 	 */
 	public static void main(String args[]) {
-		
+
 		// Start off with the name locked
 		nameLock.lock();
 
@@ -294,7 +368,9 @@ public class Mazewar extends JFrame {
 				continue;
 			} else if (args[i].equals("-p")) {
 				if (i + 1 < args.length) {
-					MazewarSLP.port = Integer.parseInt(args[i + 1]);
+					port = Integer.parseInt(args[i + 1]);
+					// Write the port value into the SLP configuration file
+					writePort(port);
 					// Skip the next value
 					i++;
 				} else {
@@ -313,13 +389,25 @@ public class Mazewar extends JFrame {
 			}
 		}
 
+		// Create the maze
+		maze = new MazeImpl(new Point(mazeWidth, mazeHeight), mazeSeed);
+		assert (maze != null);
+
 		/* Set up the networking using SLP */
-		MazewarSLP.startNetworking();
+		slpServer = new MazewarSLP();
+		slpServer.start();
 
 		// Make things get closed properly on exit
 		Runtime.getRuntime().addShutdownHook(
-				new ShutdownThread(MazewarSLP.advertiser,
-						MazewarSLP.mazewarService));
+				new ShutdownThread());
+
+		/* Create and start the communications middleware */
+		middlewareServer = new MazewarComm(slpServer);
+		middlewareServer.addCommLocalListener((MazeImpl) maze);
+		middlewareServer.start();
+
+		// The middleware is now a listener for maze events
+		maze.addMazeListener(middlewareServer);
 
 		try {
 			/* Create the GUI */
@@ -330,7 +418,7 @@ public class Mazewar extends JFrame {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		// We shouldn't get here, but if we do, let everyone know
 		System.out.println("GUI thread finished");
 	}

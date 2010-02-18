@@ -42,7 +42,7 @@ import java.util.concurrent.locks.*;
  * @version $Id: MazeImpl.java 371 2004-02-10 21:55:32Z geoffw $
  */
 
-public class MazeImpl extends Maze implements Serializable, CommListener, Runnable {
+public class MazeImpl extends Maze implements Serializable, CommLocalListener, Runnable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -359,7 +359,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
          */
 
 
-        public void commClientUpdate(CommClientWrapper cw, ClientEvent ce, CommClientWrapper cw_optional) 
+        public void commLocalClientUpdate(CommClientWrapper cw, ClientEvent ce, CommClientWrapper cw_optional) 
         { 
                 
         	if (ce.equals(ClientEvent.client_added_fin))   

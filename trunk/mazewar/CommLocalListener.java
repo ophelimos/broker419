@@ -23,9 +23,9 @@ USA.
  * @version $Id: ClientListener.java 336 2004-01-23 19:14:42Z geoffw $
  */
 
-public interface CommListener {
+public interface CommLocalListener {
 
 
-        void commClientUpdate(CommClientWrapper cw, ClientEvent clientevent, CommClientWrapper cw_optional);
+        void commLocalClientUpdate(CommClientWrapper cw, ClientEvent clientevent, CommClientWrapper cw_optional);
         
 }

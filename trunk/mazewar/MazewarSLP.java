@@ -19,19 +19,23 @@ public class MazewarSLP extends Thread {
 
 	// Global jSLP networking variables
 	public static Advertiser advertiser = null;
-	public static ServiceURL mazewarService = null;
-	public static int port = 2048;
 
-	public static void startNetworking() {
-		new MazewarSLP().start();
-	}
+	public static ServiceURL mazewarService = null;
+
+	private Locator locator = null;
+
+	private ServiceLocationEnumeration mazewarClients = null;
+
+	private long scanWaitTime = (long) 3000; // milliseconds
+	
+	public boolean clientsChanged = false;
 
 	private void serverInit() {
 		// Server
 		try {
 			advertiser = ServiceLocationManager.getAdvertiser(new Locale("en"));
 			mazewarService = new ServiceURL("service:mazewar:server://"
-					+ advertiser.getMyIP() + ":" + port,
+					+ advertiser.getMyIP() + ":" + Mazewar.port,
 					ServiceURL.LIFETIME_PERMANENT);
 
 			// some attributes for the service
@@ -39,9 +43,9 @@ public class MazewarSLP extends Thread {
 
 			// Make sure we actually have a name before trying to add a "name"
 			// attribute
-				while (Mazewar.name == null) {
-					Mazewar.nameLock.lock();
-				}
+			while (Mazewar.name == null) {
+				Mazewar.nameLock.lock();
+			}
 			attributes.put("name", Mazewar.name);
 			advertiser.register(mazewarService, attributes);
 		} catch (ServiceLocationException e) {
@@ -52,26 +56,54 @@ public class MazewarSLP extends Thread {
 
 	private void clientInit() {
 		// Connect to other clients
-		Locator locator;
 		try {
 			locator = ServiceLocationManager.getLocator(new Locale("en"));
-			// find all mazewar servers on the local network
-			ServiceLocationEnumeration mazewarClients = locator.findServices(
-					new ServiceType("service:mazewar:server"), null, null);
-			// iterate over the results
-			while (mazewarClients.hasMoreElements()) {
-				ServiceURL foundClient = (ServiceURL) mazewarClients
-						.nextElement();
-				System.out.println(foundClient);
-			}
 		} catch (ServiceLocationException e) {
 			Mazewar.consolePrintLn("Failed to initialize jSLP locator");
 			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
 		}
 	}
 
+	public synchronized ServiceLocationEnumeration findNodes() {
+		ServiceLocationEnumeration tmpClients = null;
+		try {
+			// find all mazewar servers on the local network
+			// returns ServiceURLs
+			tmpClients = locator.findServices(new ServiceType(
+					"service:mazewar:server"), null, null);
+		} catch (ServiceLocationException e) {
+			Mazewar.consolePrintLn("Failed to scan network");
+			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
+		}
+		
+		return tmpClients;
+	}
+
+	public synchronized ServiceLocationEnumeration getMazewarClients() {
+		return mazewarClients;
+	}
+
 	public void run() {
 		serverInit();
 		clientInit();
+
+		// Find at least ourself
+		findNodes();
+
+		// Scan the network every few seconds
+		ServiceLocationEnumeration newClients = mazewarClients;
+		while (true) {
+			try {
+				wait(scanWaitTime);
+				newClients = findNodes();
+			} catch (InterruptedException e) {
+				findNodes();
+			}
+			if (!newClients.equals(mazewarClients)) {
+				clientsChanged = true;
+			}
+		}
+
 	}
+
 }
