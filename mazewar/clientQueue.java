@@ -64,15 +64,33 @@ public class clientQueue {
 	
 	//Check if we have all the ACKs for a certain gamePacket we sent out earlier
 	public boolean haveACK(gamePacket checkfor){
-		int point =0, n=0;
+		int point =0, n=0, track =0;
+		boolean haveit = true;
 		
 		for(point =0; point < lineup.size(); point++){
 			//Check if these timestamps are equal
 			if(eqltimestamp(checkfor.timeogram,lineup.get(point).timeogram) && (lineup.get(point).ACK)){
-				for(n=0; n < timeogram.)
+				for(n=0; n < checkfor.timeogram.mytimestamp.size(); n++){
+					if(checkfor.timeogram.mytimestamp.get(n).getplayer().equalsIgnoreCase(lineup.get(point).senderName)){
+						track++;
+						break;
+					}
+				}
+			}
+			
+			if (track == checkfor.timeogram.mytimestamp.size()){
+				//We found all the ACKs we need for this event
+				break;
 			}
 		}
-		return true;
+		
+		if (track == checkfor.timeogram.mytimestamp.size()){
+			//We found all the ACKs we need for this event
+			return true;
+		}
+		
+		//We dont have all the ACKs yet
+		return false;
 	}
 	
 	//checks if timestamps are equal
