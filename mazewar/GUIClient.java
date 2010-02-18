@@ -28,6 +28,9 @@ import java.awt.event.KeyEvent;
  */
 
 public class GUIClient extends LocalClient implements KeyListener {
+
+	private static final long serialVersionUID = 1L;
+
 	//1001010B
 	//personalinfo is only used once, when the timestamp for htis player is created
 	vectorobj personalinfo = new vectorobj(0, getName());
