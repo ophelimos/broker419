@@ -14,12 +14,17 @@ public class clientQueue {
 	
 	//Use this to add an element to the queue
 	public boolean addElement(timestamp toadd){
-		
+		/*TODO: Do we need to sort anything here?
+		Perhaps check the value of timestamp and ensure
+		it is the largest before adding at the end of queue
+		*/ 
+		lineup.addElement(toadd);
 		return false;
 	}
 	
 	//Take the element at the top of the list and MC it to 
 	public boolean waitACK(timestamp waitingfor){
+		//TODO: might need two queues, one for incoming and one for outgoing
 		return true;
 	}
 	
