@@ -143,7 +143,7 @@ public class Mazewar extends JFrame {
 	 */
 	public Mazewar() {
 		super("ECE419 Mazewar");
-		consolePrintLn("ECE419 Mazewar started!");
+		consolePrintLn("Mazewar started!");
 
 		// Create the maze
 		maze = new MazeImpl(new Point(mazeWidth, mazeHeight), mazeSeed);
@@ -187,9 +187,7 @@ public class Mazewar extends JFrame {
 
 		// comm needs to listen to GUIClient to update the server
 		guiClient.addClientListener(comm);
-		// Use braces to force constructors not to be called at the beginning of
-		// the
-		// constructor.
+		// Use braces to force constructors not to be called at the beginning of the constructor.
 		{
 			// maze.addClient(new RobotClient("Norby"));
 			// maze.addClient(new RobotClient("Robbie"));

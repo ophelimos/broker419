@@ -1,8 +1,5 @@
 import java.util.*;
 
-/* TODO WE MUST ensure that the order in which the players are added in a 
- * vector timestamp is the same order for all players' vectortimestamp 
- */
 public class timestamp {
 
 	//A vector timestamp is owned by a client which has a player name
