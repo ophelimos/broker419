@@ -14,4 +14,6 @@ public class gamePacket {
 	
 	//True if this packet is returning an ACK
 	boolean ACK = false;
+	
+	MazewarMsg msg;
 }
