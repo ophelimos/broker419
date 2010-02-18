@@ -37,8 +37,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version $Id: Mazewar.java 371 2004-02-10 21:55:32Z geoffw $
  */
 
-public class Mazewar extends JFrame {
+public class Mazewar extends JFrame {	
 
+	private static vectorobj personalinfo;
+	private static timestamp localtimestamp;
+	
 	// To get rid of silly warnings
 	private static final long serialVersionUID = (long) 1;
 	
@@ -165,7 +168,22 @@ public class Mazewar extends JFrame {
 				nameLock.unlock();
 			}
 		}
-
+		
+		//1001010B
+		//personalinfo is only used once, when the timestamp for htis player is created
+		personalinfo = new vectorobj(0, getName());
+		
+		//This is our local timestamp
+		/* ==== HANDLE WITH CARE ==== */
+		localtimestamp = new timestamp(personalinfo);
+		
+		//This is our local queue to do things on my side of the world
+		/* ==== HANDLE WITH CARE ==== */
+		clientQueue mytodoList = new clientQueue();
+		clientQueue outgoing = new clientQueue();
+		clientQueue incoming = new clientQueue();
+		//1001010E
+		
 		// You may want to put your network initialization code somewhere in
 		// here.
 

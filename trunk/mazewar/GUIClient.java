@@ -31,22 +31,6 @@ public class GUIClient extends LocalClient implements KeyListener {
 
 	private static final long serialVersionUID = 1L;
 
-	//1001010B
-	//personalinfo is only used once, when the timestamp for htis player is created
-	vectorobj personalinfo = new vectorobj(0, getName());
-	
-	//This is our local timestamp
-	/* ==== HANDLE WITH CARE ==== */
-	timestamp localtimestamp = new timestamp(personalinfo);
-	
-	//This is our local queue to do things on my side of the world
-	/* ==== HANDLE WITH CARE ==== */
-	clientQueue mytodoList = new clientQueue();
-	/*TODO Do we need to increment our timestamp here in the sense that we just successfully created a 
-	local player and think of it as an event?
-	*/
-	//1001010E
-	
     /**
      * Create a GUI controlled {@link LocalClient}.
      */
@@ -66,58 +50,25 @@ public class GUIClient extends LocalClient implements KeyListener {
     public void keyPressed(KeyEvent e) {
         // If the user pressed Q, invoke the cleanup code and quit. 
         if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
-        	//Increment our own timestamp
-        	localtimestamp.increment(getName());
-        	//Add this event to queue
-        	mytodoList.addElement(localtimestamp);
-        	//Wait in Queue for the ACK
-        	if(mytodoList.waitACK(localtimestamp)){
-	        	//Continue
 	            System.exit(0);
-        	}
         // Up-arrow moves forward.
         } else if(e.getKeyCode() == KeyEvent.VK_UP) {
-        	//Increment our own timestamp
-    		localtimestamp.increment(getName());
-        	//Add this event to queue
-        	//Wait in Queue for the ACK
-        	
         	//Continue
             forward();
         // Down-arrow moves backward.
         } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
-        	//Increment our own timestamp
-    		localtimestamp.increment(getName());
-        	//Add this event to queue
-        	//Wait in Queue for the ACK
-        	
         	//Continue
             backup();
         // Left-arrow turns left.
         } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
-        	//Increment our own timestamp
-    		localtimestamp.increment(getName());
-        	//Add this event to queue
-        	//Wait in Queue for the ACK
-        	
         	//Continue
     		turnLeft();
         // Right-arrow turns right.
         } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
-        	//Increment our own timestamp
-    		localtimestamp.increment(getName());
-        	//Add this event to queue
-        	//Wait in Queue for the ACK
-        	
         	//Continue
     		turnRight();
         // Spacebar fires.
         } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
-        	//Increment our own timestamp
-    		localtimestamp.increment(getName());
-        	//Add this event to queue
-        	//Wait in Queue for the ACK
-        	
         	//Continue
     		fire();
         }
