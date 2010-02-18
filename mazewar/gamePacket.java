@@ -7,7 +7,7 @@ public class gamePacket {
 	
 	public int action;
 	public String senderName;
-	public timestamp tosend;
+	public timestamp timeogram;
 	
 	//True if this packet requires an ACK in return
 	boolean wantACK = true;

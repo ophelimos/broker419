@@ -66,10 +66,12 @@ public class GUIClient extends LocalClient implements KeyListener {
         	//Increment our own timestamp
         	localtimestamp.increment(getName());
         	//Add this event to queue
+        	mytodoList.addElement(localtimestamp);
         	//Wait in Queue for the ACK
-        	
-        	//Continue
-            System.exit(0);
+        	if(mytodoList.waitACK(localtimestamp)){
+	        	//Continue
+	            System.exit(0);
+        	}
         // Up-arrow moves forward.
         } else if(e.getKeyCode() == KeyEvent.VK_UP) {
         	//Increment our own timestamp
