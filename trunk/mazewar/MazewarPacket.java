@@ -1,7 +1,8 @@
 import java.io.Serializable;
-import java.util.*;
+
 public class MazewarPacket implements Serializable {
 
+	private static final long serialVersionUID = 1L;
 	/* define packet formats */
 	public static final int MW_NULL    		= 0;
 	public static final int MW_UPDATE 		= 100;

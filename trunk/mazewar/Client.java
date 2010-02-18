@@ -110,12 +110,12 @@ public abstract class Client implements Serializable  {
         /**
          * Maintain a set of listeners.
          */
-        private Set listenerSet = new HashSet();
+        private Set<ClientListener> listenerSet = new HashSet<ClientListener>();
         
         /**
          * Name of the client.
          */
-        private static String name = null;
+        private String name = null;
        
         /** 
          * Create a new client with the specified name.
@@ -239,7 +239,7 @@ public abstract class Client implements Serializable  {
          */
         private void notifyListeners(ClientEvent ce) {
                 assert(ce != null);
-                Iterator i = listenerSet.iterator();
+                Iterator<ClientListener> i = listenerSet.iterator();
                 while (i.hasNext()) {
                         Object o = i.next();
                         assert(o instanceof ClientListener);

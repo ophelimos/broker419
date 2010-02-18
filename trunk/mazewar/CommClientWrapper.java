@@ -1,6 +1,8 @@
 import java.io.Serializable;
 
 public class CommClientWrapper implements Serializable{
+
+	private static final long serialVersionUID = 1L;
 	public String name;
 	public Point point;
 	public Direction orientation;

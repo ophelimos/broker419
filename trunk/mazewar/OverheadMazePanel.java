@@ -18,21 +18,21 @@ USA.
 */
   
 import javax.swing.JPanel;
-import javax.swing.JTextPane;
 import java.awt.Font;
+import java.awt.RenderingHints.Key;
 import java.awt.font.GlyphVector;
 import java.awt.font.FontRenderContext;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Dimension;
 import java.awt.Color;
-import java.awt.Polygon;
 import java.awt.RenderingHints;
 import java.awt.geom.Arc2D;
 import java.awt.Shape;
 import java.awt.BasicStroke;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.Line2D.Double;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Iterator;
@@ -46,7 +46,10 @@ import java.util.ArrayList;
  */
 
 public class OverheadMazePanel extends JPanel implements MazeListener {
-        /**
+
+	private static final long serialVersionUID = 1L;
+
+		/**
          * Our handle to the {@link Maze}.
          */
         private final Maze maze;
@@ -59,7 +62,7 @@ public class OverheadMazePanel extends JPanel implements MazeListener {
         /**
          * The wall cache.
          */
-        private ArrayList wallList = null;
+        private ArrayList<Double> wallList = null;
 
         /** 
          * The player shape cache.
@@ -97,7 +100,7 @@ public class OverheadMazePanel extends JPanel implements MazeListener {
                 Graphics2D g2 = (Graphics2D) g;
 
                 // Turn on antialiasing
-                Map m = new HashMap();
+                Map<Key, Object> m = new HashMap<Key, Object>();
                 m.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.addRenderingHints(m);
                 
@@ -138,7 +141,7 @@ public class OverheadMazePanel extends JPanel implements MazeListener {
                 g2.setColor(Color.black);
                 g2.draw(new Rectangle2D.Double(llx, lly, width, height));
                 
-                Iterator it = wallList.iterator();
+                Iterator<Double> it = wallList.iterator();
                 while(it.hasNext()) {
                         Object o = it.next();
                         if(o instanceof Shape) {
@@ -266,7 +269,7 @@ public class OverheadMazePanel extends JPanel implements MazeListener {
          */
         private void buildWalls(double x, double y, double width, double height) {
                 Point p = maze.getSize();
-                wallList = new ArrayList(p.getX() * p.getY());
+                wallList = new ArrayList<Double>(p.getX() * p.getY());
                 for(int i = 0; i < p.getY(); i++) {
                         for(int j = 0; j < p.getX(); j++) {
                                 Cell cell = maze.getCell(new Point(j,i));

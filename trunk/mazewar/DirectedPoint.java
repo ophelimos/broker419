@@ -16,8 +16,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 USA.
 */
-   
-import java.io.Serializable;
+
  
 /**
  * An integral representation of a point in two dimensional space,
@@ -28,7 +27,8 @@ import java.io.Serializable;
 
 public class DirectedPoint extends Point {
 
-        /**
+	private static final long serialVersionUID = 1L;
+		/**
          * The {@link Direction}
          */ 
         private final Direction direction;

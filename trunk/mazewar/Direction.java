@@ -29,7 +29,9 @@ public class Direction implements Serializable {
         
         /* Internals ******************************************************/
         
-        /**
+	private static final long serialVersionUID = 1L;
+
+		/**
          * Create a random number generator to produce random directions.
          */
         private static Random randomGen = new Random();
