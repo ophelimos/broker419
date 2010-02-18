@@ -18,7 +18,6 @@ USA.
 */
  
 import java.util.Random;
-import java.util.Vector;
 import java.lang.Runnable;
 
 /**
@@ -30,7 +29,9 @@ import java.lang.Runnable;
  
 public class RobotClient extends LocalClient implements Runnable {
 
-        /**
+	private static final long serialVersionUID = 1L;
+
+		/**
          * Random number generator so that the robot can be
          * "non-deterministic".
          */ 

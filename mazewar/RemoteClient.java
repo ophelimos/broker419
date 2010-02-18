@@ -25,7 +25,9 @@ USA.
 
 public class RemoteClient extends Client {
         
-        /**
+	private static final long serialVersionUID = 1L;
+
+		/**
          * Create a remotely controlled {@link Client}.
          * @param name Name of this {@link RemoteClient}.
          */

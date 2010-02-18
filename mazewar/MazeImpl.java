@@ -24,7 +24,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Random;
 import java.util.Vector;  
@@ -45,9 +44,9 @@ import java.util.concurrent.locks.*;
 
 public class MazeImpl extends Maze implements Serializable, CommListener, Runnable {
 
-	
-   
-        /**
+	private static final long serialVersionUID = 1L;
+
+		/**
          * Create a {@link Maze}.
          * @param point Treat the {@link Point} as a magintude specifying the
          * size of the maze.
@@ -65,9 +64,9 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
                 
                 
                 // Initialize the maze matrix of cells
-                mazeVector = new Vector(maxX);
+                mazeVector = new Vector<Vector<CellImpl>>(maxX);
                 for(int i = 0; i < maxX; i++) {
-                        Vector colVector = new Vector(maxY);
+                        Vector<CellImpl> colVector = new Vector<CellImpl>(maxY);
                         
                         for(int j = 0; j < maxY; j++) {
                                 colVector.insertElementAt(new CellImpl(), j);
@@ -339,7 +338,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         }
         
        
-        public synchronized Iterator getClients() {
+        public synchronized Iterator<Client> getClients() {
                 return clientMap.keySet().iterator();
         }
         
@@ -373,7 +372,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         	{
         		if (!cw.name.equals(this.name))
         		{
-        			Client c = (Client)name2clientLookup.get(cw.name);
+        			Client c = name2clientLookup.get(cw.name);
         			rotateClientLeft(c);
         		}
         	}
@@ -381,7 +380,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         	{        		
         		if (!cw.name.equals(this.name))
         		{
-	    			Client c = (Client)name2clientLookup.get(cw.name);
+	    			Client c = name2clientLookup.get(cw.name);
 	    			rotateClientRight(c);
     		
         		}
@@ -390,7 +389,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         	{
         		if (!cw.name.equals(this.name))
         		{
-	    			Client c = (Client)name2clientLookup.get(cw.name);
+	    			Client c = name2clientLookup.get(cw.name);
 	    			moveClientForward(c);
     		
         		}
@@ -399,7 +398,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         	{
         		if (!cw.name.equals(this.name))
         		{
-	    			Client c = (Client)name2clientLookup.get(cw.name);
+	    			Client c = name2clientLookup.get(cw.name);
 	    			moveClientBackward(c);
     		
         		}
@@ -408,7 +407,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         	{
         		if (!cw.name.equals(this.name))
         		{
-	    			Client c = (Client)name2clientLookup.get(cw.name);
+	    			Client c = name2clientLookup.get(cw.name);
 	    			clientFire(c);
     		
         		}
@@ -427,14 +426,14 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         	{
         		if (!cw.name.equals(this.name))
         		{
-        			Client c = (Client)name2clientLookup.get(cw.name);
+        			Client c = name2clientLookup.get(cw.name);
         			this.removeClient(c);
         		}
         	}
         	else if (ce.equals(ClientEvent.client_killed))
         	{
-        		Client target = (Client)name2clientLookup.get(cw_optional.name);
-        		Client source = (Client)name2clientLookup.get(cw.name);
+        		Client target = name2clientLookup.get(cw_optional.name);
+        		Client source = name2clientLookup.get(cw.name);
         		if (target instanceof GUIClient)
 			    {
 				  // do nothing
@@ -465,10 +464,10 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
          * Control loop for {@link Projectile}s.
          */
         public void run() {
-                Collection deadPrj = new HashSet();
+                Collection<Object> deadPrj = new HashSet<Object>();
                 while(true) {
                         if(!projectileMap.isEmpty()) {
-                                Iterator it = projectileMap.keySet().iterator();
+                                Iterator<Object> it = projectileMap.keySet().iterator();
                                 synchronized(projectileMap) {
                                         while(it.hasNext()) {   
                                                 Object o = it.next();
@@ -487,7 +486,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
                                 }
                         }
                         try {
-                                thread.sleep(200);
+                                Thread.sleep(200);
                         } catch(Exception e) {
                                 // shouldn't happen
                         }
@@ -496,8 +495,8 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         
         /* Internals */
         
-        private synchronized Collection moveProjectile(Projectile prj) {
-                Collection deadPrj = new LinkedList();
+        private synchronized Collection<Object> moveProjectile(Projectile prj) {
+                Collection<Object> deadPrj = new LinkedList<Object>();
                 assert(prj != null);
                 
                 Object o = projectileMap.get(prj);
@@ -713,7 +712,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         private Condition isConnected;
         
         //private boolean  isConnected = false;
-        private final Map name2clientLookup = new HashMap();
+        private final Map<String, Client> name2clientLookup = new HashMap<String, Client>();
         /**
          * Client name (null if server)
          */
@@ -737,30 +736,30 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
          * The {@link Vector} of {@link Vector}s holding the
          * {@link Cell}s of the {@link Maze}.
          */
-        private final Vector mazeVector;
+        private final Vector<Vector<CellImpl>> mazeVector;
 
         /**
          * A map between {@link Client}s and {@link DirectedPoint}s
          * locating them in the {@link Maze}.
          */
-        private final Map clientMap = new HashMap();
+        private final Map<Client, Point> clientMap = new HashMap<Client, Point>();
 
         /**
          * The set of {@link MazeListener}s that are presently
          * in the notification queue.
          */
-        private final Set listenerSet = new HashSet();
+        private final Set<MazeListener> listenerSet = new HashSet<MazeListener>();
 
         /**
          * Mapping from {@link Projectile}s to {@link DirectedPoint}s. 
          */
-        private final Map projectileMap = new HashMap();
+        private final Map<Object, DirectedPoint> projectileMap = new HashMap<Object, DirectedPoint>();
         
         /**
          * The set of {@link Client}s that have {@link Projectile}s in 
          * play.
          */
-        private final Set clientFired = new HashSet();
+        private final Set<Client> clientFired = new HashSet<Client>();
        
         /**
          * The thread used to manage {@link Projectile}s.
@@ -774,7 +773,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
          */
         private void notifyClientAdd(Client c) {
                 assert(c != null);
-                Iterator i = listenerSet.iterator();
+                Iterator<MazeListener> i = listenerSet.iterator();
                 while (i.hasNext()) {
                         Object o = i.next();
                         assert(o instanceof MazeListener);
@@ -790,7 +789,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
          */
         private void notifyClientRemove(Client c) {
                 assert(c != null);
-                Iterator i = listenerSet.iterator();
+                Iterator<MazeListener> i = listenerSet.iterator();
                 while (i.hasNext()) {
                         Object o = i.next();
                         assert(o instanceof MazeListener);
@@ -806,7 +805,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
          */
         private void notifyClientFired(Client c) {
                 assert(c != null);
-                Iterator i = listenerSet.iterator();
+                Iterator<MazeListener> i = listenerSet.iterator();
                 while (i.hasNext()) {
                         Object o = i.next();
                         assert(o instanceof MazeListener);
@@ -824,7 +823,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
         private void notifyClientKilled(Client source, Client target) {
                 assert(source != null);
                 assert(target != null);
-                Iterator i = listenerSet.iterator();
+                Iterator<MazeListener> i = listenerSet.iterator();
                 while (i.hasNext()) {
                         Object o = i.next();
                         assert(o instanceof MazeListener);
@@ -838,7 +837,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
          * changed in some fashion.
          */
         private void update() {
-                Iterator i = listenerSet.iterator();
+                Iterator<MazeListener> i = listenerSet.iterator();
                 while (i.hasNext()) {
                         Object o = i.next();
                         assert(o instanceof MazeListener);
@@ -852,7 +851,10 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
          * special to this implementation of {@link Maze}s.
          */
         private class CellImpl extends Cell implements Serializable {
-                /**
+
+			private static final long serialVersionUID = 1L;
+
+				/**
                  * Has this {@link CellImpl} been visited while
                  * constructing the {@link Maze}.
                  */
@@ -984,7 +986,7 @@ public class MazeImpl extends Maze implements Serializable, CommListener, Runnab
                         Direction.South };
                         
                         // Create a vector of the possible choices
-                        Vector options = new Vector();	       
+                        Vector<Direction> options = new Vector<Direction>();	       
                         
                         // Iterate through the directions and see which
                         // Cells have been visited, adding those that haven't

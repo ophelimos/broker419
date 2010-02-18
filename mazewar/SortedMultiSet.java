@@ -27,7 +27,8 @@ import java.util.*;
  */
 public class SortedMultiSet extends LinkedList implements SortedSet {
 
-    private Comparator comparator = null;
+	private static final long serialVersionUID = 1L;
+	private Comparator<Object> comparator = null;
 
     public SortedMultiSet() {
     }
@@ -36,7 +37,7 @@ public class SortedMultiSet extends LinkedList implements SortedSet {
         super(c);
     }
 
-    public SortedMultiSet(Comparator c) {
+    public SortedMultiSet(Comparator<Object> c) {
         this.comparator = c;
     }
 
@@ -59,7 +60,7 @@ public class SortedMultiSet extends LinkedList implements SortedSet {
                             if(comparator != null) {
                                     compare = comparator.compare(o1, o2);
                             } else {
-                                    Comparable c = (Comparable)o1;
+                                    Comparable<Object> c = (Comparable<Object>)o1;
                                     compare = c.compareTo(o2);
                             }
                             if(compare <= 0) {
@@ -96,7 +97,7 @@ public class SortedMultiSet extends LinkedList implements SortedSet {
         return true;
     }
 
-    public Comparator comparator() {
+    public Comparator<Object> comparator() {
         return comparator;
     }
 
@@ -117,7 +118,7 @@ public class SortedMultiSet extends LinkedList implements SortedSet {
                     if(comparator != null) {
                             compare = comparator.compare(o, toElement);
                     } else {
-                            Comparable c = (Comparable)o;
+                            Comparable<Object> c = (Comparable<Object>)o;
                             compare = c.compareTo(toElement);
                     }
                     if(compare < 0) {
@@ -138,7 +139,7 @@ public class SortedMultiSet extends LinkedList implements SortedSet {
                             compare1 = comparator.compare(o, fromElement);
                             compare2 = comparator.compare(o, toElement);
                     } else {
-                            Comparable c = (Comparable)o;
+                            Comparable<Object> c = (Comparable<Object>)o;
                             compare1 = c.compareTo(fromElement);
                             compare2 = c.compareTo(toElement);
                     }
@@ -158,7 +159,7 @@ public class SortedMultiSet extends LinkedList implements SortedSet {
                     if(comparator != null) {
                             compare = comparator.compare(o, fromElement);
                     } else {
-                            Comparable c = (Comparable)o;
+                            Comparable<Object> c = (Comparable<Object>)o;
                             compare = c.compareTo(fromElement);
                     }
                     if(compare >= 0) {

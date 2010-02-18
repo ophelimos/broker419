@@ -3,6 +3,8 @@ import java.io.Serializable;
 
 public class MazewarMsg implements Serializable {
 
+	private static final long serialVersionUID = 1L;
+
 	/* define packet formats */
 	public static final int MW_MSG_BAD			= -1;
 	
