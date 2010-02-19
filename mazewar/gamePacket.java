@@ -1,10 +1,13 @@
+import java.io.Serializable;
+
 //We will use this packet to transmit across players
 /*It consists of:- vector timestamps
  * 				 - type of movement the player has made 
  */
 
-public class gamePacket {
+public class gamePacket implements Serializable {
 	
+	private static final long serialVersionUID = 1L;
 	public int action;
 	public String senderName;
 	public timestamp timeogram;

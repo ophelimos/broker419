@@ -241,9 +241,7 @@ public abstract class Client implements Serializable  {
                 assert(ce != null);
                 Iterator<ClientListener> i = listenerSet.iterator();
                 while (i.hasNext()) {
-                        Object o = i.next();
-                        assert(o instanceof ClientListener);
-                        ClientListener cl = (ClientListener)o;
+                        ClientListener cl = i.next();
                         cl.clientUpdate(this, ce);
                 } 
         }

@@ -4,7 +4,7 @@ public class timestamp {
 
 	//A vector timestamp is owned by a client which has a player name
 	//Fixed size of 4
-	public Vector<vectorobj> mytimestamp = new Vector<vectorobj>(1,1);
+	public Vector<vectorobj> mytimestamp = new Vector<vectorobj>(Mazewar.maxPlayers,1);
 	private Exception IllegalArgumentException;
 		
 	public timestamp(vectorobj firstentry) {

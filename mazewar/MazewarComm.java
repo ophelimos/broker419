@@ -2,12 +2,14 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.Vector;
+import java.util.logging.ConsoleHandler;
 
 import ch.ethz.iks.slp.ServiceLocationEnumeration;
 import ch.ethz.iks.slp.ServiceLocationException;
@@ -20,8 +22,9 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 	private MazewarSLP slpServer = null;
 
 	private Vector<Peer> networkPeers = new Vector<Peer>();
-	
-	private clientQueue inputQueue = new clientQueue();
+
+	private clientQueue toNetwork = new clientQueue();
+	private clientQueue toMaze = new clientQueue();
 
 	/**
 	 * Maintain a set of listeners.
@@ -55,22 +58,22 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 	// }
 	// }
 
-//	public boolean sendMsg(MazewarMsg msg) {
-//
-//		MazewarPacket packet = new MazewarPacket();
-//
-//		packet.msg = msg;
-//		packet.type = MazewarPacket.MW_UPDATE;
-//
-//		try {
-//			socketOut.writeObject(packet);
-//		} catch (IOException e) {
-//			// TODO yeah whatever status
-//			return false;
-//		}
-//
-//		return true;
-//	}
+	// public boolean sendMsg(MazewarMsg msg) {
+	//
+	// MazewarPacket packet = new MazewarPacket();
+	//
+	// packet.msg = msg;
+	// packet.type = MazewarPacket.MW_UPDATE;
+	//
+	// try {
+	// socketOut.writeObject(packet);
+	// } catch (IOException e) {
+	// // TODO yeah whatever status
+	// return false;
+	// }
+	//
+	// return true;
+	// }
 
 	/*
 	 * implements ClientListener's clientUpdate
@@ -92,11 +95,11 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 		} else if (ce.equals(ClientEvent.fire)) {
 			msg.action = MazewarMsg.MW_MSG_FIRE;
 		}
-		
+
 		// Make an appropriate gamePacket
 		gamePacket newPacket = new gamePacket();
 		newPacket.msg = msg;
-		inputQueue.addtoQueue(newPacket);
+		toNetwork.addtoQueue(newPacket);
 	}
 
 	/*
@@ -116,10 +119,10 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 					.getOrientation());
 
 			msg.action = MazewarMsg.MW_MSG_CLIENT_ADDED;
-//			 Make an appropriate gamePacket
+			// Make an appropriate gamePacket
 			gamePacket newPacket = new gamePacket();
 			newPacket.msg = msg;
-			inputQueue.addtoQueue(newPacket);
+			toNetwork.addtoQueue(newPacket);
 		} else {
 			// do nothing
 		}
@@ -134,11 +137,11 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 			msg.cw = new CommClientWrapper(c.getName());
 
 			msg.action = MazewarMsg.MW_MSG_CLIENT_REMOVED;
-			
-//			 Make an appropriate gamePacket
+
+			// Make an appropriate gamePacket
 			gamePacket newPacket = new gamePacket();
 			newPacket.msg = msg;
-			inputQueue.addtoQueue(newPacket);
+			toNetwork.addtoQueue(newPacket);
 		}
 	}
 
@@ -153,11 +156,11 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 			msg.cw_optional = new CommClientWrapper(target.getName(), target
 					.getPoint(), target.getOrientation());
 			msg.action = MazewarMsg.MW_MSG_CLIENT_KILLED;
-			
-//			 Make an appropriate gamePacket
+
+			// Make an appropriate gamePacket
 			gamePacket newPacket = new gamePacket();
 			newPacket.msg = msg;
-			inputQueue.addtoQueue(newPacket);
+			toNetwork.addtoQueue(newPacket);
 		}
 	}
 
@@ -239,11 +242,17 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 					}
 				}
 
-				// Otherwise, it's not.  Connect to it and add it
+				// Otherwise, it's not. Connect to it and add it
 				Socket curSocket = new Socket(cur.getHost(), cur.getPort());
-				ObjectInputStream socketIn = new ObjectInputStream(curSocket.getInputStream());
-				ObjectOutputStream socketOut = new ObjectOutputStream(curSocket.getOutputStream());
-				Peer newPeer = new Peer(cur.getHost(), curSocket, socketIn, socketOut);
+				// Only spend a maximum of a millisecond waiting for a packet
+				// that might not be coming
+				curSocket.setSoTimeout(1);
+				ObjectInputStream socketIn = new ObjectInputStream(curSocket
+						.getInputStream());
+				ObjectOutputStream socketOut = new ObjectOutputStream(curSocket
+						.getOutputStream());
+				Peer newPeer = new Peer(cur.getHost(), curSocket, socketIn,
+						socketOut);
 				networkPeers.add(newPeer);
 			}
 		} catch (ServiceLocationException e) {
@@ -256,9 +265,62 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 					.consolePrintLn("I/O exception connecting to SLP-received address");
 		}
 	}
-	
+
 	// Receive packets from the network
-	
+	private void receivePackets() {
+		// Iterate through our network peers, receiving one packet from each
+		Peer curPeer = null;
+		for (int i = 0; i < networkPeers.size(); i++) {
+			try {
+				curPeer = networkPeers.get(i);
+				gamePacket receivedPacket = (gamePacket) curPeer.in
+						.readObject();
+				// I'm not sure when we get null here, but it means the
+				// connection's down
+				if (receivedPacket == null) {
+					IOException nullReceived = new IOException();
+					throw nullReceived;
+				}
+				// Otherwise, we got a packet, synchronize our timestamps
+				Mazewar.localtimestamp.max(receivedPacket.timeogram);
+				// and throw it on the (sorted) toMaze queue
+				toMaze.addtoSortedQueue(receivedPacket);
+			} catch (SocketTimeoutException e) {
+				// On timeout, simply try the next peer
+				continue;
+			} catch (IOException e) {
+				Mazewar.consolePrintLn("Connection failed with "
+						+ curPeer.hostname
+						+ "\n Removing from connection list...");
+				networkPeers.remove(i);
+			} catch (ClassNotFoundException e) {
+				System.out.println("Node " + curPeer.hostname
+						+ "sent unrecognized packet!");
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void broadcastPackets() {
+		// Grab a packet on the output stream
+		gamePacket packetToSend = toNetwork.getElement();
+		// Make sure we actually got one, otherwise, don't bother
+		if (packetToSend != null) {
+			// Iterate through our network peers
+			Peer curPeer = null;
+			for (int i = 0; i < networkPeers.size(); i++) {
+				try {
+					curPeer = networkPeers.get(i);
+					curPeer.out.writeObject(packetToSend);
+				} catch (IOException e) {
+					Mazewar.consolePrintLn("Connection failed with "
+							+ curPeer.hostname
+							+ "\n Removing from connection list...");
+					networkPeers.remove(i);
+				}
+			}
+		}
+	}
 
 	public void run() {
 
@@ -270,52 +332,60 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 		 * will be handled by MazewarSLP. Connections will be handled by calling
 		 * functions from it.
 		 */
-		
+
 		// Connect to any initially located nodes
 		connectPeers(slpServer.getMazewarClients());
-		
+
 		while (true) {
-			// Process local packets
-			
+			// Local packets are added to the input queue automatically by the
+			// maze (it calls the appropriate function, which adds the packet to
+			// the queue)
+
 			// Receive remote packets
-			
+			receivePackets();
 			// Send remote packets
+			broadcastPackets();
+			
+			// Check for new peers
+			if (slpServer.clientsChanged) {
+				connectPeers(slpServer.getMazewarClients());
+			}
 		}
 
-//		MazewarPacket packet = null;
-//		try {
-//
-//			packet = (MazewarPacket) socketIn.readObject();
-//			while (packet != null) {
-//				serverInQueue.add(packet);
-//
-//				packet = serverInQueue.peek();
-//				/*
-//				 * Since there is no guarantee that packets arrive in order from
-//				 * the server we need to make sure that we execute packets in
-//				 * order
-//				 */
-//				if ((packet != null)) {
-//					packet = serverInQueue.poll(); // remove the packet from
-//					// the queue
-//
-//					// need to process the message
-//					notifyListeners(packet.msg);
-//
-//					sequenceLastEx++; // increment the sequence number
-//					// look at the next packet to see if we can process anymore
-//					// messages
-//					packet = serverInQueue.peek();
-//				}
-//
-//				packet = (MazewarPacket) socketIn.readObject();
-//			}
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		} catch (ClassNotFoundException e) {
-//			e.printStackTrace();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
+		// MazewarPacket packet = null;
+		// try {
+		//
+		// packet = (MazewarPacket) socketIn.readObject();
+		// while (packet != null) {
+		// serverInQueue.add(packet);
+		//
+		// packet = serverInQueue.peek();
+		// /*
+		// * Since there is no guarantee that packets arrive in order from
+		// * the server we need to make sure that we execute packets in
+		// * order
+		// */
+		// if ((packet != null)) {
+		// packet = serverInQueue.poll(); // remove the packet from
+		// // the queue
+		//
+		// // need to process the message
+		// notifyListeners(packet.msg);
+		//
+		// sequenceLastEx++; // increment the sequence number
+		// // look at the next packet to see if we can process anymore
+		// // messages
+		// packet = serverInQueue.peek();
+		// }
+		//
+		// packet = (MazewarPacket) socketIn.readObject();
+		// }
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// } catch (ClassNotFoundException e) {
+		// e.printStackTrace();
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
 	}
 }
