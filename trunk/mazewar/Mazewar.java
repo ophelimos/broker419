@@ -56,7 +56,9 @@ public class Mazewar extends JFrame {
 
 	// Jay's stuff
 	private static vectorobj personalinfo;
-	private static timestamp localtimestamp;
+	public static timestamp localtimestamp;
+	
+	public static final int maxPlayers = 4;
 
 	// To get rid of silly warnings
 	private static final long serialVersionUID = (long) 1;
