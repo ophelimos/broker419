@@ -19,21 +19,24 @@ import ch.ethz.iks.slp.ServiceURL;
  * 
  */
 public class MazewarMiddlewareServer extends Thread {
-	
+
+	// Reasonable batch of packets to process at once
+	private final int processBatch = 256;
+
 	// List of my peers on the network
 	private Vector<Peer> networkPeers = new Vector<Peer>();
-	
+
 	// Queues used for communication - moved to MazeWar
-//	public clientQueue toNetwork = new clientQueue();
-//	public clientQueue toMaze = new clientQueue();
-	
+	// public clientQueue toNetwork = new clientQueue();
+	// public clientQueue toMaze = new clientQueue();
+
 	// Identifier for this node's SLP server (passed in constructor)
 	private MazewarSLP slpServer = null;
 
 	public MazewarMiddlewareServer(MazewarSLP slpServer_in) {
 		this.slpServer = slpServer_in;
 	}
-	
+
 	// Go through the list of clients given from SLP and convert them to Peer
 	// structures
 	public void connectPeers(ServiceLocationEnumeration slpPeers) {
@@ -75,7 +78,7 @@ public class MazewarMiddlewareServer extends Thread {
 					.consolePrintLn("I/O exception connecting to SLP-received address");
 		}
 	}
-	
+
 	// Receive packets from the network
 	private void receivePackets() {
 		// Iterate through our network peers, receiving one packet from each
@@ -93,7 +96,11 @@ public class MazewarMiddlewareServer extends Thread {
 				}
 				// Otherwise, we got a packet, synchronize our timestamps
 				Mazewar.localtimestamp.max(receivedPacket.timeogram);
-				// and throw it on the (sorted) toMaze queue
+				//TODO: If it's an ACK, count it off, see if we have enough
+				// If it's not an ACK, throw it on the (sorted) toMaze queue
+				if (receivedPacket.ACK) {
+					
+				}
 				Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
@@ -108,6 +115,19 @@ public class MazewarMiddlewareServer extends Thread {
 						+ "sent unrecognized packet!");
 				e.printStackTrace();
 			}
+		}
+	}
+
+	private void processPackets() {
+		// Process all the packets on the top of the queue that are ready to go
+		// (up to a reasonable limit)
+		for (int i = 0; i < processBatch; i++) {
+			gamePacket mostRecentPacket = Mazewar.toMaze.getElement();
+			if (mostRecentPacket == null) {
+				// Nothing left to process
+				return;
+			}
+			
 		}
 	}
 
@@ -131,7 +151,7 @@ public class MazewarMiddlewareServer extends Thread {
 			}
 		}
 	}
-	
+
 	public void run() {
 
 		/*
@@ -153,12 +173,13 @@ public class MazewarMiddlewareServer extends Thread {
 
 			// Receive remote packets
 			receivePackets();
-			
-			// Local packets handled by another thread
-			
+
+			// Check if any packets can get sent to the maze
+			processPackets();
+
 			// Send remote packets
 			broadcastPackets();
-			
+
 			// Check for new peers
 			if (slpServer.clientsChanged) {
 				connectPeers(slpServer.getMazewarClients());
