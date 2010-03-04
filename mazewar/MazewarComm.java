@@ -19,13 +19,17 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 
 	private PriorityQueue<MazewarPacket> serverInQueue = null;
 
+	// Middlewared
 	private MazewarSLP slpServer = null;
 
+	// Middle
 	private Vector<Peer> networkPeers = new Vector<Peer>();
 
+	// Middleware
 	private clientQueue toNetwork = new clientQueue();
 	private clientQueue toMaze = new clientQueue();
 
+	// Local
 	/**
 	 * Maintain a set of listeners.
 	 */
@@ -34,47 +38,10 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 	private int sequenceLastEx = -1;
 
 	public MazewarComm(MazewarSLP slpServer_in) {
+		// Middlewared
 		this.slpServer = slpServer_in;
 	}
-
-	// public MazewarComm(String hostname, int port) {
-	//
-	// if (hostname.length() == 0 || port < 1000) {
-	// System.err.println("ERROR: Invalid arguments!");
-	// System.exit(-1);
-	// }
-	// try {
-	// socket = new Socket(hostname, port);
-	// socketIn = new ObjectInputStream(socket.getInputStream());
-	// socketOut = new ObjectOutputStream(socket.getOutputStream());
-	// // socketIn = new ObjectInputStream(socket.getInputStream());
-	// serverInQueue = new PriorityQueue<MazewarPacket>();
-	// } catch (UnknownHostException e) {
-	// System.err.println("ERROR: Don't know where to connect!!");
-	// System.exit(1);
-	// } catch (IOException e) {
-	// System.err.println("ERROR: Couldn't get I/O for the connection.");
-	// System.exit(1);
-	// }
-	// }
-
-	// public boolean sendMsg(MazewarMsg msg) {
-	//
-	// MazewarPacket packet = new MazewarPacket();
-	//
-	// packet.msg = msg;
-	// packet.type = MazewarPacket.MW_UPDATE;
-	//
-	// try {
-	// socketOut.writeObject(packet);
-	// } catch (IOException e) {
-	// // TODO yeah whatever status
-	// return false;
-	// }
-	//
-	// return true;
-	// }
-
+	
 	/*
 	 * implements ClientListener's clientUpdate
 	 */
@@ -110,7 +77,7 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 	}
 
 	/*
-	 * implements MAzeListener's clientAdded();
+	 * implements MazeListener's clientAdded();
 	 */
 	public void clientAdded(Client c) {
 		if (c instanceof GUIClient) {
@@ -231,6 +198,10 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 	// Go through the list of clients given from SLP and convert them to Peer
 	// structures
 	public void connectPeers(ServiceLocationEnumeration slpPeers) {
+		if (slpPeers == null) {
+			// If I don't have any peers, don't do anything
+			return;
+		}
 		try {
 			checkSLPPeers: for (ServiceURL cur = (ServiceURL) slpPeers.next(); slpPeers
 					.hasMoreElements(); cur = (ServiceURL) slpPeers.next()) {
@@ -343,6 +314,9 @@ public class MazewarComm extends Thread implements ClientListener, MazeListener 
 
 			// Receive remote packets
 			receivePackets();
+			
+			// Local packets handled by another thread
+			
 			// Send remote packets
 			broadcastPackets();
 			

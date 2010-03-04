@@ -94,7 +94,7 @@ public class MazewarSLP extends Thread {
 		ServiceLocationEnumeration newClients = mazewarClients;
 		while (true) {
 			try {
-				wait(scanWaitTime);
+				sleep(scanWaitTime);
 				newClients = findNodes();
 			} catch (InterruptedException e) {
 				findNodes();
