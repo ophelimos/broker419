@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version $Id: Mazewar.java 371 2004-02-10 21:55:32Z geoffw $
  */
 
-public class Mazewar extends JFrame {	
+public class Mazewar extends JFrame {
 
 	// The global port everything's running on
 	public static int port = 2048;
@@ -56,15 +56,18 @@ public class Mazewar extends JFrame {
 
 	// Jay's stuff
 	private static vectorobj personalinfo;
+
 	public static timestamp localtimestamp;
-	
+
+	// Global queues
+	public static clientQueue toNetwork;
+
+	public static clientQueue toMaze;
+
 	public static final int maxPlayers = 4;
 
 	// To get rid of silly warnings
 	private static final long serialVersionUID = (long) 1;
-
-	// Locks (for communication with networking)
-	public static ReentrantLock nameLock = new ReentrantLock();
 
 	// Program usage string
 	private static final String usageString = "Usage: mazewar [-c] [-p <port>] [-n <name>]";
@@ -74,7 +77,7 @@ public class Mazewar extends JFrame {
 	public static boolean consoleMode = false;
 
 	// We're going to make name global
-	public static String name = null;
+	public static String localName = null;
 
 	// SLP and middleware servers
 	public static MazewarSLP slpServer = null;
@@ -176,35 +179,9 @@ public class Mazewar extends JFrame {
 		assert (scoreModel != null);
 		maze.addMazeListener(scoreModel);
 
-		// Throw up a dialog to get the GUIClient name.
-		while ((name == null) || (name.length() == 0)) {
-			name = JOptionPane.showInputDialog("Enter your name");
-			if ((name == null) || (name.length() == 0)) {
-				consolePrintLn("Error: Invalid name");
-				continue;
-			} else {
-				nameLock.unlock();
-			}
-		}
-		
-		//1001010B
-		//personalinfo is only used once, when the timestamp for htis player is created
-		personalinfo = new vectorobj(0, getName());
-		
-		//This is our local timestamp
-		/* ==== HANDLE WITH CARE ==== */
-		localtimestamp = new timestamp(personalinfo);
-		
-		//This is our local queue to do things on my side of the world
-		/* ==== HANDLE WITH CARE ==== */
-		clientQueue mytodoList = new clientQueue();
-		clientQueue outgoing = new clientQueue();
-		clientQueue incoming = new clientQueue();
-		//1001010E
-		
 		// Create the GUIClient and connect it to the KeyListener queue
-		guiClient = new GUIClient(name);
-		maze.setName(name);
+		guiClient = new GUIClient(localName);
+		maze.setName(localName);
 		maze.addClient(guiClient);
 
 		this.addKeyListener(guiClient);
@@ -359,9 +336,6 @@ public class Mazewar extends JFrame {
 	 */
 	public static void main(String args[]) {
 
-		// Start off with the name locked
-		nameLock.lock();
-
 		// Read off command-line arguments
 
 		for (int i = 0; i < args.length; i++) {
@@ -380,10 +354,7 @@ public class Mazewar extends JFrame {
 				}
 			} else if (args[i].equals("-n")) {
 				if (i + 1 < args.length) {
-					name = args[i + 1];
-					// We just set our name, so we can unlock it
-					nameLock.unlock();
-					// Skip the next value
+					localName = args[i + 1];
 					i++;
 				} else {
 					System.out.println(usageString);
@@ -391,17 +362,49 @@ public class Mazewar extends JFrame {
 			}
 		}
 
+		// We need to have a name, so if we haven't been given one on the
+		// command line, get it now, since nothing starts before we have a name
+		try {
+			while ((localName == null) || (localName.length() == 0)) {
+				localName = JOptionPane.showInputDialog("Enter your name");
+				if ((localName == null) || (localName.length() == 0)) {
+					consolePrintLn("Error: Invalid name");
+					continue;
+				}
+			}
+		} catch (NullPointerException e) {
+			consolePrintLn("Error: Invalid name");
+			System.exit(1);
+		}
+
 		// Create the maze
 		maze = new MazeImpl(new Point(mazeWidth, mazeHeight), mazeSeed);
 		assert (maze != null);
+
+		// Set up network queues
+		// 1001010B
+		// personalinfo is only used once, when the timestamp for htis player is
+		// created
+		personalinfo = new vectorobj(0, localName);
+
+		// This is our local timestamp
+		/* ==== HANDLE WITH CARE ==== */
+		localtimestamp = new timestamp(personalinfo);
+
+		// This is our local queue to do things on my side of the world
+		/* ==== HANDLE WITH CARE ==== */
+		clientQueue mytodoList = new clientQueue();
+		toNetwork = new clientQueue();
+		toMaze = new clientQueue();
+
+		// 1001010E
 
 		/* Set up the networking using SLP */
 		slpServer = new MazewarSLP();
 		slpServer.start();
 
 		// Make things get closed properly on exit
-		Runtime.getRuntime().addShutdownHook(
-				new ShutdownThread());
+		Runtime.getRuntime().addShutdownHook(new ShutdownThread());
 
 		/* Create and start the communications middleware */
 		middlewareServer = new MazewarComm(slpServer);

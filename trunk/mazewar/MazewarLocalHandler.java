@@ -54,8 +54,9 @@ public class MazewarLocalHandler extends Thread implements ClientListener,
 	 * Players are represented by "client" objects. When a client does an
 	 * action, it's represented as it sending a message using its
 	 * "notifyListeners" function, which ends up calling this function in any of
-	 * its listeners. Since this is going to be _the_ listener for all clients,
-	 * this is where we take something a client wants and send it to the maze.
+	 * its listeners. Since this is going to be _the_ listener for local
+	 * clients, (i.e., GUIclient) this is where we take something the client
+	 * wants and send it to the network output queue.
 	 */
 	public void clientUpdate(Client c, ClientEvent ce) {
 		// When a client turns, update our state.
@@ -78,69 +79,52 @@ public class MazewarLocalHandler extends Thread implements ClientListener,
 		// Make an appropriate gamePacket
 		gamePacket newPacket = new gamePacket();
 		newPacket.msg = msg;
-		toNetwork.addtoQueue(newPacket);
+		Mazewar.toNetwork.addtoQueue(newPacket);
 	}
 
 	/*
 	 * implements MazeListener's clientAdded();
 	 */
 	public void clientAdded(Client c) {
-		if (c instanceof GUIClient) {
-			MazewarMsg msg = new MazewarMsg();
-			msg.cw = new CommClientWrapper(c.getName(), c.getPoint(), c
-					.getOrientation());
-
-			msg.action = MazewarMsg.MW_MSG_CLIENT_ADDED;
-			// Make an appropriate gamePacket
-			gamePacket newPacket = new gamePacket();
-			newPacket.msg = msg;
-			toNetwork.addtoQueue(newPacket);
-		} else {
-			// do nothing
-		}
+		// Don't do anything if the maze tells us a client has been added,
+		// except maybe print a debug message.
 	}
 
 	/*
-	 * implements MazeListerner's clientFired
+	 * implements MazeListener's clientFired
 	 */
 	public void clientFired(Client c) {
-
+		// Don't do anything if the maze tells us a client has fired,
+		// except maybe print a debug message.
 	}
 
 	/*
 	 * implements MazeListener's clientKilled();
 	 */
 	public void clientKilled(Client source, Client target) {
-		if (target instanceof GUIClient) {
-			MazewarMsg msg = new MazewarMsg();
-			msg.cw = new CommClientWrapper(source.getName(), source.getPoint(),
-					source.getOrientation());
-			msg.cw_optional = new CommClientWrapper(target.getName(), target
-					.getPoint(), target.getOrientation());
-			msg.action = MazewarMsg.MW_MSG_CLIENT_KILLED;
+		// It does matter if the maze tells us that someone's been killed, since
+		// we need to drop them.
 
-			// Make an appropriate gamePacket
-			gamePacket newPacket = new gamePacket();
-			newPacket.msg = msg;
-			toNetwork.addtoQueue(newPacket);
-		}
+		// if (target instanceof GUIClient) {
+		// MazewarMsg msg = new MazewarMsg();
+		// msg.cw = new CommClientWrapper(source.getName(), source.getPoint(),
+		// source.getOrientation());
+		// msg.cw_optional = new CommClientWrapper(target.getName(), target
+		// .getPoint(), target.getOrientation());
+		// msg.action = MazewarMsg.MW_MSG_CLIENT_KILLED;
+		//
+		// // Make an appropriate gamePacket
+		// gamePacket newPacket = new gamePacket();
+		// newPacket.msg = msg;
+		// Mazewar.toNetwork.addtoQueue(newPacket);
+		// }
 	}
 
 	/*
 	 * implements MazeListener's clientRemoved();
 	 */
 	public void clientRemoved(Client c) {
-		if (c instanceof GUIClient) {
-			MazewarMsg msg = new MazewarMsg();
-			msg.cw = new CommClientWrapper(c.getName());
-
-			msg.action = MazewarMsg.MW_MSG_CLIENT_REMOVED;
-
-			// Make an appropriate gamePacket
-			gamePacket newPacket = new gamePacket();
-			newPacket.msg = msg;
-			toNetwork.addtoQueue(newPacket);
-		}
+		// Nothing needs to know. Just let it disappear.
 	}
 
 	/*
@@ -194,6 +178,16 @@ public class MazewarLocalHandler extends Thread implements ClientListener,
 		}
 	}
 
+	/**
+	 * The basic job of this thread is to serialize data transfer in and out of
+	 * the maze. It has two main tasks:
+	 * 1.  Receive client events and send them to the toNetwork queue
+	 * 2.  Take events off the toMaze queue and send them to the maze
+	 * 
+	 */
+	public void run() {
+		// 
+	}
 	// MazewarPacket packet = null;
 	// try {
 	//

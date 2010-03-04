@@ -23,9 +23,9 @@ public class MazewarMiddlewareServer extends Thread {
 	// List of my peers on the network
 	private Vector<Peer> networkPeers = new Vector<Peer>();
 	
-	// Queues used for communication
-	public clientQueue toNetwork = new clientQueue();
-	public clientQueue toMaze = new clientQueue();
+	// Queues used for communication - moved to MazeWar
+//	public clientQueue toNetwork = new clientQueue();
+//	public clientQueue toMaze = new clientQueue();
 	
 	// Identifier for this node's SLP server (passed in constructor)
 	private MazewarSLP slpServer = null;
@@ -94,7 +94,7 @@ public class MazewarMiddlewareServer extends Thread {
 				// Otherwise, we got a packet, synchronize our timestamps
 				Mazewar.localtimestamp.max(receivedPacket.timeogram);
 				// and throw it on the (sorted) toMaze queue
-				toMaze.addtoSortedQueue(receivedPacket);
+				Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
 				continue;
@@ -113,7 +113,7 @@ public class MazewarMiddlewareServer extends Thread {
 
 	private void broadcastPackets() {
 		// Grab a packet on the output stream
-		gamePacket packetToSend = toNetwork.getElement();
+		gamePacket packetToSend = Mazewar.toNetwork.getElement();
 		// Make sure we actually got one, otherwise, don't bother
 		if (packetToSend != null) {
 			// Iterate through our network peers
