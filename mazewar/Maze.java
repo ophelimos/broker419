@@ -61,6 +61,14 @@ public abstract class Maze {
      */
     public abstract void addClient(Client client);
 
+	/**
+	 * All the firing checks that can be made WITHOUT actually updating the
+	 * state of the maze. These are all also checked in clientFire, but this
+	 * allows us to check them locally for performance reasons before sending
+	 * them across the network.
+	 */
+    public abstract boolean canFire(Client client);
+    
     /** 
      * Create a new {@link Projectile} from the specified {@link Client}
      * @param client {@link Client} that is firing.
@@ -87,6 +95,18 @@ public abstract class Maze {
      */
     public abstract Direction getClientOrientation(Client client);
 
+	/**
+	 * All the movement checks that can be made WITHOUT actually updating the
+	 * state of the maze.
+	 */
+    public abstract boolean canMoveForward(Client client);
+    
+	/**
+	 * All the movement checks that can be made WITHOUT actually updating the
+	 * state of the maze.
+	 */
+    public abstract boolean canMoveBackward(Client client);
+    
     /** 
      * Attempt to move a {@link Client} in the {@link Maze} forward.
      * @param client {@link Client} to move.

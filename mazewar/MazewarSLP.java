@@ -41,12 +41,8 @@ public class MazewarSLP extends Thread {
 			// some attributes for the service
 			Hashtable<String, String> attributes = new Hashtable<String, String>();
 
-			// Make sure we actually have a name before trying to add a "name"
-			// attribute
-			while (Mazewar.name == null) {
-				Mazewar.nameLock.lock();
-			}
-			attributes.put("name", Mazewar.name);
+			// Nothing starts before we have a name.  Nothing.
+			attributes.put("name", Mazewar.localName);
 			advertiser.register(mazewarService, attributes);
 		} catch (ServiceLocationException e) {
 			Mazewar.consolePrintLn("Failed to initialize jSLP server");
