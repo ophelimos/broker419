@@ -19,4 +19,11 @@ public class gamePacket implements Serializable {
 	boolean ACK = false;
 	
 	MazewarMsg msg;
+	
+	//Variables for the waiting room phase
+	boolean addme= false;
+	boolean addedyou = false;
+	boolean startgame = false;
+	
+	String playerlist[]; 
 }
