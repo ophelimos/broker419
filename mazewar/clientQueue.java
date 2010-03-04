@@ -71,8 +71,8 @@ public class clientQueue {
 	// Check if we have all the ACKs for a certain gamePacket we sent out
 	// earlier
 	public boolean haveACK(gamePacket checkfor) {
-		int point = 0, n = 0, track = 0;
-		boolean haveit = true;
+		int point = 0, n = 0, trackACK = 0;
+		boolean haveit = false;
 
 		for (point = 0; point < lineup.size(); point++) {
 			// Check if these timestamps are equal
@@ -81,25 +81,26 @@ public class clientQueue {
 				for (n = 0; n < checkfor.timeogram.mytimestamp.size(); n++) {
 					if (checkfor.timeogram.mytimestamp.get(n).getplayer()
 							.equalsIgnoreCase(lineup.get(point).senderName)) {
-						track++;
+						trackACK++;
 						break;
 					}
 				}
 			}
 
-			if (track == checkfor.timeogram.mytimestamp.size()) {
+			if (trackACK == checkfor.timeogram.mytimestamp.size()) {
 				// We found all the ACKs we need for this event
+				haveit = true;
 				break;
 			}
 		}
 
-		if (track == checkfor.timeogram.mytimestamp.size()) {
+		if (trackACK == checkfor.timeogram.mytimestamp.size()) {
 			// We found all the ACKs we need for this event
-			return true;
+			return haveit;
 		}
 
 		// We dont have all the ACKs yet
-		return false;
+		return haveit;
 	}
 
 	// checks if timestamps are equal
@@ -124,5 +125,39 @@ public class clientQueue {
 			return isgood;
 		}
 		return isgood;
+	}
+	
+	//Print EVERYTHING in this queue
+	private void printQueue(){
+		int iterator =0;
+		
+		System.out.println("=====        START OF QUEUE        =====\n");
+		System.out.println("Total elements in this queue: " + lineup.size() + "\n\n");
+		
+		for (iterator =0; iterator <= lineup.size(); iterator++){
+			//Print the name of the sender of this packet
+			System.out.println("Sender name: " + lineup.elementAt(iterator).senderName + "\n");
+			
+			//Print all the players and their timestamp values  
+			for(int i =0; i <= lineup.elementAt(iterator).timeogram.mytimestamp.size(); i++) {
+				System.out.println(lineup.elementAt(iterator).timeogram.mytimestamp.get(i).playername + " : " + lineup.elementAt(iterator).timeogram.mytimestamp.get(i).gettime());
+				if (i != lineup.elementAt(iterator).timeogram.mytimestamp.size()){
+					System.out.println(" | ");
+				}
+				else {
+					System.out.println("\n");
+				}				
+			}
+			
+			//Print if this is a first sent packet or an ACK packet
+			if (lineup.get(iterator).wantACK){
+				System.out.println("Message type: wantACK\n");
+			}
+			if (lineup.get(iterator).ACK){
+				System.out.println("Message type: ACK\n");
+			}
+		}
+		
+		System.out.println("\n=====        END OF QUEUE        =====\n");
 	}
 }
