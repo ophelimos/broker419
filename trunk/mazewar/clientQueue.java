@@ -10,7 +10,7 @@
 import java.util.*;
 
 public class clientQueue {
-	protected Vector<gamePacket> lineup = new Vector<gamePacket>(10, 1);
+	protected Vector<gamePacket> lineup = new Vector<gamePacket>(0, 1);
 
 	// Use this to add an element to the communicating queue
 	public boolean addtoQueue(gamePacket toadd) {
