@@ -1,0 +1,8 @@
+The Waiting Room:
+
+On program startup, the game does not start immediately.  Nodes wait for other nodes to show up, visible on some sort of screen.  SLP tells us who's online at all times.
+
+When we detect someone is online, we add them to our game immediately, but we don't start the game immediately.
+
+After someone clicks the "start game" button, the game starts with whoever is already know to that person.  Everyone who isn't contained in that initial "start game" packet is ignored.  Any "start game" packets after the first are ignored (until there's been a "finish game" packet).
+
