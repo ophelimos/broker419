@@ -17,6 +17,9 @@
  USA.
  */
 
+import java.awt.Button;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.io.BufferedReader;
@@ -27,6 +30,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Scanner;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -34,8 +38,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextPane;
-
-import java.util.Scanner;
 
 /**
  * The entry point and glue code for the game. It also contains some helpful
@@ -137,7 +139,7 @@ public class Mazewar extends JFrame {
 	 * Create the textpane statically so that we can write to it globally using
 	 * the static consolePrint methods
 	 */
-	private static JTextPane console = null;
+	public static JTextPane console = null;
 
 	/**
 	 * Write a message to the console followed by a newline.
@@ -183,8 +185,8 @@ public class Mazewar extends JFrame {
 	 */
 	public Mazewar() {
 		super("ECE419 Mazewar");
-		consolePrintLn("Waiting for connections from other players.  " +
-				"Press the <Start Game> button when you're ready to begin");
+		consolePrintLn("Waiting for connections from other players.\n"
+				+ "Press the <Start Game> button when you're ready to begin!");
 
 		// Have the ScoreTableModel listen to the maze to find
 		// out how to adjust scores.
@@ -199,15 +201,10 @@ public class Mazewar extends JFrame {
 
 		// The GUI client listens to keystrokes to generate actions
 		this.addKeyListener(guiClient);
-
-		// Use braces to force constructors not to be called at the beginning of
-		// the constructor.
-		{
-			// maze.addClient(new RobotClient("Norby"));
-			// maze.addClient(new RobotClient("Robbie"));
-			// maze.addClient(new RobotClient("Clango"));
-			// maze.addClient(new RobotClient("Marvin"));
-		}
+		
+		// Make the program end properly when I close the window
+		WindowHandler windowHandler = new WindowHandler();
+		this.addWindowListener(windowHandler);
 
 		// Create the panel that will display the maze.
 		overheadPanel = new OverheadMazePanel(maze, guiClient);
@@ -238,6 +235,15 @@ public class Mazewar extends JFrame {
 		scoreScrollPane.setBorder(BorderFactory.createTitledBorder(
 				BorderFactory.createEtchedBorder(), "Scores"));
 
+		// Create the start button
+		Button startButton = new Button("Start");
+		startButton.setForeground(Color.red);
+		Dimension buttonSize = startButton.getSize();
+		consolePrintLn("Button width = " + buttonSize.getWidth()
+				+ " and button height = " + buttonSize.height);
+		StartButtonListener startButtonListener = new StartButtonListener();
+		startButton.addMouseListener(startButtonListener);
+
 		// Create the layout manager
 		GridBagLayout layout = new GridBagLayout();
 		GridBagConstraints c = new GridBagConstraints();
@@ -249,6 +255,7 @@ public class Mazewar extends JFrame {
 		c.weighty = 3.0;
 		c.gridwidth = GridBagConstraints.REMAINDER;
 		layout.setConstraints(overheadPanel, c);
+		layout.setConstraints(startButton, c);
 		c.gridwidth = GridBagConstraints.RELATIVE;
 		c.weightx = 2.0;
 		c.weighty = 1.0;
@@ -261,6 +268,7 @@ public class Mazewar extends JFrame {
 		getContentPane().add(overheadPanel);
 		getContentPane().add(consoleScrollPane);
 		getContentPane().add(scoreScrollPane);
+		getContentPane().add(startButton);
 
 		// Pack everything neatly.
 		pack();
@@ -419,6 +427,15 @@ public class Mazewar extends JFrame {
 		ConnectionAcceptor connectionAcceptor = new ConnectionAcceptor(
 				connectionDB, directPort);
 		connectionAcceptor.start();
+		
+		// Use braces to force constructors not to be called at the beginning of
+		// the constructor.
+		{
+			// maze.addClient(new RobotClient("Norby"));
+			// maze.addClient(new RobotClient("Robbie"));
+			// maze.addClient(new RobotClient("Clango"));
+			// maze.addClient(new RobotClient("Marvin"));
+		}
 
 		/* Set up the networking using SLP */
 		slpServer = new MazewarSLP(connectionDB);
@@ -429,12 +446,8 @@ public class Mazewar extends JFrame {
 
 		/* Create and start the communications middleware */
 		middlewareServer = new MazewarMiddlewareServer(connectionDB, maze);
-		// middlewareServer.addCommLocalListener((MazeImpl) maze);
 		middlewareServer.start();
-
-		// The middleware is now a listener for maze events
-		// maze.addMazeListener(middlewareServer);
-
+		
 		try {
 			/* Create the GUI */
 			if (!consoleMode) {
@@ -445,7 +458,6 @@ public class Mazewar extends JFrame {
 			e.printStackTrace();
 		}
 
-		// We shouldn't get here, but if we do, let everyone know
-		System.out.println("GUI thread finished");
+		//System.out.println("GUI startup thread finished");
 	}
 }

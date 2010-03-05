@@ -22,6 +22,7 @@ public class ConnectionAcceptor extends Thread {
 
 	public ConnectionAcceptor(ConnectionDB connectionDB, int port) {
 		this.connectionDB = connectionDB;
+		
 		try {
 			serverSocket = new ServerSocket(port);
 			serverSocket.setSoTimeout(acceptorTimeout);
