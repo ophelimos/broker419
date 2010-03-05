@@ -6,6 +6,9 @@
  * at bottom
  * 
  * Before an elements is added it is sorted and inserted in the right place
+ * 
+ * Every method in the class is synchronized, since queues will be accessed by 
+ * different threads at the same time
  */
 import java.util.*;
 
@@ -13,13 +16,13 @@ public class clientQueue {
 	protected Vector<gamePacket> lineup = new Vector<gamePacket>(0, 1);
 
 	// Use this to add an element to the communicating queue
-	public boolean addtoQueue(gamePacket toadd) {
+	public synchronized boolean addtoQueue(gamePacket toadd) {
 		lineup.add(toadd);
 		return true;
 	}
 
 	// Use this to add an element to the communicating queue
-	public void addtoSortedQueue(gamePacket toadd) {
+	public synchronized void addtoSortedQueue(gamePacket toadd) {
 		int linepoint = 0;
 
 		while (linepoint < lineup.size()) {
@@ -34,7 +37,8 @@ public class clientQueue {
 		return;
 	}
 
-	private boolean checktimestamp(gamePacket toinsert, gamePacket tocheck) {
+	private synchronized boolean checktimestamp(gamePacket toinsert,
+			gamePacket tocheck) {
 		boolean isgood = false;
 		int point1 = 0, point2 = 0, sum1 = 0, sum2 = 0;
 		// Check for both timestmap sizes
@@ -58,7 +62,7 @@ public class clientQueue {
 		return isgood;
 	}
 
-	public gamePacket getElement() {
+	public synchronized gamePacket getElement() {
 		// This lineup will return firstpacket, and then remove it as well
 		if (!lineup.isEmpty()) {
 			return lineup.remove(0);
@@ -70,7 +74,7 @@ public class clientQueue {
 
 	// Check if we have all the ACKs for a certain gamePacket we sent out
 	// earlier
-	public boolean haveACK(gamePacket checkfor) {
+	public synchronized boolean haveACK(gamePacket checkfor) {
 		int point = 0, n = 0, trackACK = 0;
 		boolean haveit = false;
 
@@ -104,7 +108,7 @@ public class clientQueue {
 	}
 
 	// checks if timestamps are equal
-	private boolean eqltimestamp(timestamp value1, timestamp value2) {
+	private synchronized boolean eqltimestamp(timestamp value1, timestamp value2) {
 		boolean isgood = false;
 		int point1 = 0, point2 = 0, sum1 = 0, sum2 = 0;
 		// Check for both timestmap sizes
@@ -126,38 +130,46 @@ public class clientQueue {
 		}
 		return isgood;
 	}
-	
-	//Print EVERYTHING in this queue
-	private void printQueue(){
-		int iterator =0;
-		
+
+	// Print EVERYTHING in this queue
+	public synchronized void printQueue() {
+		int iterator = 0;
+
 		System.out.println("=====        START OF QUEUE        =====\n");
-		System.out.println("Total elements in this queue: " + lineup.size() + "\n\n");
-		
-		for (iterator =0; iterator <= lineup.size(); iterator++){
-			//Print the name of the sender of this packet
-			System.out.println("Sender name: " + lineup.elementAt(iterator).senderName + "\n");
-			
-			//Print all the players and their timestamp values  
-			for(int i =0; i <= lineup.elementAt(iterator).timeogram.mytimestamp.size(); i++) {
-				System.out.println(lineup.elementAt(iterator).timeogram.mytimestamp.get(i).playername + " : " + lineup.elementAt(iterator).timeogram.mytimestamp.get(i).gettime());
-				if (i != lineup.elementAt(iterator).timeogram.mytimestamp.size()){
+		System.out.println("Total elements in this queue: " + lineup.size()
+				+ "\n\n");
+
+		for (iterator = 0; iterator <= lineup.size(); iterator++) {
+			// Print the name of the sender of this packet
+			System.out.println("Sender name: "
+					+ lineup.elementAt(iterator).senderName + "\n");
+
+			// Print all the players and their timestamp values
+			for (int i = 0; i <= lineup.elementAt(iterator).timeogram.mytimestamp
+					.size(); i++) {
+				System.out
+						.println(lineup.elementAt(iterator).timeogram.mytimestamp
+								.get(i).playername
+								+ " : "
+								+ lineup.elementAt(iterator).timeogram.mytimestamp
+										.get(i).gettime());
+				if (i != lineup.elementAt(iterator).timeogram.mytimestamp
+						.size()) {
 					System.out.println(" | ");
-				}
-				else {
+				} else {
 					System.out.println("\n");
-				}				
+				}
 			}
-			
-			//Print if this is a first sent packet or an ACK packet
-			if (lineup.get(iterator).wantACK){
+
+			// Print if this is a first sent packet or an ACK packet
+			if (lineup.get(iterator).wantACK) {
 				System.out.println("Message type: wantACK\n");
 			}
-			if (lineup.get(iterator).ACK){
+			if (lineup.get(iterator).ACK) {
 				System.out.println("Message type: ACK\n");
 			}
 		}
-		
+
 		System.out.println("\n=====        END OF QUEUE        =====\n");
 	}
 }

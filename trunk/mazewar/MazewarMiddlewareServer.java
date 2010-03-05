@@ -1,14 +1,6 @@
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.util.Vector;
-
-import ch.ethz.iks.slp.ServiceLocationEnumeration;
-import ch.ethz.iks.slp.ServiceLocationException;
-import ch.ethz.iks.slp.ServiceURL;
 
 /**
  * The Mazewar middleware server that sits between the network and the queues,
@@ -23,66 +15,27 @@ public class MazewarMiddlewareServer extends Thread {
 	// Reasonable batch of packets to process at once
 	private final int processBatch = 256;
 
-	// List of my peers on the network
-	private Vector<Peer> networkPeers = new Vector<Peer>();
+	private ConnectionDB connectionDB;
 
 	// Queues used for communication - moved to MazeWar
 	// public clientQueue toNetwork = new clientQueue();
 	// public clientQueue toMaze = new clientQueue();
 
-	// Identifier for this node's SLP server (passed in constructor)
-	private MazewarSLP slpServer = null;
+	MazeImpl maze = null;
 
-	public MazewarMiddlewareServer(MazewarSLP slpServer_in) {
-		this.slpServer = slpServer_in;
-	}
-
-	// Go through the list of clients given from SLP and convert them to Peer
-	// structures
-	public void connectPeers(ServiceLocationEnumeration slpPeers) {
-		if (slpPeers == null) {
-			// If I don't have any peers, don't do anything
-			return;
-		}
-		try {
-			checkSLPPeers: for (ServiceURL cur = (ServiceURL) slpPeers.next(); slpPeers
-					.hasMoreElements(); cur = (ServiceURL) slpPeers.next()) {
-
-				// Check if it's already in the vector
-				for (int i = 0; i < networkPeers.size(); i++) {
-					if (networkPeers.get(i).hostname.equals(cur.getHost())) {
-						continue checkSLPPeers;
-					}
-				}
-
-				// Otherwise, it's not. Connect to it and add it
-				Socket curSocket = new Socket(cur.getHost(), cur.getPort());
-				// Only spend a maximum of a millisecond waiting for a packet
-				// that might not be coming
-				curSocket.setSoTimeout(1);
-				ObjectInputStream socketIn = new ObjectInputStream(curSocket
-						.getInputStream());
-				ObjectOutputStream socketOut = new ObjectOutputStream(curSocket
-						.getOutputStream());
-				Peer newPeer = new Peer(cur.getHost(), curSocket, socketIn,
-						socketOut);
-				networkPeers.add(newPeer);
-			}
-		} catch (ServiceLocationException e) {
-			Mazewar.consolePrintLn("Exception while sorting SLP values");
-			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
-		} catch (UnknownHostException e) {
-			Mazewar.consolePrintLn("Invalid hostname received from SLP!!!");
-		} catch (IOException e) {
-			Mazewar
-					.consolePrintLn("I/O exception connecting to SLP-received address");
-		}
+	public MazewarMiddlewareServer(ConnectionDB connectionDB_in,
+			MazeImpl maze_in) {
+		this.connectionDB = connectionDB_in;
+		this.maze = maze_in;
 	}
 
 	// Receive packets from the network
 	private void receivePackets() {
+		// Get the current list of input peers
+		Vector<InputPeer> networkPeers = connectionDB.getInputPeers();
+
 		// Iterate through our network peers, receiving one packet from each
-		Peer curPeer = null;
+		InputPeer curPeer = null;
 		for (int i = 0; i < networkPeers.size(); i++) {
 			try {
 				curPeer = networkPeers.get(i);
@@ -96,12 +49,13 @@ public class MazewarMiddlewareServer extends Thread {
 				}
 				// Otherwise, we got a packet, synchronize our timestamps
 				Mazewar.localtimestamp.max(receivedPacket.timeogram);
-				//TODO: If it's an ACK, count it off, see if we have enough
-				// If it's not an ACK, throw it on the (sorted) toMaze queue
+				
 				if (receivedPacket.ACK) {
-					
+//					 TODO: Jay, modify this so that if it's an ACK, count it off, see if we have enough
+				} else {
+//					 If it's not an ACK, throw it on the (sorted) toMaze queue	
+					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 				}
-				Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
 				continue;
@@ -127,17 +81,57 @@ public class MazewarMiddlewareServer extends Thread {
 				// Nothing left to process
 				return;
 			}
-			
+			MazewarMsg msg = mostRecentPacket.msg;
+
+			ClientEvent ce = null;
+			switch (msg.action) {
+			case MazewarMsg.MW_MSG_LEFT:
+				ce = ClientEvent.turnLeft;
+				break;
+			case MazewarMsg.MW_MSG_RIGHT:
+				ce = ClientEvent.turnRight;
+				break;
+			case MazewarMsg.MW_MSG_FWD:
+				ce = ClientEvent.moveForward;
+				break;
+			case MazewarMsg.MW_MSG_BKWD:
+				ce = ClientEvent.moveBackward;
+				break;
+			case MazewarMsg.MW_MSG_FIRE:
+				ce = ClientEvent.fire;
+				break;
+			case MazewarMsg.MW_MSG_CLIENT_ADDED:
+				ce = ClientEvent.client_added;
+				break;
+			case MazewarMsg.MW_MSG_CLIENT_REMOVED:
+				ce = ClientEvent.client_removed;
+				break;
+			case MazewarMsg.MW_MSG_CLIENT_ADDED_FIN:
+				ce = ClientEvent.client_added_fin;
+				break;
+			case MazewarMsg.MW_MSG_CLIENT_KILLED:
+				ce = ClientEvent.client_killed;
+				break;
+			default:
+				// TODO: enter error code
+				break;
+			}
+			maze.commLocalClientUpdate(msg.cw, ce, msg.cw_optional);
 		}
+
 	}
 
 	private void broadcastPackets() {
+
+		// Get the current list of output peers
+		Vector<OutputPeer> networkPeers = connectionDB.getOutputPeers();
+
 		// Grab a packet on the output stream
 		gamePacket packetToSend = Mazewar.toNetwork.getElement();
 		// Make sure we actually got one, otherwise, don't bother
 		if (packetToSend != null) {
 			// Iterate through our network peers
-			Peer curPeer = null;
+			OutputPeer curPeer = null;
 			for (int i = 0; i < networkPeers.size(); i++) {
 				try {
 					curPeer = networkPeers.get(i);
@@ -155,16 +149,13 @@ public class MazewarMiddlewareServer extends Thread {
 	public void run() {
 
 		/*
-		 * The middleware does two things: 1. Connect to other nodes. 2. Send
-		 * and receive packets from those nodes
+		 * The middleware sends and receives packets with other nodes. It puts
+		 * things on queues and takes them off of queues.
 		 * 
-		 * However, most of the interesting parts of connecting to other nodes
-		 * will be handled by MazewarSLP. Connections will be handled by calling
-		 * functions from it.
+		 * Actually connecting to other nodes, however, will be handled by
+		 * MazewarSLP. Connections will be handled by using data structures
+		 * updated by MazewarSLP.
 		 */
-
-		// Connect to any initially located nodes
-		connectPeers(slpServer.getMazewarClients());
 
 		while (true) {
 			// Local packets are added to the input queue automatically by the
@@ -179,11 +170,6 @@ public class MazewarMiddlewareServer extends Thread {
 
 			// Send remote packets
 			broadcastPackets();
-
-			// Check for new peers
-			if (slpServer.clientsChanged) {
-				connectPeers(slpServer.getMazewarClients());
-			}
 		}
 	}
 }

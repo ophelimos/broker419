@@ -24,24 +24,28 @@ public class MazewarSLP extends Thread {
 
 	private Locator locator = null;
 
-	private ServiceLocationEnumeration mazewarClients = null;
+	private ServiceLocationEnumeration slpPeers = null;
 
 	private long scanWaitTime = (long) 3000; // milliseconds
-	
-	public boolean clientsChanged = false;
+
+	private ConnectionDB connectionDB;
+
+	public MazewarSLP(ConnectionDB connectionDB_in) {
+		connectionDB = connectionDB_in;
+	}
 
 	private void serverInit() {
 		// Server
 		try {
 			advertiser = ServiceLocationManager.getAdvertiser(new Locale("en"));
 			mazewarService = new ServiceURL("service:mazewar:server://"
-					+ advertiser.getMyIP() + ":" + Mazewar.port,
+					+ advertiser.getMyIP() + ":" + Mazewar.slpPort,
 					ServiceURL.LIFETIME_PERMANENT);
 
 			// some attributes for the service
 			Hashtable<String, String> attributes = new Hashtable<String, String>();
 
-			// Nothing starts before we have a name.  Nothing.
+			// Nothing starts before we have a name. Nothing.
 			attributes.put("name", Mazewar.localName);
 			advertiser.register(mazewarService, attributes);
 		} catch (ServiceLocationException e) {
@@ -60,7 +64,7 @@ public class MazewarSLP extends Thread {
 		}
 	}
 
-	public synchronized ServiceLocationEnumeration findNodes() {
+	public ServiceLocationEnumeration findNodes() {
 		ServiceLocationEnumeration tmpClients = null;
 		try {
 			// find all mazewar servers on the local network
@@ -71,12 +75,39 @@ public class MazewarSLP extends Thread {
 			Mazewar.consolePrintLn("Failed to scan network");
 			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
 		}
-		
+
 		return tmpClients;
 	}
 
-	public synchronized ServiceLocationEnumeration getMazewarClients() {
-		return mazewarClients;
+	// Go through the list of clients given from SLP and convert them to Peer
+	// structures (slpPeers -> outputPeers)
+	public void connectPeers(ServiceLocationEnumeration slpPeers) {
+		if (slpPeers == null) {
+			// If I don't have any peers, don't do anything
+			return;
+		}
+		while (slpPeers.hasMoreElements()) {
+			ServiceURL cur;
+			try {
+				cur = (ServiceURL) slpPeers.next();
+			} catch (ServiceLocationException e) {
+				Mazewar.consolePrintLn("Error iterating through SLP peers");
+				return;
+			}
+			// Give ConnectionDB the information it needs to add it
+
+			// Drop the leading '/' on SLP's hostname (otherwise, creating a
+			// socket breaks)
+			String hostname = cur.getHost();
+			String hostnameCleaned = hostname.substring(1);
+
+			// Only create an output stream here. The acceptor part will
+			// create the input stream. Essentially, all socket connections
+			// in this node-to-node network will be one-way
+			OutputPeer newPeer = new OutputPeer(hostnameCleaned,
+					Mazewar.directPort);
+			connectionDB.addOutputPeer(newPeer);
+		}
 	}
 
 	public void run() {
@@ -84,19 +115,22 @@ public class MazewarSLP extends Thread {
 		clientInit();
 
 		// Find at least ourself
-		findNodes();
+		slpPeers = findNodes();
+		// Actually connect to ourself (somewhat useless, but ensures sanity)
+		connectPeers(slpPeers);
 
 		// Scan the network every few seconds
-		ServiceLocationEnumeration newClients = mazewarClients;
+		ServiceLocationEnumeration newPeers = slpPeers;
 		while (true) {
 			try {
 				sleep(scanWaitTime);
-				newClients = findNodes();
+				newPeers = findNodes();
 			} catch (InterruptedException e) {
 				findNodes();
 			}
-			if (!newClients.equals(mazewarClients)) {
-				clientsChanged = true;
+			if (!newPeers.equals(slpPeers)) {
+				slpPeers = newPeers;
+				connectPeers(slpPeers);
 			}
 		}
 

@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.ServerSocket;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -35,7 +36,6 @@ import javax.swing.JTable;
 import javax.swing.JTextPane;
 
 import java.util.Scanner;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * The entry point and glue code for the game. It also contains some helpful
@@ -48,8 +48,15 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Mazewar extends JFrame {
 
-	// The global port everything's running on
-	public static int port = 2048;
+	// The global port SLP is running on
+	public static int slpPort = 2048;
+
+	// The global port all direct network conenctions are running on
+	public static int directPort = slpPort - 1;
+
+	// Whether or not I'm accepting new connections. Setting this to false kills
+	// the ConnectionAcceptor thread.
+	public static boolean acceptingNewConnections = true;
 
 	// SLP properties file name (constant)
 	public static final String slpPropertiesFileName = "jslp.properties";
@@ -60,6 +67,8 @@ public class Mazewar extends JFrame {
 	public static timestamp localtimestamp;
 
 	// Global queues
+	public static clientQueue mytodoList;
+
 	public static clientQueue toNetwork;
 
 	public static clientQueue toMaze;
@@ -82,7 +91,10 @@ public class Mazewar extends JFrame {
 	// SLP and middleware servers
 	public static MazewarSLP slpServer = null;
 
-	public static MazewarComm middlewareServer = null;
+	public static MazewarMiddlewareServer middlewareServer = null;
+
+	// The socket I receive connections from other people on
+	public static ServerSocket serverSocket = null;
 
 	/**
 	 * The {@link Maze} that the game uses.
@@ -171,7 +183,8 @@ public class Mazewar extends JFrame {
 	 */
 	public Mazewar() {
 		super("ECE419 Mazewar");
-		consolePrintLn("Mazewar started!");
+		consolePrintLn("Waiting for connections from other players.  " +
+				"Press the <Start Game> button when you're ready to begin");
 
 		// Have the ScoreTableModel listen to the maze to find
 		// out how to adjust scores.
@@ -184,10 +197,8 @@ public class Mazewar extends JFrame {
 		maze.setName(localName);
 		maze.addClient(guiClient);
 
+		// The GUI client listens to keystrokes to generate actions
 		this.addKeyListener(guiClient);
-
-		// the middleware needs to listen to GUIClient to update the server
-		guiClient.addClientListener(middlewareServer);
 
 		// Use braces to force constructors not to be called at the beginning of
 		// the constructor.
@@ -344,9 +355,9 @@ public class Mazewar extends JFrame {
 				continue;
 			} else if (args[i].equals("-p")) {
 				if (i + 1 < args.length) {
-					port = Integer.parseInt(args[i + 1]);
+					slpPort = Integer.parseInt(args[i + 1]);
 					// Write the port value into the SLP configuration file
-					writePort(port);
+					writePort(slpPort);
 					// Skip the next value
 					i++;
 				} else {
@@ -393,26 +404,36 @@ public class Mazewar extends JFrame {
 
 		// This is our local queue to do things on my side of the world
 		/* ==== HANDLE WITH CARE ==== */
-		clientQueue mytodoList = new clientQueue();
+		mytodoList = new clientQueue();
 		toNetwork = new clientQueue();
 		toMaze = new clientQueue();
 
 		// 1001010E
 
+		// Create the database to handle connections
+		ConnectionDB connectionDB = new ConnectionDB();
+
+		// Create our local server socket, so that we can receive connections
+		// from other people.
+
+		ConnectionAcceptor connectionAcceptor = new ConnectionAcceptor(
+				connectionDB, directPort);
+		connectionAcceptor.start();
+
 		/* Set up the networking using SLP */
-		slpServer = new MazewarSLP();
+		slpServer = new MazewarSLP(connectionDB);
 		slpServer.start();
 
 		// Make things get closed properly on exit
 		Runtime.getRuntime().addShutdownHook(new ShutdownThread());
 
 		/* Create and start the communications middleware */
-		middlewareServer = new MazewarComm(slpServer);
-		middlewareServer.addCommLocalListener((MazeImpl) maze);
+		middlewareServer = new MazewarMiddlewareServer(connectionDB, maze);
+		// middlewareServer.addCommLocalListener((MazeImpl) maze);
 		middlewareServer.start();
 
 		// The middleware is now a listener for maze events
-		maze.addMazeListener(middlewareServer);
+		// maze.addMazeListener(middlewareServer);
 
 		try {
 			/* Create the GUI */
