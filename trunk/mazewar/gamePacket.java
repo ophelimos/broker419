@@ -8,7 +8,8 @@ import java.io.Serializable;
 public class gamePacket implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
-	public int action;
+	public int nextmove;
+	public int trackACK = 0;
 	public String senderName;
 	public timestamp timeogram;
 	
@@ -21,9 +22,19 @@ public class gamePacket implements Serializable {
 	MazewarMsg msg;
 	
 	//Variables for the waiting room phase
+	//===========
 	boolean addme= false;
 	boolean addedyou = false;
 	boolean startgame = false;
 	
 	String playerlist[]; 
+	//===========
+	
+	public void setnextmove(int action){
+		nextmove = action;
+	}
+	
+	public void addtrack(){
+		trackACK++;
+	}
 }

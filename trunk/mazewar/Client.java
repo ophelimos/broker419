@@ -16,6 +16,20 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
  USA.
  */
+//1.  Modify client.java so that all the notify functions
+//(notifyMoveForward() etc.) all do two things:
+//
+//a)  Updates the timestamp
+//b)  Puts a packet with that timestamp and the action (MazewarMsg) on the
+//toNetwork queue, where it'll be sent to all other nodes.
+//c)  Puts the same packet on the mytodolist queue, where it waits until
+//the ACKs come back.
+//
+//2.  Modify the receivePackets function in MazewarMiddleware to, when an
+//ACK comes in, figure out whether we should move a packet from the
+//mytodolist queue to the toMaze queue.  You can do it any way you want,
+//but I think *you* should be the one who implements it.  This way, you
+//can make it work with your haveACK function however you want.
 
 import java.util.Set;
 import java.util.HashSet;
@@ -214,35 +228,40 @@ public abstract class Client implements Serializable {
 	 * Notify listeners that the client moved forward.
 	 */
 	private void notifyMoveForward() {
-		notifyListeners(ClientEvent.moveForward);
+		//notifyListeners(ClientEvent.moveForward);
+		handlelocalEvent(0);
 	}
 
 	/**
 	 * Notify listeners that the client moved backward.
 	 */
 	private void notifyMoveBackward() {
-		notifyListeners(ClientEvent.moveBackward);
+		//notifyListeners(ClientEvent.moveBackward);
+		handlelocalEvent(1);
 	}
 
 	/**
 	 * Notify listeners that the client turned right.
 	 */
 	private void notifyTurnRight() {
-		notifyListeners(ClientEvent.turnRight);
+		//notifyListeners(ClientEvent.turnRight);
+		handlelocalEvent(3);
 	}
 
 	/**
 	 * Notify listeners that the client turned left.
 	 */
 	private void notifyTurnLeft() {
-		notifyListeners(ClientEvent.turnLeft);
+		//notifyListeners(ClientEvent.turnLeft);
+		handlelocalEvent(2);
 	}
 
 	/**
 	 * Notify listeners that the client fired.
 	 */
 	private void notifyFire() {
-		notifyListeners(ClientEvent.fire);
+		//notifyListeners(ClientEvent.fire);
+		handlelocalEvent(4);
 	}
 	
 
@@ -250,12 +269,45 @@ public abstract class Client implements Serializable {
 	 * All other players must be listening to this. We shall increment our own
 	 * timestamp everytime notifyListener is called
 	 */
-	private void handlelocalEvent(ClientEvent ce){
+	private void handlelocalEvent(int theaction){
 		//Increment my own timestamp
 		Mazewar.localtimestamp.increment(Mazewar.localName);
 		
+		gamePacket onetogo = new gamePacket();
+		gamePacket fortomaze = new gamePacket();
 		
+		//set the action for there packets
+		onetogo.setnextmove(theaction);
+		
+		//Set sender's name in packet
+		onetogo.senderName = Mazewar.localName;
+
+		//Set the timestamps for these packets
+		onetogo.timeogram = Mazewar.localtimestamp;
+		
+		//Set this packet as a firsttime packet
+		onetogo.wantACK = true;
+		
+		//Add to the toNETWORK queue
+		Mazewar.toNetwork.addtoQueue(onetogo);
+		//TODO what do we do about about Mazewar msg parameter in the gamePacket here?
+		
+		//set the action for there packets
+		fortomaze.setnextmove(theaction);
+		
+		//Set sender's name in packet
+		fortomaze.senderName = Mazewar.localName;
+
+		//Set the timestamps for these packets
+		fortomaze.timeogram = Mazewar.localtimestamp;
+		
+		//Set this packet as a firsttime packet
+		fortomaze.wantACK = true;
+		
+		//Add to the toMAZE queue | must be in sorted order
+		Mazewar.toMaze.addtoSortedQueue(fortomaze);
 	}
+	
 
 	/**
 	 * Send a the specified {@link ClientEvent} to all registered listeners
