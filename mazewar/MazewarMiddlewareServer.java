@@ -33,7 +33,7 @@ public class MazewarMiddlewareServer extends Thread {
 	private void receivePackets() {
 		// Get the current list of input peers
 		Vector<InputPeer> networkPeers = connectionDB.getInputPeers();
-
+		boolean allarehere = false;
 		// Iterate through our network peers, receiving one packet from each
 		InputPeer curPeer = null;
 		for (int i = 0; i < networkPeers.size(); i++) {
@@ -51,7 +51,9 @@ public class MazewarMiddlewareServer extends Thread {
 				Mazewar.localtimestamp.max(receivedPacket.timeogram);
 				
 				if (receivedPacket.ACK) {
-//					 TODO: Jay, modify this so that if it's an ACK, count it off, see if we have enough
+					//haveALL add the ACK count and it returns true if we have all, returns true, else false
+					allarehere = Mazewar.mytodoList.haveACK(receivedPacket);
+					
 				} else {
 //					 If it's not an ACK, throw it on the (sorted) toMaze queue	
 					Mazewar.toMaze.addtoSortedQueue(receivedPacket);

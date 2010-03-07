@@ -75,34 +75,33 @@ public class clientQueue {
 	// Check if we have all the ACKs for a certain gamePacket we sent out
 	// earlier
 	public synchronized boolean haveACK(gamePacket checkfor) {
-		int point = 0, n = 0, trackACK = 0;
-		boolean haveit = false;
+		int point = 0;
+		boolean haveit = false, foundinqueue = false;
 
 		for (point = 0; point < lineup.size(); point++) {
 			// Check if these timestamps are equal
 			if (eqltimestamp(checkfor.timeogram, lineup.get(point).timeogram)
-					&& (lineup.get(point).ACK)) {
-				for (n = 0; n < checkfor.timeogram.mytimestamp.size(); n++) {
-					if (checkfor.timeogram.mytimestamp.get(n).getplayer()
-							.equalsIgnoreCase(lineup.get(point).senderName)) {
-						trackACK++;
-						break;
-					}
-				}
-			}
-
-			if (trackACK == checkfor.timeogram.mytimestamp.size()) {
-				// We found all the ACKs we need for this event
-				haveit = true;
+					&& (lineup.get(point).ACK) && (checkfor.ACK)) {
+				//the timestamps are same for these packets so we shall increment the 
+				//trackACK on the packet in queue
+				lineup.get(point).addtrack();
+				foundinqueue = true;
 				break;
 			}
 		}
 
-		if (trackACK == checkfor.timeogram.mytimestamp.size()) {
+		if (lineup.get(point).trackACK == checkfor.timeogram.mytimestamp.size()) {
 			// We found all the ACKs we need for this event
+			haveit = true;
 			return haveit;
 		}
-
+		
+		//==========================================
+		//By now it is certain that this is the first ACK for this timestamp, so add in queue
+		if(!foundinqueue) {
+			checkfor.addtrack();
+			lineup.add(checkfor);
+		}
 		// We dont have all the ACKs yet
 		return haveit;
 	}
