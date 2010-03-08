@@ -290,7 +290,6 @@ public abstract class Client implements Serializable {
 		
 		//Add to the toNETWORK queue
 		Mazewar.toNetwork.addtoQueue(onetogo);
-		//TODO what do we do about about Mazewar msg parameter in the gamePacket here?
 		
 		//set the action for there packets
 		fortomaze.setnextmove(theaction);
