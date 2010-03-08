@@ -229,7 +229,9 @@ public abstract class Client implements Serializable {
 	 */
 	private void notifyMoveForward() {
 		//notifyListeners(ClientEvent.moveForward);
-		handlelocalEvent(0);
+		MazewarMsg msg = new MazewarMsg();
+		msg.action = MazewarMsg.MW_MSG_FWD;
+		handlelocalEvent(0, msg);
 	}
 
 	/**
@@ -237,7 +239,9 @@ public abstract class Client implements Serializable {
 	 */
 	private void notifyMoveBackward() {
 		//notifyListeners(ClientEvent.moveBackward);
-		handlelocalEvent(1);
+		MazewarMsg msg = new MazewarMsg();
+		msg.action = MazewarMsg.MW_MSG_BKWD;
+		handlelocalEvent(1, msg);
 	}
 
 	/**
@@ -245,7 +249,9 @@ public abstract class Client implements Serializable {
 	 */
 	private void notifyTurnRight() {
 		//notifyListeners(ClientEvent.turnRight);
-		handlelocalEvent(3);
+		MazewarMsg msg = new MazewarMsg();
+		msg.action = MazewarMsg.MW_MSG_RIGHT;
+		handlelocalEvent(3, msg);
 	}
 
 	/**
@@ -253,7 +259,9 @@ public abstract class Client implements Serializable {
 	 */
 	private void notifyTurnLeft() {
 		//notifyListeners(ClientEvent.turnLeft);
-		handlelocalEvent(2);
+		MazewarMsg msg = new MazewarMsg();
+		msg.action = MazewarMsg.MW_MSG_LEFT;
+		handlelocalEvent(2, msg);
 	}
 
 	/**
@@ -261,7 +269,9 @@ public abstract class Client implements Serializable {
 	 */
 	private void notifyFire() {
 		//notifyListeners(ClientEvent.fire);
-		handlelocalEvent(4);
+		MazewarMsg msg = new MazewarMsg();
+		msg.action = MazewarMsg.MW_MSG_FIRE;
+		handlelocalEvent(4, msg);
 	}
 	
 
@@ -269,12 +279,16 @@ public abstract class Client implements Serializable {
 	 * All other players must be listening to this. We shall increment our own
 	 * timestamp everytime notifyListener is called
 	 */
-	private void handlelocalEvent(int theaction){
+	private void handlelocalEvent(int theaction, MazewarMsg msg){
 		//Increment my own timestamp
 		Mazewar.localtimestamp.increment(Mazewar.localName);
 		
 		gamePacket onetogo = new gamePacket();
 		gamePacket fortomaze = new gamePacket();
+		
+		// Add the MazewarMsg's
+		onetogo.msg = msg;
+		fortomaze.msg = msg;
 		
 		//set the action for there packets
 		onetogo.setnextmove(theaction);
@@ -307,21 +321,4 @@ public abstract class Client implements Serializable {
 		Mazewar.toMaze.addtoSortedQueue(fortomaze);
 	}
 	
-
-	/**
-	 * Send a the specified {@link ClientEvent} to all registered listeners
-	 * 
-	 * @param ce
-	 *            Event to be sent.
-	 * 
-	 */
-	private void notifyListeners(ClientEvent ce) {
-		assert (ce != null);
-		Iterator<ClientListener> i = listenerSet.iterator();
-		while (i.hasNext()) {
-			ClientListener cl = i.next();
-			cl.clientUpdate(this, ce);
-		}
-	}
-
 }
