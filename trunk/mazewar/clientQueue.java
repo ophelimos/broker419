@@ -74,9 +74,9 @@ public class clientQueue {
 
 	// Check if we have all the ACKs for a certain gamePacket we sent out
 	// earlier
-	public synchronized boolean haveACK(gamePacket checkfor) {
+	public synchronized gamePacket haveACK(gamePacket checkfor) {
 		int point = 0;
-		boolean haveit = false, foundinqueue = false;
+		boolean foundinqueue = false;
 
 		for (point = 0; point < lineup.size(); point++) {
 			// Check if these timestamps are equal
@@ -92,8 +92,11 @@ public class clientQueue {
 
 		if (lineup.get(point).trackACK == checkfor.timeogram.mytimestamp.size()) {
 			// We found all the ACKs we need for this event
-			haveit = true;
-			return haveit;
+			
+			// Remove that particular packet from the queue
+			gamePacket ackedPacket = lineup.remove(point);
+			
+			return ackedPacket;
 		}
 		
 		//==========================================
@@ -103,7 +106,7 @@ public class clientQueue {
 			lineup.add(checkfor);
 		}
 		// We dont have all the ACKs yet
-		return haveit;
+		return null;
 	}
 
 	// checks if timestamps are equal

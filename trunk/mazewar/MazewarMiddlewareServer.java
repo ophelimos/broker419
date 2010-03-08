@@ -33,7 +33,6 @@ public class MazewarMiddlewareServer extends Thread {
 	private void receivePackets() {
 		// Get the current list of input peers
 		Vector<InputPeer> networkPeers = connectionDB.getInputPeers();
-		boolean allarehere = false;
 		// Iterate through our network peers, receiving one packet from each
 		InputPeer curPeer = null;
 		for (int i = 0; i < networkPeers.size(); i++) {
@@ -52,8 +51,11 @@ public class MazewarMiddlewareServer extends Thread {
 				
 				if (receivedPacket.ACK) {
 					//haveALL add the ACK count and it returns true if we have all, returns true, else false
-					allarehere = Mazewar.mytodoList.haveACK(receivedPacket);
-					
+					gamePacket ackedPacket = Mazewar.mytodoList.haveACK(receivedPacket);
+					if (ackedPacket != null){
+						// Put it in the toMaze queue
+						Mazewar.toMaze.addtoSortedQueue(ackedPacket);
+					}
 				} else {
 //					 If it's not an ACK, throw it on the (sorted) toMaze queue	
 					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
@@ -115,7 +117,7 @@ public class MazewarMiddlewareServer extends Thread {
 				ce = ClientEvent.client_killed;
 				break;
 			default:
-				// TODO: enter error code
+				Mazewar.consolePrintLn("Weird message received!!!");
 				break;
 			}
 			maze.commLocalClientUpdate(msg.cw, ce, msg.cw_optional);

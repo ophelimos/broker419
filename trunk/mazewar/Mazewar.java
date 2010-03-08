@@ -1,9 +1,10 @@
 /*
  Copyright (C) 2004 Geoffrey Alan Washburn
+ Copyright (C) 2010 James Robinson and Jay Suthar
  
  This program is free software; you can redistribute it and/or
  modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
+ as published by the Free Software Foundation; either version 3
  of the License, or (at your option) any later version.
  
  This program is distributed in the hope that it will be useful,
@@ -17,11 +18,6 @@
  USA.
  */
 
-import java.awt.Button;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,11 +28,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Scanner;
 
-import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 import javax.swing.JTextPane;
 
 /**
@@ -121,21 +114,6 @@ public class Mazewar extends JFrame {
 	private static final int mazeSeed = 42;
 
 	/**
-	 * The {@link GUIClient} for the game.
-	 */
-	private GUIClient guiClient = null;
-
-	/**
-	 * The panel that displays the {@link Maze}.
-	 */
-	private OverheadMazePanel overheadPanel = null;
-
-	/**
-	 * The table the displays the scores.
-	 */
-	private JTable scoreTable = null;
-
-	/**
 	 * Create the textpane statically so that we can write to it globally using
 	 * the static consolePrint methods
 	 */
@@ -177,173 +155,6 @@ public class Mazewar extends JFrame {
 			System.out.println("<clear screen>");
 		} else {
 			console.setText("");
-		}
-	}
-
-	/**
-	 * GUI code
-	 */
-	public Mazewar() {
-		super("ECE419 Mazewar");
-		consolePrintLn("Waiting for connections from other players.\n"
-				+ "Press the <Start Game> button when you're ready to begin!");
-
-		// Have the ScoreTableModel listen to the maze to find
-		// out how to adjust scores.
-		ScoreTableModel scoreModel = new ScoreTableModel();
-		assert (scoreModel != null);
-		maze.addMazeListener(scoreModel);
-
-		// Create the GUIClient and connect it to the KeyListener queue
-		guiClient = new GUIClient(localName);
-		maze.setName(localName);
-		maze.addClient(guiClient);
-
-		// The GUI client listens to keystrokes to generate actions
-		this.addKeyListener(guiClient);
-		
-		// Make the program end properly when I close the window
-		WindowHandler windowHandler = new WindowHandler();
-		this.addWindowListener(windowHandler);
-
-		// Create the panel that will display the maze.
-		overheadPanel = new OverheadMazePanel(maze, guiClient);
-		assert (overheadPanel != null);
-		maze.addMazeListener(overheadPanel);
-
-		// Don't allow editing the console from the GUI
-		console.setEditable(false);
-		console.setFocusable(false);
-		console.setBorder(BorderFactory.createTitledBorder(BorderFactory
-				.createEtchedBorder()));
-
-		// Allow the console to scroll by putting it in a scrollpane
-		JScrollPane consoleScrollPane = new JScrollPane(console);
-		assert (consoleScrollPane != null);
-		consoleScrollPane.setBorder(BorderFactory.createTitledBorder(
-				BorderFactory.createEtchedBorder(), "Console"));
-
-		// Create the score table
-		scoreTable = new JTable(scoreModel);
-		assert (scoreTable != null);
-		scoreTable.setFocusable(false);
-		scoreTable.setRowSelectionAllowed(false);
-
-		// Allow the score table to scroll too.
-		JScrollPane scoreScrollPane = new JScrollPane(scoreTable);
-		assert (scoreScrollPane != null);
-		scoreScrollPane.setBorder(BorderFactory.createTitledBorder(
-				BorderFactory.createEtchedBorder(), "Scores"));
-
-		// Create the start button
-		Button startButton = new Button("Start");
-		startButton.setForeground(Color.red);
-		Dimension buttonSize = startButton.getSize();
-		consolePrintLn("Button width = " + buttonSize.getWidth()
-				+ " and button height = " + buttonSize.height);
-		StartButtonListener startButtonListener = new StartButtonListener();
-		startButton.addMouseListener(startButtonListener);
-
-		// Create the layout manager
-		GridBagLayout layout = new GridBagLayout();
-		GridBagConstraints c = new GridBagConstraints();
-		getContentPane().setLayout(layout);
-
-		// Define the constraints on the components.
-		c.fill = GridBagConstraints.BOTH;
-		c.weightx = 1.0;
-		c.weighty = 3.0;
-		c.gridwidth = GridBagConstraints.REMAINDER;
-		layout.setConstraints(overheadPanel, c);
-		layout.setConstraints(startButton, c);
-		c.gridwidth = GridBagConstraints.RELATIVE;
-		c.weightx = 2.0;
-		c.weighty = 1.0;
-		layout.setConstraints(consoleScrollPane, c);
-		c.gridwidth = GridBagConstraints.REMAINDER;
-		c.weightx = 1.0;
-		layout.setConstraints(scoreScrollPane, c);
-
-		// Add the components
-		getContentPane().add(overheadPanel);
-		getContentPane().add(consoleScrollPane);
-		getContentPane().add(scoreScrollPane);
-		getContentPane().add(startButton);
-
-		// Pack everything neatly.
-		pack();
-
-		// Let the magic begin.
-		setVisible(true);
-		overheadPanel.repaint();
-		this.requestFocusInWindow();
-	}
-
-	public static void writePort(int port) {
-
-		try {
-			try {
-				// Read a line at a time
-				Scanner slpConfigInput = new Scanner(new BufferedReader(
-						new FileReader(slpPropertiesFileName)))
-						.useDelimiter("\n");
-
-				// Write the file to a temporary file first, and then overwrite,
-				// rather
-				// than accidentally truncating it
-				File cwd = new File(System.getProperty("user.dir"));
-				File tempFile = File.createTempFile("slpprop", ".tmp", cwd);
-				BufferedWriter slpConfigOutput = new BufferedWriter(
-						new FileWriter(tempFile));
-
-				while (slpConfigInput.hasNext()) {
-
-					// Copy from input to output
-					String input = slpConfigInput.next();
-
-					if (input.contains("net.slp.port")) {
-						slpConfigOutput.write("net.slp.port = " + port);
-					} else {
-						slpConfigOutput.write(input);
-					}
-
-				}
-
-				// Flush the temporary file
-				slpConfigOutput.flush();
-
-				// Now, move the old file to a backup file
-				File propFile = new File(slpPropertiesFileName);
-				String backupFileName = slpPropertiesFileName.concat(".bak");
-				File backupFile = new File(backupFileName);
-				boolean success = propFile.renameTo(backupFile);
-				if (!success) {
-					IOException noRename = new IOException(
-							"Failed to rename file" + slpPropertiesFileName
-									+ " to " + backupFileName);
-					throw noRename;
-				}
-
-				// Rename the temporary file to the database file
-				success = tempFile.renameTo(propFile);
-				if (!success) {
-					IOException noRename = new IOException(
-							"Failed to rename temp file to "
-									+ slpPropertiesFileName);
-					throw noRename;
-				}
-
-			} catch (FileNotFoundException e) {
-				System.out
-						.println("jslp.properties not found or invalid, creating new one...");
-				BufferedWriter slpConfigOutput = new BufferedWriter(
-						new FileWriter(slpPropertiesFileName));
-				slpConfigOutput.write("net.slp.port = " + port);
-				slpConfigOutput.flush();
-			}
-		} catch (IOException e) {
-			System.out
-					.println("Failed to mess with the jslp.properties file correctly");
 		}
 	}
 
@@ -427,7 +238,7 @@ public class Mazewar extends JFrame {
 		ConnectionAcceptor connectionAcceptor = new ConnectionAcceptor(
 				connectionDB, directPort);
 		connectionAcceptor.start();
-		
+
 		// Use braces to force constructors not to be called at the beginning of
 		// the constructor.
 		{
@@ -447,17 +258,85 @@ public class Mazewar extends JFrame {
 		/* Create and start the communications middleware */
 		middlewareServer = new MazewarMiddlewareServer(connectionDB, maze);
 		middlewareServer.start();
-		
+
 		try {
 			/* Create the GUI */
 			if (!consoleMode) {
 				console = new JTextPane();
-				new Mazewar();
+				new MazewarGUI();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		//System.out.println("GUI startup thread finished");
+		// System.out.println("GUI startup thread finished");
+	}
+
+	public static void writePort(int port) {
+		// Two try statements to catch IOExceptions in the first catch block
+		try {
+			try {
+				// Read a line at a time
+				Scanner slpConfigInput = new Scanner(new BufferedReader(
+						new FileReader(slpPropertiesFileName)))
+						.useDelimiter("\n");
+
+				// Write the file to a temporary file first, and then overwrite,
+				// rather
+				// than accidentally truncating it
+				File cwd = new File(System.getProperty("user.dir"));
+				File tempFile = File.createTempFile("slpprop", ".tmp", cwd);
+				BufferedWriter slpConfigOutput = new BufferedWriter(
+						new FileWriter(tempFile));
+
+				while (slpConfigInput.hasNext()) {
+
+					// Copy from input to output
+					String input = slpConfigInput.next();
+
+					if (input.contains("net.slp.port")) {
+						slpConfigOutput.write("net.slp.port = " + port);
+					} else {
+						slpConfigOutput.write(input);
+					}
+
+				}
+
+				// Flush the temporary file
+				slpConfigOutput.flush();
+
+				// Now, move the old file to a backup file
+				File propFile = new File(slpPropertiesFileName);
+				String backupFileName = slpPropertiesFileName.concat(".bak");
+				File backupFile = new File(backupFileName);
+				boolean success = propFile.renameTo(backupFile);
+				if (!success) {
+					IOException noRename = new IOException(
+							"Failed to rename file" + slpPropertiesFileName
+									+ " to " + backupFileName);
+					throw noRename;
+				}
+
+				// Rename the temporary file to the database file
+				success = tempFile.renameTo(propFile);
+				if (!success) {
+					IOException noRename = new IOException(
+							"Failed to rename temp file to "
+									+ slpPropertiesFileName);
+					throw noRename;
+				}
+
+			} catch (FileNotFoundException e) {
+				System.out
+						.println("jslp.properties not found or invalid, creating new one...");
+				BufferedWriter slpConfigOutput = new BufferedWriter(
+						new FileWriter(slpPropertiesFileName));
+				slpConfigOutput.write("net.slp.port = " + port);
+				slpConfigOutput.flush();
+			}
+		} catch (IOException e) {
+			System.out
+					.println("Failed to mess with the jslp.properties file correctly");
+		}
 	}
 }
