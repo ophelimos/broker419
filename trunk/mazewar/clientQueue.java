@@ -62,7 +62,7 @@ public class clientQueue {
 		return isgood;
 	}
 
-	public synchronized boolean istimeeql(gamePacket toinsert, gamePacket tocheck) {
+	public synchronized boolean isTimeLessThan(gamePacket toinsert, gamePacket tocheck) {
 		boolean isgood = false;
 		int point1 = 0, point2 = 0, sum1 = 0, sum2 = 0;
 		// Check for both timestmap sizes

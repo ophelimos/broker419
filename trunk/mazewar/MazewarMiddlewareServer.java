@@ -52,7 +52,7 @@ public class MazewarMiddlewareServer extends Thread {
 				if (receivedPacket.ACK) {
 					// haveALL add the ACK count and it returns true if we have
 					// all, returns true, else false
-					gamePacket ackedPacket = Mazewar.mytodoList
+					gamePacket ackedPacket = Mazewar.waitingForAcks
 							.haveACK(receivedPacket);
 					if (ackedPacket != null) {
 						// Put it in the toMaze queue
@@ -86,6 +86,19 @@ public class MazewarMiddlewareServer extends Thread {
 		// Process all the packets on the top of the queue that are ready to go
 		// (up to a reasonable limit)
 		for (int i = 0; i < processBatch; i++) {
+
+			if (Mazewar.toMaze.lineup.isEmpty()) {
+				return;
+			}
+
+			// If we have something waiting for an ACK that's older than
+			// something to send to the maze, wait for it to get ACKed
+			if (Mazewar.toMaze.isTimeLessThan(Mazewar.waitingForAcks.lineup
+					.get(0), Mazewar.toMaze.lineup.get(0))) {
+				Mazewar.consolePrintLn("Waiting for an ACK...");
+				break;
+			}
+
 			gamePacket mostRecentPacket = Mazewar.toMaze.getElement();
 			if (mostRecentPacket == null) {
 				// Nothing left to process

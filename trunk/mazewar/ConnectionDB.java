@@ -7,7 +7,6 @@ import java.util.Enumeration;
 import java.util.Vector;
 
 import javax.swing.DefaultListModel;
-import javax.swing.ListModel;
 import javax.swing.event.ListDataListener;
 
 /**
@@ -25,8 +24,11 @@ public class ConnectionDB {
 	// List of my peers on the network
 	private Vector<InputPeer> inputPeers = new Vector<InputPeer>();
 
-	private DefaultListModel outputPeers = new DefaultListModel();
-	
+	public Vector<OutputPeer> outputPeers = new Vector<OutputPeer>();
+
+	// Used to update the listBox
+	private DefaultListModel stringified_peers = new DefaultListModel();
+
 	/**
 	 * Ensure that to use the connectedPeers variable, you need to get it once
 	 * and work with your temporary copy. This ensures that you don't end up
@@ -42,7 +44,9 @@ public class ConnectionDB {
 	}
 
 	public synchronized Enumeration<OutputPeer> getOutputPeers() {
-		return (Enumeration<OutputPeer>) outputPeers.elements();
+		Vector copy = (Vector) inputPeers.clone();
+		// Don't worry about the warning
+		return (Enumeration<OutputPeer>) copy.elements();
 	}
 
 	public synchronized void addInputPeer(InputPeer peer) {
@@ -87,6 +91,9 @@ public class ConnectionDB {
 
 			peer.out = new ObjectOutputStream(peer.socket.getOutputStream());
 
+			// Also put it in the list of stringified peers
+			stringified_peers.addElement(peer.hostname);
+
 		} catch (UnknownHostException e) {
 			Mazewar.consolePrintLn("Invalid hostname received from SLP!!!");
 			return;
@@ -99,27 +106,28 @@ public class ConnectionDB {
 		outputPeers.addElement(peer);
 		Mazewar.consolePrintLn("Connected to peer " + peer.hostname);
 	}
-	
+
 	/**
 	 * Remove a peer from *both* input and output lists. Returns whether or not
 	 * it successfully removed the peer.
 	 */
 	public synchronized boolean removePeer(Peer peer) {
-		return (inputPeers.remove(peer) && outputPeers.removeElement(peer));
+		return (inputPeers.remove(peer) && outputPeers.removeElement(peer) && stringified_peers
+				.removeElement(peer.hostname));
 	}
-	
+
 	/**
 	 * Expose the dataListener functions of outputPeers
 	 */
-//	public synchronized void addListDataListener(ListDataListener l) {
-//		outputPeers.addListDataListener(l);
-//	}
-//	
-//	public synchronized void removeListDataListener(ListDataListener l) {
-//		outputPeers.removeListDataListener(l);
-//	}
-	
+	 public synchronized void addListDataListener(ListDataListener l) {
+	 stringified_peers.addListDataListener(l);
+	 }
+		
+	 public synchronized void removeListDataListener(ListDataListener l) {
+	 stringified_peers.removeListDataListener(l);
+	 }
+	 
 	public synchronized DefaultListModel getListModel() {
-		return outputPeers;
+		return stringified_peers;
 	}
 }
