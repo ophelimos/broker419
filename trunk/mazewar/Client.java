@@ -31,10 +31,9 @@
 //but I think *you* should be the one who implements it.  This way, you
 //can make it work with your haveACK function however you want.
 
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * An abstract class for clients in a maze.

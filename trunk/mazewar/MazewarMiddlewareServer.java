@@ -1,6 +1,6 @@
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.util.Vector;
+import java.util.Enumeration;
 
 /**
  * The Mazewar middleware server that sits between the network and the queues,
@@ -32,12 +32,12 @@ public class MazewarMiddlewareServer extends Thread {
 	// Receive packets from the network
 	private void receivePackets() {
 		// Get the current list of input peers
-		Vector<InputPeer> networkPeers = connectionDB.getInputPeers();
+		Enumeration<InputPeer> networkPeers = connectionDB.getInputPeers();
 		// Iterate through our network peers, receiving one packet from each
 		InputPeer curPeer = null;
-		for (int i = 0; i < networkPeers.size(); i++) {
+		while (networkPeers.hasMoreElements()) {
 			try {
-				curPeer = networkPeers.get(i);
+				curPeer = networkPeers.nextElement();
 				gamePacket receivedPacket = (gamePacket) curPeer.in
 						.readObject();
 				// I'm not sure when we get null here, but it means the
@@ -48,26 +48,32 @@ public class MazewarMiddlewareServer extends Thread {
 				}
 				// Otherwise, we got a packet, synchronize our timestamps
 				Mazewar.localtimestamp.max(receivedPacket.timeogram);
-				
+
 				if (receivedPacket.ACK) {
-					//haveALL add the ACK count and it returns true if we have all, returns true, else false
-					gamePacket ackedPacket = Mazewar.mytodoList.haveACK(receivedPacket);
-					if (ackedPacket != null){
+					// haveALL add the ACK count and it returns true if we have
+					// all, returns true, else false
+					gamePacket ackedPacket = Mazewar.mytodoList
+							.haveACK(receivedPacket);
+					if (ackedPacket != null) {
 						// Put it in the toMaze queue
 						Mazewar.toMaze.addtoSortedQueue(ackedPacket);
 					}
 				} else {
-//					 If it's not an ACK, throw it on the (sorted) toMaze queue	
+					// If it's not an ACK, throw it on the (sorted) toMaze queue
 					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 				}
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
 				continue;
 			} catch (IOException e) {
-				Mazewar.consolePrintLn("Connection failed with "
+				Mazewar.consolePrint("Connection failed with "
 						+ curPeer.hostname
 						+ "\n Removing from connection list...");
-				networkPeers.remove(i);
+				if (connectionDB.removePeer(curPeer)) {
+					Mazewar.consolePrint("Success!\n");
+				} else {
+					Mazewar.consolePrint("Failed!\n");
+				}
 			} catch (ClassNotFoundException e) {
 				System.out.println("Node " + curPeer.hostname
 						+ "sent unrecognized packet!");
@@ -128,7 +134,7 @@ public class MazewarMiddlewareServer extends Thread {
 	private void broadcastPackets() {
 
 		// Get the current list of output peers
-		Vector<OutputPeer> networkPeers = connectionDB.getOutputPeers();
+		Enumeration<OutputPeer> networkPeers = connectionDB.getOutputPeers();
 
 		// Grab a packet on the output stream
 		gamePacket packetToSend = Mazewar.toNetwork.getElement();
@@ -136,15 +142,19 @@ public class MazewarMiddlewareServer extends Thread {
 		if (packetToSend != null) {
 			// Iterate through our network peers
 			OutputPeer curPeer = null;
-			for (int i = 0; i < networkPeers.size(); i++) {
+			while (networkPeers.hasMoreElements()) {
 				try {
-					curPeer = networkPeers.get(i);
+					curPeer = networkPeers.nextElement();
 					curPeer.out.writeObject(packetToSend);
 				} catch (IOException e) {
 					Mazewar.consolePrintLn("Connection failed with "
 							+ curPeer.hostname
 							+ "\n Removing from connection list...");
-					networkPeers.remove(i);
+					if (connectionDB.removePeer(curPeer)) {
+						Mazewar.consolePrint("Success!\n");
+					} else {
+						Mazewar.consolePrint("Failed!\n");
+					}
 				}
 			}
 		}

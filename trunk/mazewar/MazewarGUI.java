@@ -3,9 +3,11 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.util.Vector;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
+import javax.swing.JList;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
@@ -30,10 +32,24 @@ public class MazewarGUI extends JFrame {
 	 * The table the displays the scores.
 	 */
 	private JTable scoreTable = null;
-
 	
-
-	public MazewarGUI() {
+	/**
+	 * The table that displays the available players
+	 *
+	 */
+	private JList availablePlayers = null;
+	
+	/**
+	 * And the functions handling its changes
+	 */
+	PlayerSelectionHandler playerSelectionHandler;
+	
+	/**
+	 * Actually start the GUI
+	 * 
+	 * @param connectionDB
+	 */
+	public MazewarGUI(ConnectionDB connectionDB) {
 		super("ECE419 Mazewar");
 		Mazewar.consolePrintLn("Waiting for connections from other players.\n"
 				+ "Press the <Start Game> button when you're ready to begin!");
@@ -89,11 +105,16 @@ public class MazewarGUI extends JFrame {
 		Button startButton = new Button("Start");
 		startButton.setForeground(Color.red);
 		Dimension buttonSize = startButton.getSize();
-		Mazewar.consolePrintLn("Button width = " + buttonSize.getWidth()
-				+ " and button height = " + buttonSize.height);
 		StartButtonListener startButtonListener = new StartButtonListener();
 		startButton.addMouseListener(startButtonListener);
-
+		
+		// Create the list of available players
+		availablePlayers = new JList(connectionDB.getListModel());
+		
+		// Make sure changes get handled
+		playerSelectionHandler = new PlayerSelectionHandler(connectionDB);
+		availablePlayers.addListSelectionListener(playerSelectionHandler);
+		
 		// Create the layout manager
 		GridBagLayout layout = new GridBagLayout();
 		GridBagConstraints c = new GridBagConstraints();
@@ -110,6 +131,8 @@ public class MazewarGUI extends JFrame {
 		c.weightx = 2.0;
 		c.weighty = 1.0;
 		layout.setConstraints(consoleScrollPane, c);
+		c.gridwidth = GridBagConstraints.RELATIVE;
+		layout.setConstraints(availablePlayers, c);
 		c.gridwidth = GridBagConstraints.REMAINDER;
 		c.weightx = 1.0;
 		layout.setConstraints(scoreScrollPane, c);
@@ -118,6 +141,7 @@ public class MazewarGUI extends JFrame {
 		getContentPane().add(overheadPanel);
 		getContentPane().add(consoleScrollPane);
 		getContentPane().add(scoreScrollPane);
+		getContentPane().add(availablePlayers);
 		getContentPane().add(startButton);
 
 		// Pack everything neatly.

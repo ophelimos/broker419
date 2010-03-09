@@ -158,6 +158,74 @@ public class Mazewar extends JFrame {
 		}
 	}
 
+	public static void writePort(int port) {
+		// Two try statements to catch IOExceptions in the first catch block
+		try {
+			try {
+				// Read a line at a time
+				Scanner slpConfigInput = new Scanner(new BufferedReader(
+						new FileReader(slpPropertiesFileName)))
+						.useDelimiter("\n");
+
+				// Write the file to a temporary file first, and then overwrite,
+				// rather
+				// than accidentally truncating it
+				File cwd = new File(System.getProperty("user.dir"));
+				File tempFile = File.createTempFile("slpprop", ".tmp", cwd);
+				BufferedWriter slpConfigOutput = new BufferedWriter(
+						new FileWriter(tempFile));
+
+				while (slpConfigInput.hasNext()) {
+
+					// Copy from input to output
+					String input = slpConfigInput.next();
+
+					if (input.contains("net.slp.port")) {
+						slpConfigOutput.write("net.slp.port = " + port);
+					} else {
+						slpConfigOutput.write(input);
+					}
+
+				}
+
+				// Flush the temporary file
+				slpConfigOutput.flush();
+
+				// Now, move the old file to a backup file
+				File propFile = new File(slpPropertiesFileName);
+				String backupFileName = slpPropertiesFileName.concat(".bak");
+				File backupFile = new File(backupFileName);
+				boolean success = propFile.renameTo(backupFile);
+				if (!success) {
+					IOException noRename = new IOException(
+							"Failed to rename file" + slpPropertiesFileName
+									+ " to " + backupFileName);
+					throw noRename;
+				}
+
+				// Rename the temporary file to the database file
+				success = tempFile.renameTo(propFile);
+				if (!success) {
+					IOException noRename = new IOException(
+							"Failed to rename temp file to "
+									+ slpPropertiesFileName);
+					throw noRename;
+				}
+
+			} catch (FileNotFoundException e) {
+				System.out
+						.println("jslp.properties not found or invalid, creating new one...");
+				BufferedWriter slpConfigOutput = new BufferedWriter(
+						new FileWriter(slpPropertiesFileName));
+				slpConfigOutput.write("net.slp.port = " + port);
+				slpConfigOutput.flush();
+			}
+		} catch (IOException e) {
+			System.out
+					.println("Failed to mess with the jslp.properties file correctly");
+		}
+	}
+
 	/**
 	 * Entry point for the game.
 	 * 
@@ -263,80 +331,12 @@ public class Mazewar extends JFrame {
 			/* Create the GUI */
 			if (!consoleMode) {
 				console = new JTextPane();
-				new MazewarGUI();
+				new MazewarGUI(connectionDB);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		// System.out.println("GUI startup thread finished");
-	}
-
-	public static void writePort(int port) {
-		// Two try statements to catch IOExceptions in the first catch block
-		try {
-			try {
-				// Read a line at a time
-				Scanner slpConfigInput = new Scanner(new BufferedReader(
-						new FileReader(slpPropertiesFileName)))
-						.useDelimiter("\n");
-
-				// Write the file to a temporary file first, and then overwrite,
-				// rather
-				// than accidentally truncating it
-				File cwd = new File(System.getProperty("user.dir"));
-				File tempFile = File.createTempFile("slpprop", ".tmp", cwd);
-				BufferedWriter slpConfigOutput = new BufferedWriter(
-						new FileWriter(tempFile));
-
-				while (slpConfigInput.hasNext()) {
-
-					// Copy from input to output
-					String input = slpConfigInput.next();
-
-					if (input.contains("net.slp.port")) {
-						slpConfigOutput.write("net.slp.port = " + port);
-					} else {
-						slpConfigOutput.write(input);
-					}
-
-				}
-
-				// Flush the temporary file
-				slpConfigOutput.flush();
-
-				// Now, move the old file to a backup file
-				File propFile = new File(slpPropertiesFileName);
-				String backupFileName = slpPropertiesFileName.concat(".bak");
-				File backupFile = new File(backupFileName);
-				boolean success = propFile.renameTo(backupFile);
-				if (!success) {
-					IOException noRename = new IOException(
-							"Failed to rename file" + slpPropertiesFileName
-									+ " to " + backupFileName);
-					throw noRename;
-				}
-
-				// Rename the temporary file to the database file
-				success = tempFile.renameTo(propFile);
-				if (!success) {
-					IOException noRename = new IOException(
-							"Failed to rename temp file to "
-									+ slpPropertiesFileName);
-					throw noRename;
-				}
-
-			} catch (FileNotFoundException e) {
-				System.out
-						.println("jslp.properties not found or invalid, creating new one...");
-				BufferedWriter slpConfigOutput = new BufferedWriter(
-						new FileWriter(slpPropertiesFileName));
-				slpConfigOutput.write("net.slp.port = " + port);
-				slpConfigOutput.flush();
-			}
-		} catch (IOException e) {
-			System.out
-					.println("Failed to mess with the jslp.properties file correctly");
-		}
 	}
 }
