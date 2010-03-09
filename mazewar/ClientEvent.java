@@ -35,7 +35,7 @@ public class ClientEvent {
         private static final int TURN_RIGHT = 3;
         private static final int FIRE = 4;
         
-        private static final int CLIENT_ADMIN = 100;
+//        private static final int CLIENT_ADMIN = 100;
         private static final int CLIENT_ADDED = 101;
         private static final int CLIENT_REMOVED = 102;
         private static final int CLIENT_ADDED_FIN = 103;

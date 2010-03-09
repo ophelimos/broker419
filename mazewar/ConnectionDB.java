@@ -3,7 +3,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.Vector;
+
+import javax.swing.DefaultListModel;
+import javax.swing.ListModel;
+import javax.swing.event.ListDataListener;
 
 /**
  * This class is made to handle a problem: I've got a list of connections, and
@@ -20,19 +25,24 @@ public class ConnectionDB {
 	// List of my peers on the network
 	private Vector<InputPeer> inputPeers = new Vector<InputPeer>();
 
-	private Vector<OutputPeer> outputPeers = new Vector<OutputPeer>();
-
+	private DefaultListModel outputPeers = new DefaultListModel();
+	
 	/**
 	 * Ensure that to use the connectedPeers variable, you need to get it once
 	 * and work with your temporary copy. This ensures that you don't end up
 	 * working with a changing data structure.
+	 * 
+	 * On the other hand, these are still shallow copies, so
+	 * _don't_change_the_data!_
 	 */
-	public synchronized Vector<InputPeer> getInputPeers() {
-		return inputPeers;
+	public synchronized Enumeration<InputPeer> getInputPeers() {
+		Vector copy = (Vector) inputPeers.clone();
+		// Don't worry about the warning
+		return (Enumeration<InputPeer>) copy.elements();
 	}
 
-	public synchronized Vector<OutputPeer> getOutputPeers() {
-		return outputPeers;
+	public synchronized Enumeration<OutputPeer> getOutputPeers() {
+		return (Enumeration<OutputPeer>) outputPeers.elements();
 	}
 
 	public synchronized void addInputPeer(InputPeer peer) {
@@ -61,7 +71,8 @@ public class ConnectionDB {
 
 		// Check if it's already in the vector
 		for (int i = 0; i < outputPeers.size(); i++) {
-			if (outputPeers.get(i).hostname.equals(peer.hostname)) {
+			OutputPeer tmp = (OutputPeer) outputPeers.get(i);
+			if (tmp.hostname.equals(peer.hostname)) {
 				return;
 			}
 		}
@@ -85,8 +96,30 @@ public class ConnectionDB {
 			return;
 		}
 
-		outputPeers.add(peer);
+		outputPeers.addElement(peer);
 		Mazewar.consolePrintLn("Connected to peer " + peer.hostname);
 	}
-
+	
+	/**
+	 * Remove a peer from *both* input and output lists. Returns whether or not
+	 * it successfully removed the peer.
+	 */
+	public synchronized boolean removePeer(Peer peer) {
+		return (inputPeers.remove(peer) && outputPeers.removeElement(peer));
+	}
+	
+	/**
+	 * Expose the dataListener functions of outputPeers
+	 */
+//	public synchronized void addListDataListener(ListDataListener l) {
+//		outputPeers.addListDataListener(l);
+//	}
+//	
+//	public synchronized void removeListDataListener(ListDataListener l) {
+//		outputPeers.removeListDataListener(l);
+//	}
+	
+	public synchronized DefaultListModel getListModel() {
+		return outputPeers;
+	}
 }
