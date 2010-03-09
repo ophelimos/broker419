@@ -103,13 +103,15 @@ public class MazewarGUI extends JFrame {
 
 		// Create the start button
 		Button startButton = new Button("Start");
-		startButton.setForeground(Color.red);
-		Dimension buttonSize = startButton.getSize();
+		startButton.setForeground(Color.black);
+		startButton.setBackground(Color.red);
 		StartButtonListener startButtonListener = new StartButtonListener();
 		startButton.addMouseListener(startButtonListener);
 		
 		// Create the list of available players
 		availablePlayers = new JList(connectionDB.getListModel());
+		availablePlayers.setBorder(BorderFactory.createTitledBorder(
+				BorderFactory.createEtchedBorder(), "Available Players"));
 		
 		// Make sure changes get handled
 		playerSelectionHandler = new PlayerSelectionHandler(connectionDB);

@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.util.Scanner;
 
@@ -62,7 +63,7 @@ public class Mazewar extends JFrame {
 	public static timestamp localtimestamp;
 
 	// Global queues
-	public static clientQueue mytodoList;
+	public static clientQueue waitingForAcks;
 
 	public static clientQueue toNetwork;
 
@@ -262,17 +263,33 @@ public class Mazewar extends JFrame {
 
 		// We need to have a name, so if we haven't been given one on the
 		// command line, get it now, since nothing starts before we have a name
-		try {
-			while ((localName == null) || (localName.length() == 0)) {
-				localName = JOptionPane.showInputDialog("Enter your name");
-				if ((localName == null) || (localName.length() == 0)) {
+
+		if (localName == null) {
+			if (!consoleMode) {
+				try {
+					while ((localName == null) || (localName.length() == 0)) {
+						localName = JOptionPane
+								.showInputDialog("Enter your name");
+						if ((localName == null) || (localName.length() == 0)) {
+							consolePrintLn("Error: Invalid name");
+							continue;
+						}
+					}
+				} catch (NullPointerException e) {
 					consolePrintLn("Error: Invalid name");
-					continue;
+					System.exit(1);
+				}
+			} else {
+				System.out.println("Enter your name:");
+				BufferedReader cin = new BufferedReader(new InputStreamReader(
+						System.in));
+				try {
+					localName = cin.readLine();
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
 				}
 			}
-		} catch (NullPointerException e) {
-			consolePrintLn("Error: Invalid name");
-			System.exit(1);
 		}
 
 		// Create the maze
@@ -291,7 +308,7 @@ public class Mazewar extends JFrame {
 
 		// This is our local queue to do things on my side of the world
 		/* ==== HANDLE WITH CARE ==== */
-		mytodoList = new clientQueue();
+		waitingForAcks = new clientQueue();
 		toNetwork = new clientQueue();
 		toMaze = new clientQueue();
 

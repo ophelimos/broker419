@@ -22,12 +22,14 @@ public class ConnectionAcceptor extends Thread {
 
 	public ConnectionAcceptor(ConnectionDB connectionDB, int port) {
 		this.connectionDB = connectionDB;
-		
+
 		try {
 			serverSocket = new ServerSocket(port);
 			serverSocket.setSoTimeout(acceptorTimeout);
 		} catch (IOException e) {
 			System.err.println("ERROR: Could not listen on port " + port);
+			System.err
+					.println("Don't try to start up more than one instance of Mazewar on the same computer");
 			System.exit(-1);
 		}
 	}
