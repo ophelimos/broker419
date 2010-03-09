@@ -62,6 +62,30 @@ public class clientQueue {
 		return isgood;
 	}
 
+	public synchronized boolean istimeeql(gamePacket toinsert, gamePacket tocheck) {
+		boolean isgood = false;
+		int point1 = 0, point2 = 0, sum1 = 0, sum2 = 0;
+		// Check for both timestmap sizes
+		if (toinsert.timeogram.mytimestamp.size() != tocheck.timeogram.mytimestamp
+				.size()) {
+			return isgood;
+		}
+
+		for (point1 = 0; point1 < toinsert.timeogram.mytimestamp.size(); point1++) {
+			sum1 += toinsert.timeogram.mytimestamp.get(point1).gettime();
+		}
+
+		for (point2 = 0; point2 < tocheck.timeogram.mytimestamp.size(); point2++) {
+			sum2 = tocheck.timeogram.mytimestamp.get(point2).gettime();
+		}
+
+		if (sum1 < sum2) {
+			isgood = true;
+			return isgood;
+		}
+		return isgood;
+	}
+	
 	public synchronized gamePacket getElement() {
 		// This lineup will return firstpacket, and then remove it as well
 		if (!lineup.isEmpty()) {
