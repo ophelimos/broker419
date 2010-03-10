@@ -37,14 +37,16 @@ public class ConnectionDB {
 	 * On the other hand, these are still shallow copies, so
 	 * _don't_change_the_data!_
 	 */
+	@SuppressWarnings("unchecked")
 	public synchronized Enumeration<InputPeer> getInputPeers() {
 		Vector copy = (Vector) inputPeers.clone();
 		// Don't worry about the warning
 		return (Enumeration<InputPeer>) copy.elements();
 	}
 
+	@SuppressWarnings("unchecked")
 	public synchronized Enumeration<OutputPeer> getOutputPeers() {
-		Vector copy = (Vector) inputPeers.clone();
+		Vector copy = (Vector) outputPeers.clone();
 		// Don't worry about the warning
 		return (Enumeration<OutputPeer>) copy.elements();
 	}
@@ -93,6 +95,15 @@ public class ConnectionDB {
 
 			// Also put it in the list of stringified peers
 			stringified_peers.addElement(peer.hostname);
+			
+			// Send it a message telling it what our name is
+			gamePacket nameMessage = new gamePacket();
+			nameMessage.type = gamePacket.GP_MYNAME;
+			nameMessage.senderName = Mazewar.localName;
+			nameMessage.wantACK = false;
+			nameMessage.ACK = false;
+			
+			Mazewar.toNetwork.addtoQueue(nameMessage);
 
 		} catch (UnknownHostException e) {
 			Mazewar.consolePrintLn("Invalid hostname received from SLP!!!");
@@ -106,14 +117,28 @@ public class ConnectionDB {
 		outputPeers.addElement(peer);
 		Mazewar.consolePrintLn("Connected to peer " + peer.hostname);
 	}
+	
+	public synchronized boolean addPlayerName(String playerName, String hostname) {
+		int position = stringified_peers.indexOf(hostname);
+		if (position == -1) {
+			return false;
+		}
+		
+		// Otherwise, it's there, replace it
+		stringified_peers.set(position, playerName + "@" + hostname);
+		return true;
+	}
 
 	/**
 	 * Remove a peer from *both* input and output lists. Returns whether or not
 	 * it successfully removed the peer.
 	 */
 	public synchronized boolean removePeer(Peer peer) {
-		return (inputPeers.remove(peer) && outputPeers.removeElement(peer) && stringified_peers
-				.removeElement(peer.hostname));
+		boolean success = true;
+		success = inputPeers.remove(peer);
+		success = outputPeers.removeElement(peer);
+		success = stringified_peers.removeElement(peer.hostname);
+		return success;
 	}
 
 	/**

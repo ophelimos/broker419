@@ -103,7 +103,7 @@ public class MazewarGUI extends JFrame {
 
 		// Create the start button
 		Button startButton = new Button("Start");
-		startButton.setForeground(Color.black);
+		startButton.setForeground(Color.white);
 		startButton.setBackground(Color.red);
 		StartButtonListener startButtonListener = new StartButtonListener();
 		startButton.addMouseListener(startButtonListener);

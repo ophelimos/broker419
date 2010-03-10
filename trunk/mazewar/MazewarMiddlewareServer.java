@@ -15,6 +15,8 @@ public class MazewarMiddlewareServer extends Thread {
 	// Reasonable batch of packets to process at once
 	private final int processBatch = 256;
 
+	private boolean debug = true;
+
 	private ConnectionDB connectionDB;
 
 	// Queues used for communication - moved to MazeWar
@@ -46,9 +48,11 @@ public class MazewarMiddlewareServer extends Thread {
 					IOException nullReceived = new IOException();
 					throw nullReceived;
 				}
-				// Otherwise, we got a packet, synchronize our timestamps
-				Mazewar.localtimestamp.max(receivedPacket.timeogram);
+				if (debug) {
+					printPacket(receivedPacket);
+				}
 
+				// Handle ACKing
 				if (receivedPacket.ACK) {
 					// haveALL add the ACK count and it returns true if we have
 					// all, returns true, else false
@@ -58,14 +62,39 @@ public class MazewarMiddlewareServer extends Thread {
 						// Put it in the toMaze queue
 						Mazewar.toMaze.addtoSortedQueue(ackedPacket);
 					}
-				} else {
-					// If it's not an ACK, throw it on the (sorted) toMaze queue
-					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 				}
+				if (receivedPacket.wantACK) {
+					// Send an ACK
+					gamePacket ackPacket = new gamePacket(receivedPacket);
+					ackPacket.ACK = true;
+					ackPacket.wantACK = false;
+					Mazewar.toNetwork.addtoQueue(ackPacket);
+				}
+
+				if (receivedPacket.type == gamePacket.GP_COMMAND) {
+					// Synchronize our timestamps
+					Mazewar.localtimestamp.max(receivedPacket.timeogram);
+
+					// Put it on the toMaze queue
+					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
+				} else if (receivedPacket.type == gamePacket.GP_MYNAME) {
+					connectionDB.addPlayerName(receivedPacket.senderName,
+							curPeer.hostname);
+				} else if (receivedPacket.type == gamePacket.GP_STARTGAME) {
+					// Start the game
+					Mazewar.consolePrintLn("Starting the game!!!");
+				} else {
+					Mazewar.consolePrintLn("Error: untyped packet received!");
+					printPacket(receivedPacket);
+				}
+
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
 				continue;
 			} catch (IOException e) {
+				if (debug) {
+					System.out.print(e.getStackTrace());
+				}
 				Mazewar.consolePrint("Connection failed with "
 						+ curPeer.hostname
 						+ "\n Removing from connection list...");
@@ -171,6 +200,61 @@ public class MazewarMiddlewareServer extends Thread {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Print all the info in a gamePacket, for debugging
+	 * 
+	 */
+	public void printPacket(gamePacket packet) {
+		Mazewar.consolePrintLn("----Packet Info----");
+		Mazewar.consolePrintLn("Packet Info: type = " + packet.type
+				+ " nextmove = " + packet.nextmove + " trackACK = "
+				+ packet.trackACK + " senderName = " + packet.senderName
+				+ " wantACK = " + packet.wantACK + " ACK = " + packet.ACK);
+
+		// Timestamp
+		Mazewar.consolePrintLn("Timestamp: " + packet.timeogram.toString());
+
+		// MazewarMsg
+		Mazewar.consolePrint("MazewarMsg = ");
+		if (packet.msg == null) {
+			Mazewar.consolePrint("null\n");
+		} else {
+			switch (packet.msg.action) {
+			case MazewarMsg.MW_MSG_LEFT:
+				Mazewar.consolePrint("turnLeft\n");
+				break;
+			case MazewarMsg.MW_MSG_RIGHT:
+				Mazewar.consolePrint("turnRight\n");
+				break;
+			case MazewarMsg.MW_MSG_FWD:
+				Mazewar.consolePrint("moveForward\n");
+				break;
+			case MazewarMsg.MW_MSG_BKWD:
+				Mazewar.consolePrint("moveBackward\n");
+				break;
+			case MazewarMsg.MW_MSG_FIRE:
+				Mazewar.consolePrint("fire\n");
+				break;
+			case MazewarMsg.MW_MSG_CLIENT_ADDED:
+				Mazewar.consolePrint("client_added\n");
+				break;
+			case MazewarMsg.MW_MSG_CLIENT_REMOVED:
+				Mazewar.consolePrint("client_removed\n");
+				break;
+			case MazewarMsg.MW_MSG_CLIENT_ADDED_FIN:
+				Mazewar.consolePrint("client_added_fin\n");
+				break;
+			case MazewarMsg.MW_MSG_CLIENT_KILLED:
+				Mazewar.consolePrint("client_killed\n");
+				break;
+			default:
+				Mazewar.consolePrintLn("BAD\n");
+				break;
+			}
+		}
+		Mazewar.consolePrintLn("----End Packet Info----");
 	}
 
 	public void run() {

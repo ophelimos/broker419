@@ -1,7 +1,10 @@
+import java.io.Serializable;
+
 //this is a simple object that holds the name of the player and its timestamp value
 
-public class vectorobj {
-	
+public class vectorobj implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 	private int timeval;
 	protected String playername;
 	

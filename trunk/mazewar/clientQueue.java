@@ -108,7 +108,7 @@ public class clientQueue {
 					&& (lineup.get(point).ACK) && (checkfor.ACK)) {
 				//the timestamps are same for these packets so we shall increment the 
 				//trackACK on the packet in queue
-				lineup.get(point).addtrack();
+				lineup.get(point).trackACK++;
 				foundinqueue = true;
 				break;
 			}
@@ -126,7 +126,7 @@ public class clientQueue {
 		//==========================================
 		//By now it is certain that this is the first ACK for this timestamp, so add in queue
 		if(!foundinqueue) {
-			checkfor.addtrack();
+			checkfor.trackACK++;
 			lineup.add(checkfor);
 		}
 		// We dont have all the ACKs yet
