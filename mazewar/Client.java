@@ -289,8 +289,12 @@ public abstract class Client implements Serializable {
 		onetogo.msg = msg;
 		fortomaze.msg = msg;
 		
+		// Set type to command
+		onetogo.type = gamePacket.GP_COMMAND;
+		fortomaze.type = gamePacket.GP_COMMAND;
+		
 		//set the action for there packets
-		onetogo.setnextmove(theaction);
+		onetogo.nextmove = theaction;
 		
 		//Set sender's name in packet
 		onetogo.senderName = Mazewar.localName;
@@ -305,7 +309,7 @@ public abstract class Client implements Serializable {
 		Mazewar.toNetwork.addtoQueue(onetogo);
 		
 		//set the action for there packets
-		fortomaze.setnextmove(theaction);
+		fortomaze.nextmove = theaction;
 		
 		//Set sender's name in packet
 		fortomaze.senderName = Mazewar.localName;

@@ -1,7 +1,10 @@
-import java.util.*;
+import java.io.Serializable;
+import java.util.Vector;
 
-public class timestamp {
+public class timestamp implements Serializable {
 
+	private static final long serialVersionUID = 1L;
+	
 	//A vector timestamp is owned by a client which has a player name
 	//Fixed size of 4
 	public Vector<vectorobj> mytimestamp = new Vector<vectorobj>(Mazewar.maxPlayers,1);
@@ -122,6 +125,16 @@ public class timestamp {
 			}
 		}
 		return false;
+	}
+	
+	public String toString() {
+		String tmpString = "";
+		for (int i = 0; i < mytimestamp.size(); i++) {
+			int stamp = mytimestamp.get(i).gettime();
+			String timeStamp = Integer.toString(stamp);
+			tmpString.concat(mytimestamp.get(i).playername + ":" + timeStamp + "|");
+		}
+		return tmpString;
 	}
 
 }
