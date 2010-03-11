@@ -22,7 +22,7 @@ public class MazewarMiddlewareServer extends Thread {
 	MazeImpl maze = null;
 
 	MazewarSLP slpserver = null;
-	
+
 	MazewarGUI mazewarGUI = null;
 
 	public MazewarMiddlewareServer(ConnectionDB connectionDB_in,
@@ -153,10 +153,12 @@ public class MazewarMiddlewareServer extends Thread {
 
 			// If we have something waiting for an ACK that's older than
 			// something to send to the maze, wait for it to get ACKed
-			if (Mazewar.toMaze.isTimeLessThan(Mazewar.waitingForAcks.lineup
-					.get(0), Mazewar.toMaze.lineup.get(0))) {
-				Mazewar.consolePrintLn("Waiting for an ACK...");
-				break;
+			if (!Mazewar.waitingForAcks.lineup.isEmpty()) {
+				if (Mazewar.toMaze.isTimeLessThan(Mazewar.waitingForAcks.lineup
+						.get(0), Mazewar.toMaze.lineup.get(0))) {
+					Mazewar.consolePrintLn("Waiting for an ACK...");
+					break;
+				}
 			}
 
 			gamePacket mostRecentPacket = Mazewar.toMaze.getElement();
@@ -259,7 +261,8 @@ public class MazewarMiddlewareServer extends Thread {
 				+ " NACK = " + packet.NACK);
 
 		// Timestamp
-		Mazewar.consolePrintLn("Timestamp: " + packet.timeogram.toString());
+		Mazewar.consolePrintLn("Timestamp: ");
+		packet.timeogram.printVTS();
 
 		// MazewarMsg
 		Mazewar.consolePrint("MazewarMsg = ");
@@ -312,12 +315,12 @@ public class MazewarMiddlewareServer extends Thread {
 
 		// Shut down SLP
 		slpserver.stopServer();
-		
+
 		// Set our state to PLAYING
 		Mazewar.setPlaying();
 
 		// Boot all nodes except the ones we're playing with
-		
+
 		// Get the current list of output peers
 		Enumeration<OutputPeer> networkPeers = connectionDB.getOutputPeers();
 
@@ -326,20 +329,24 @@ public class MazewarMiddlewareServer extends Thread {
 		while (networkPeers.hasMoreElements()) {
 			curPeer = networkPeers.nextElement();
 			for (int i = 0; i < startPacket.numPlayers; i++) {
-				if (startPacket.playerlist[i].equals(curPeer.hostname)) {
-					continue;
+				if (!startPacket.playerlist[i].equals(curPeer.hostname)) {
+//					 Kill the connection
+					connectionDB.removePeer(curPeer);
 				}
 			}
-			// Kill the connection
-			connectionDB.removePeer(curPeer);
+			
 		}
-		
+
 		// Make remote clients for everyone we're playing with
 		for (int i = 0; i < startPacket.numPlayers; i++) {
 			RemoteClient newPlayer = new RemoteClient(startPacket.playerlist[i]);
 			Mazewar.actualPlayers.add(newPlayer);
 			maze.addClient(newPlayer);
 		}
+		
+		// Remove unneeded graphics
+		mazewarGUI.removeAvailablePlayers();
+		mazewarGUI.removeStartButton();
 
 		// Attach the keyboard to the GUIclient
 		mazewarGUI.turnOnGUIClient();

@@ -15,6 +15,11 @@ public class vectorobj implements Serializable {
 		playername = playernameinit;
 	}
 	
+	public vectorobj clone() {
+		vectorobj newobj = new vectorobj(this.timeval, this.playername);
+		return newobj;
+	}
+	
 	public void settime(int newtime){
 		timeval = newtime;
 	}

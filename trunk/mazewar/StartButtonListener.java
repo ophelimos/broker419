@@ -58,6 +58,10 @@ public class StartButtonListener implements MouseListener {
 		gamePacket startGamePacket = new gamePacket();
 		startGamePacket.type = gamePacket.GP_STARTGAME;
 		startGamePacket.wantACK = false;
+		
+		// TODO: Testing purposes
+//		vectorobj myname = new vectorobj(8787, "Bobbie");
+//		startGamePacket.timeogram = new timestamp(myname);
 
 		// Create a list of the players in the game
 		String[] myTeam = new String[mazewarGUI.selectedPlayers.size()];

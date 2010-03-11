@@ -50,7 +50,7 @@ public class gamePacket implements Serializable {
 
 	public gamePacket() {
 		senderName = Mazewar.localName;
-		timeogram = Mazewar.localtimestamp;
+		timeogram = Mazewar.localtimestamp.clone();
 	}
 
 	// Copy constructor - just shallow copies for now, since nothing else should

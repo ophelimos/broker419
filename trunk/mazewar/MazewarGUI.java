@@ -42,6 +42,11 @@ public class MazewarGUI extends JFrame {
 	 * 
 	 */
 	private JList availablePlayers = null;
+	
+	/**
+	 * The start button
+	 */
+	private Button startButton = null;
 
 	/**
 	 * And the functions handling its changes
@@ -70,6 +75,20 @@ public class MazewarGUI extends JFrame {
 	 */
 	public void turnOffGUIClient() {
 		this.removeKeyListener(guiClient);
+	}
+	
+	/**
+	 * Remove the start button
+	 */
+	public void removeStartButton() {
+		getContentPane().remove(startButton);
+	}
+	
+	/**
+	 * Remove the player list
+	 */
+	public void removeAvailablePlayers() {
+		getContentPane().remove(availablePlayers);
 	}
 	
 	/**
@@ -135,7 +154,7 @@ public class MazewarGUI extends JFrame {
 				BorderFactory.createEtchedBorder(), "Scores"));
 
 		// Create the start button
-		Button startButton = new Button("Start");
+		startButton = new Button("Start");
 		startButton.setForeground(Color.white);
 		startButton.setBackground(Color.red);
 		StartButtonListener startButtonListener = new StartButtonListener(this);
