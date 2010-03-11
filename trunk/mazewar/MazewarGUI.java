@@ -157,7 +157,7 @@ public class MazewarGUI extends JFrame {
 	
 	public void addStartButton() {
 //		 Create the start button
-		startButton = new Button("Start");
+		startButton = new Button("Start Game");
 		startButton.setForeground(Color.white);
 		startButton.setBackground(Color.red);
 		StartButtonListener startButtonListener = new StartButtonListener(this);
