@@ -371,6 +371,8 @@ public class MazewarMiddlewareServer extends Thread {
 		// Remove unneeded graphics
 		mazewarGUI.removeAvailablePlayers();
 		mazewarGUI.removeStartButton();
+		
+		mazewarGUI.pack();
 
 		// Attach the keyboard to the GUIclient
 		mazewarGUI.turnOnGUIClient();
