@@ -365,14 +365,14 @@ public class MazewarMiddlewareServer extends Thread {
 			}
 		}
 		
-		// Add maze graphics
-		mazewarGUI.addOverheadPanel();
-		mazewarGUI.addScoreTable();
-
 		// Remove unneeded graphics
 		mazewarGUI.removeAvailablePlayers();
 		mazewarGUI.removeStartButton();
 		
+		// Add maze graphics
+		mazewarGUI.addOverheadPanel();
+		mazewarGUI.addScoreTable();
+
 		mazewarGUI.pack();
 
 		// Attach the keyboard to the GUIclient
