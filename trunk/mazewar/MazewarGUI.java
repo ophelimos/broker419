@@ -47,11 +47,13 @@ public class MazewarGUI extends JFrame {
 	 * The start button
 	 */
 	private Button startButton = null;
+	
+	private ConnectionDB connectionDB;
 
 	/**
 	 * And the functions handling its changes
 	 */
-	PlayerSelectionHandler playerSelectionHandler;
+	PlayerSelectionHandler playerSelectionHandler = new PlayerSelectionHandler(connectionDB, this);
 
 	/**
 	 * Selected players (manipulated elsewhere, but this gives a nice central
@@ -96,11 +98,49 @@ public class MazewarGUI extends JFrame {
 		overheadPanel.repaint();
 	}
 	
+	public StartButtonListener startButtonListener = new StartButtonListener(this);
+	
+	public void addStartButton() {
+//		 Create the start button
+		startButton = new Button("Start Game");
+		startButton.setForeground(Color.white);
+		startButton.setBackground(Color.red);
+		startButton.addMouseListener(startButtonListener);
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 0;
+		c.gridy = 1;
+		layout.setConstraints(startButton, c);
+		
+		getContentPane().add(startButton);
+	}
+	
 	/**
 	 * Remove the start button
 	 */
 	public void removeStartButton() {
 		getContentPane().remove(startButton);
+		startButton.removeMouseListener(startButtonListener);
+		startButton = null;
+	}
+	
+	public void addAvailablePlayers() {
+//		 Create the list of available players
+		availablePlayers = new JList(connectionDB.getListModel());
+		availablePlayers.setBorder(BorderFactory.createTitledBorder(
+				BorderFactory.createEtchedBorder(), "Available Players"));
+
+		// Make sure changes get handled
+		availablePlayers.addListSelectionListener(playerSelectionHandler);
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 1;
+		c.gridy = 0;
+		c.ipadx = 200;
+		c.ipady = 200;
+		layout.setConstraints(availablePlayers, c);
+		
+		getContentPane().add(availablePlayers);
 	}
 	
 	/**
@@ -108,6 +148,8 @@ public class MazewarGUI extends JFrame {
 	 */
 	public void removeAvailablePlayers() {
 		getContentPane().remove(availablePlayers);
+		availablePlayers.removeListSelectionListener(playerSelectionHandler);
+		availablePlayers = null;
 	}
 	
 	/**
@@ -128,7 +170,7 @@ public class MazewarGUI extends JFrame {
 	 * 
 	 */
 	
-	public void startScoreTable() {
+	public void addScoreTable() {
 //		 Have the ScoreTableModel listen to the maze to find
 		// out how to adjust scores.
 		ScoreTableModel scoreModel = new ScoreTableModel();
@@ -155,42 +197,6 @@ public class MazewarGUI extends JFrame {
 		getContentPane().add(scoreScrollPane);
 	}
 	
-	public void addStartButton() {
-//		 Create the start button
-		startButton = new Button("Start Game");
-		startButton.setForeground(Color.white);
-		startButton.setBackground(Color.red);
-		StartButtonListener startButtonListener = new StartButtonListener(this);
-		startButton.addMouseListener(startButtonListener);
-		
-		GridBagConstraints c = new GridBagConstraints();
-		c.gridx = 0;
-		c.gridy = 1;
-		layout.setConstraints(startButton, c);
-		
-		getContentPane().add(startButton);
-	}
-	
-	public void addAvailablePlayers() {
-//		 Create the list of available players
-		availablePlayers = new JList(connectionDB.getListModel());
-		availablePlayers.setBorder(BorderFactory.createTitledBorder(
-				BorderFactory.createEtchedBorder(), "Available Players"));
-
-		// Make sure changes get handled
-		playerSelectionHandler = new PlayerSelectionHandler(connectionDB, this);
-		availablePlayers.addListSelectionListener(playerSelectionHandler);
-		
-		GridBagConstraints c = new GridBagConstraints();
-		c.gridx = 1;
-		c.gridy = 0;
-		c.ipadx = 200;
-		c.ipady = 200;
-		layout.setConstraints(availablePlayers, c);
-		
-		getContentPane().add(availablePlayers);
-	}
-	
 	public void addConsole() {
 //		 Don't allow editing the console from the GUI
 		Mazewar.console.setEditable(false);
@@ -215,8 +221,6 @@ public class MazewarGUI extends JFrame {
 		
 		getContentPane().add(consoleScrollPane);
 	}
-	
-	private ConnectionDB connectionDB;
 
 	/**
 	 * Actually start the GUI

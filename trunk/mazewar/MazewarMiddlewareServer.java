@@ -363,6 +363,10 @@ public class MazewarMiddlewareServer extends Thread {
 				maze.addClient(newPlayer);
 			}
 		}
+		
+		// Add maze graphics
+		mazewarGUI.addOverheadPanel();
+		mazewarGUI.addScoreTable();
 
 		// Remove unneeded graphics
 		mazewarGUI.removeAvailablePlayers();
