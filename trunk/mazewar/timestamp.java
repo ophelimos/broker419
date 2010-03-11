@@ -139,9 +139,9 @@ public class timestamp implements Serializable {
 	
 	public void printVTS(){
 		for (int i= 0; i <= this.mytimestamp.size(); i++){
-			System.out.println(this.mytimestamp.get(i).getplayer() + ": " + this.mytimestamp.get(i).gettime() + "\n");
+			Mazewar.consolePrintLn(this.mytimestamp.get(i).getplayer() + ": " + this.mytimestamp.get(i).gettime() + "\n");
 		}
-		System.out.println("\n");
+		Mazewar.consolePrintLn("\n");
 	}
 
 }
