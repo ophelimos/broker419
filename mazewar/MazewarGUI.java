@@ -93,6 +93,9 @@ public class MazewarGUI extends JFrame {
 		c.fill = GridBagConstraints.BOTH;
 		c.gridx = 1;
 		c.gridy = 0;
+		c.ipadx = 10;
+		c.ipady = 10;
+		c.weightx = 1;
 		layout.setConstraints(overheadPanel, c);
 		overheadPanel.repaint();
 	}
@@ -195,6 +198,8 @@ public class MazewarGUI extends JFrame {
 		c.ipady = 100;
 		c.gridx = 0;
 		c.gridy = 1;
+		c.weightx = 2;
+		c.gridwidth = 2;
 		layout.setConstraints(scoreScrollPane, c);
 		
 		getContentPane().add(scoreScrollPane);
