@@ -56,6 +56,7 @@ public class gamePacket implements Serializable {
 	// Copy constructor - just shallow copies for now, since nothing else should
 	// be changing
 	public gamePacket(gamePacket fromPacket) {
+		this.type = fromPacket.type;
 		this.nextmove = fromPacket.nextmove;
 		this.trackACK = fromPacket.trackACK;
 		this.senderName = fromPacket.senderName;
