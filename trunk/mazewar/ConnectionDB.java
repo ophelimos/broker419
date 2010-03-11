@@ -103,7 +103,7 @@ public class ConnectionDB {
 			nameMessage.wantACK = false;
 			nameMessage.ACK = false;
 			
-			Mazewar.toNetwork.addtoQueue(nameMessage);
+			peer.out.writeObject(nameMessage);
 
 		} catch (UnknownHostException e) {
 			Mazewar.consolePrintLn("Invalid hostname received from SLP!!!");
