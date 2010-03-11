@@ -22,9 +22,9 @@ import javax.swing.event.ListDataListener;
 public class ConnectionDB {
 
 	// List of my peers on the network
-	private Vector<InputPeer> inputPeers = new Vector<InputPeer>();
+	public Vector<InputPeer> inputPeers = new Vector<InputPeer>();
 
-	public Vector<OutputPeer> outputPeers = new Vector<OutputPeer>();
+	private Vector<OutputPeer> outputPeers = new Vector<OutputPeer>();
 
 	// Used to update the listBox
 	private DefaultListModel stringified_peers = new DefaultListModel();
@@ -59,6 +59,9 @@ public class ConnectionDB {
 			// Only spend a maximum of a millisecond waiting for a packet
 			// that might not be coming
 			peer.socket.setSoTimeout(1);
+			
+//			 Also put it in the list of stringified peers
+			stringified_peers.addElement(peer.hostname);
 
 			peer.in = new ObjectInputStream(peer.socket.getInputStream());
 
@@ -76,8 +79,8 @@ public class ConnectionDB {
 	public synchronized void addOutputPeer(OutputPeer peer) {
 
 		// Check if it's already in the vector
-		for (int i = 0; i < outputPeers.size(); i++) {
-			OutputPeer tmp = (OutputPeer) outputPeers.get(i);
+		for (int i = 0; i < inputPeers.size(); i++) {
+			InputPeer tmp = (InputPeer) inputPeers.get(i);
 			if (tmp.hostname.equals(peer.hostname)) {
 				return;
 			}
@@ -92,9 +95,6 @@ public class ConnectionDB {
 			peer.socket.setSoTimeout(1);
 
 			peer.out = new ObjectOutputStream(peer.socket.getOutputStream());
-
-			// Also put it in the list of stringified peers
-			stringified_peers.addElement(peer.hostname);
 			
 			// Send it a message telling it what our name is
 			gamePacket nameMessage = new gamePacket();
@@ -127,8 +127,8 @@ public class ConnectionDB {
 		// Otherwise, it's there, replace it
 		stringified_peers.set(position, playerName + "@" + hostname);
 		
-		// Do the same thing with outputPeers
-		outputPeers.get(position).playerName = playerName;
+		// Do the same thing with inputPeers
+		inputPeers.get(position).playerName = playerName;
 		return true;
 	}
 

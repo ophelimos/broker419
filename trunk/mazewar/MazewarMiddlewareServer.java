@@ -72,6 +72,12 @@ public class MazewarMiddlewareServer extends Thread {
 					}
 				}
 
+				if (receivedPacket.wantACK) {
+					// Send an ACK
+					sendACK(receivedPacket);
+				}
+
+				/**** Sorting packets by type ******/
 				if (receivedPacket.type == gamePacket.GP_STARTGAME) {
 
 					// The only thing it can be is a command. Throw it on
@@ -81,22 +87,18 @@ public class MazewarMiddlewareServer extends Thread {
 					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 
 					continue;
-				}
-
-				if (receivedPacket.wantACK) {
-					// Send an ACK
-					sendACK(receivedPacket);
-				}
-
-				if (receivedPacket.type == gamePacket.GP_COMMAND) {
+					
+				} else if (receivedPacket.type == gamePacket.GP_COMMAND) {
 					// Synchronize our timestamps
 					Mazewar.localtimestamp.max(receivedPacket.timeogram);
 
 					// Put it on the toMaze queue
 					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
+					
 				} else if (receivedPacket.type == gamePacket.GP_MYNAME) {
 					connectionDB.addPlayerName(receivedPacket.senderName,
 							curPeer.hostname);
+					
 				} else {
 					Mazewar.consolePrintLn("Error: untyped packet received!");
 					printPacket(receivedPacket);
@@ -361,9 +363,9 @@ public class MazewarMiddlewareServer extends Thread {
 	}
 
 	public String getPlayerName(String hostname) {
-		for (int i = 0; i < connectionDB.outputPeers.size(); i++) {
-			if (hostname.equals(connectionDB.outputPeers.get(i).hostname)) {
-				return connectionDB.outputPeers.get(i).playerName;
+		for (int i = 0; i < connectionDB.inputPeers.size(); i++) {
+			if (hostname.equals(connectionDB.inputPeers.get(i).hostname)) {
+				return connectionDB.inputPeers.get(i).playerName;
 			}
 		}
 

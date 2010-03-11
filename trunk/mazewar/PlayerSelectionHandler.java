@@ -39,7 +39,7 @@ public class PlayerSelectionHandler implements ListSelectionListener {
 		int minIndex = lsm.getMinSelectionIndex();
 		int maxIndex = lsm.getMaxSelectionIndex();
 		// This is dangerous, because it's handling the actual object
-		Vector<OutputPeer> availablePlayers = connectionDB.outputPeers;
+		Vector<InputPeer> availablePlayers = connectionDB.inputPeers;
 		for (int i = minIndex; i <= maxIndex; i++) {
 			if (lsm.isSelectedIndex(i)) {
 				mazewarGUI.selectedPlayers.add((Peer)availablePlayers.get(i));
