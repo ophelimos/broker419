@@ -63,7 +63,7 @@ public class Mazewar extends JFrame {
 	public static int slpPort = 2048;
 
 	// My IP address
-	public static String ipAddress = null;
+	public static String hostname = null;
 
 	// The global port all direct network conenctions are running on
 	public static int directPort = slpPort - 1;
@@ -399,7 +399,7 @@ public class Mazewar extends JFrame {
 		try {
 			InetAddress addr;
 			addr = InetAddress.getLocalHost();
-			ipAddress = addr.getHostAddress();
+			hostname = addr.getHostAddress();
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
