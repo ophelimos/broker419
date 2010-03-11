@@ -103,6 +103,11 @@ public class MazewarSLP extends Thread {
 			// socket breaks)
 			String hostname = cur.getHost();
 			String hostnameCleaned = hostname.substring(1);
+			
+			// Do not add ourselves
+			if (hostnameCleaned.equals(Mazewar.hostname)) {
+				continue;
+			}
 
 			// Only create an output stream here. The acceptor part will
 			// create the input stream. Essentially, all socket connections

@@ -173,7 +173,7 @@ public class MazewarMiddlewareServer extends Thread {
 				// Make sure the packet's actually for us
 				boolean forUs = false;
 				for (int j = 0; j < mostRecentPacket.numPlayers; j++) {
-					if (mostRecentPacket.playerlist[i].equals(Mazewar.ipAddress)) {
+					if (mostRecentPacket.playerlist[i].equals(Mazewar.hostname)) {
 						forUs = true;
 						break;
 					}
@@ -324,8 +324,7 @@ public class MazewarMiddlewareServer extends Thread {
 	 * 
 	 */
 	private void startGame(gamePacket startPacket) {
-		// ACK the successfully received packet
-		sendACK(startPacket);
+		// No ACKing startGame packets
 		
 		// Stop accepting connections
 		Mazewar.acceptingNewConnections = false;
