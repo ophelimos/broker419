@@ -157,7 +157,7 @@ public class timestamp implements Serializable {
 	}
 	
 	public String printVTS(){
-		String toreturn = null;
+		String toreturn = "";
 		for (int i= 0; i < this.mytimestamp.size(); i++){
 			toreturn.concat(this.mytimestamp.get(i).getplayer());
 			toreturn.concat(" ");
