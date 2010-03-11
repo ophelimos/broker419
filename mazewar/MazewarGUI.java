@@ -53,7 +53,7 @@ public class MazewarGUI extends JFrame {
 	/**
 	 * And the functions handling its changes
 	 */
-	PlayerSelectionHandler playerSelectionHandler = new PlayerSelectionHandler(connectionDB, this);
+	PlayerSelectionHandler playerSelectionHandler = null;
 
 	/**
 	 * Selected players (manipulated elsewhere, but this gives a nice central
@@ -98,13 +98,14 @@ public class MazewarGUI extends JFrame {
 		overheadPanel.repaint();
 	}
 	
-	public StartButtonListener startButtonListener = new StartButtonListener(this);
+	public StartButtonListener startButtonListener = null;
 	
 	public void addStartButton() {
 //		 Create the start button
 		startButton = new Button("Start Game");
 		startButton.setForeground(Color.white);
 		startButton.setBackground(Color.red);
+		startButtonListener = new StartButtonListener(this);
 		startButton.addMouseListener(startButtonListener);
 		
 		GridBagConstraints c = new GridBagConstraints();
@@ -131,6 +132,7 @@ public class MazewarGUI extends JFrame {
 				BorderFactory.createEtchedBorder(), "Available Players"));
 
 		// Make sure changes get handled
+		playerSelectionHandler = new PlayerSelectionHandler(connectionDB, this);
 		availablePlayers.addListSelectionListener(playerSelectionHandler);
 		
 		GridBagConstraints c = new GridBagConstraints();
