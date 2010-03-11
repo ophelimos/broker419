@@ -22,6 +22,8 @@ public class MazewarSLP extends Thread {
 
 	public static ServiceURL mazewarService = null;
 
+	boolean killServer = false;
+
 	private Locator locator = null;
 
 	private ServiceLocationEnumeration slpPeers = null;
@@ -31,6 +33,7 @@ public class MazewarSLP extends Thread {
 	private ConnectionDB connectionDB;
 
 	public MazewarSLP(ConnectionDB connectionDB_in) {
+		super("Mazewar SLP Locator");
 		connectionDB = connectionDB_in;
 	}
 
@@ -109,14 +112,17 @@ public class MazewarSLP extends Thread {
 			connectionDB.addOutputPeer(newPeer);
 		}
 	}
-	
+
 	public void stopServer() {
 		try {
-		mazewarService = new ServiceURL("service:mazewar:server://"
-				+ advertiser.getMyIP() + ":" + Mazewar.slpPort,
-				ServiceURL.LIFETIME_PERMANENT);
-		advertiser.deregister(mazewarService);
-		
+			killServer = true;
+			mazewarService = new ServiceURL("service:mazewar:server://"
+					+ advertiser.getMyIP() + ":" + Mazewar.slpPort,
+					ServiceURL.LIFETIME_PERMANENT);
+			advertiser.deregister(mazewarService);
+			advertiser = null;
+			mazewarService = null;
+			locator = null;
 		} catch (ServiceLocationException e) {
 			Mazewar.consolePrintLn("Failed to shut down jSLP server");
 			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
@@ -137,6 +143,9 @@ public class MazewarSLP extends Thread {
 		while (true) {
 			try {
 				sleep(scanWaitTime);
+				if (killServer) {
+					return;
+				}
 				newPeers = findNodes();
 			} catch (InterruptedException e) {
 				findNodes();

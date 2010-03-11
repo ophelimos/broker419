@@ -284,7 +284,7 @@ public abstract class Client implements Serializable {
 		Mazewar.localtimestamp.increment(Mazewar.localName);
 		
 		gamePacket onetogo = new gamePacket();
-		gamePacket fortomaze = new gamePacket();
+		gamePacket needsToBeAcked = new gamePacket();
 		
 		// Make sure we identify ourself in the cw
 		CommClientWrapper cw = new CommClientWrapper(Mazewar.localName);
@@ -292,11 +292,11 @@ public abstract class Client implements Serializable {
 		
 		// Add the MazewarMsg's
 		onetogo.msg = msg;
-		fortomaze.msg = msg;
+		needsToBeAcked.msg = msg;
 		
 		// Set type to command
 		onetogo.type = gamePacket.GP_COMMAND;
-		fortomaze.type = gamePacket.GP_COMMAND;
+		needsToBeAcked.type = gamePacket.GP_COMMAND;
 		
 		//set the action for there packets
 		onetogo.nextmove = theaction;
@@ -315,20 +315,20 @@ public abstract class Client implements Serializable {
 		Mazewar.toNetwork.addtoQueue(onetogo);
 
 		//set the action for there packets
-		fortomaze.nextmove = theaction;
+		needsToBeAcked.nextmove = theaction;
 		
 		//Set sender's name in packet
-		fortomaze.senderName = Mazewar.localName;
+		needsToBeAcked.senderName = Mazewar.localName;
 
 		//Set the timestamps for these packets
-		fortomaze.timeogram = Mazewar.localtimestamp;
+		needsToBeAcked.timeogram = Mazewar.localtimestamp;
 		
 		//Set this packet as a firsttime packet
-		fortomaze.wantACK = true;
+		needsToBeAcked.wantACK = true;
 		
-		fortomaze.msg.action = theaction;
+		needsToBeAcked.msg.action = theaction;
 		//Add to the toMAZE queue | must be in sorted order
-		Mazewar.toMaze.addtoSortedQueue(fortomaze);
+		Mazewar.waitingForAcks.addtoSortedQueue(needsToBeAcked);
 	}
 	
 }

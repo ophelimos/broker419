@@ -26,7 +26,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -53,12 +55,15 @@ public class Mazewar extends JFrame {
 	public static final int STATUS_INVITING = 1;
 
 	public static final int STATUS_PLAYING = 2;
-	
+
 	// The people we're actually playing with right now
 	public static Vector<RemoteClient> actualPlayers = new Vector<RemoteClient>();
 
 	// The global port SLP is running on
 	public static int slpPort = 2048;
+
+	// My IP address
+	public static String ipAddress = null;
 
 	// The global port all direct network conenctions are running on
 	public static int directPort = slpPort - 1;
@@ -104,6 +109,11 @@ public class Mazewar extends JFrame {
 
 	// The socket I receive connections from other people on
 	public static ServerSocket serverSocket = null;
+	
+	/**
+	 * The pointer to the GUI object
+	 */
+	public static MazewarGUI mazewarGUI = null;
 
 	/**
 	 * The {@link Maze} that the game uses.
@@ -258,17 +268,20 @@ public class Mazewar extends JFrame {
 			return false;
 		}
 
+		mazewarGUI.setTitle("Inviting");
 		status = STATUS_INVITING;
 		return true;
 	}
 
 	public static synchronized boolean setPlaying() {
 		status = STATUS_PLAYING;
+		mazewarGUI.setTitle("Playing");
 		return true;
 	}
 
 	public static synchronized boolean setWaiting() {
 		status = STATUS_WAITING;
+		mazewarGUI.setTitle("Waiting");
 		return true;
 	}
 
@@ -382,6 +395,15 @@ public class Mazewar extends JFrame {
 			// maze.addClient(new RobotClient("Marvin"));
 		}
 
+		// Figure out who I am
+		try {
+			InetAddress addr;
+			addr = InetAddress.getLocalHost();
+			ipAddress = addr.getHostAddress();
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		}
+
 		/* Set up the networking using SLP */
 		slpServer = new MazewarSLP(connectionDB);
 		slpServer.start();
@@ -393,7 +415,7 @@ public class Mazewar extends JFrame {
 			/* Create the GUI */
 			if (!consoleMode) {
 				console = new JTextPane();
-				MazewarGUI mazewarGUI = new MazewarGUI(connectionDB);
+				mazewarGUI = new MazewarGUI(connectionDB);
 				/* Create and start the communications middleware */
 				middlewareServer = new MazewarMiddlewareServer(connectionDB,
 						maze, slpServer, mazewarGUI);

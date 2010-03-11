@@ -95,7 +95,7 @@ public class MazewarGUI extends JFrame {
 	 * Set the title of the window so I can use it for debugging output as well
 	 *
 	 */
-	public void setTitle(String title) {
+	public void setWindowTitle(String title) {
 		this.setTitle(windowTitle + " - " + title);
 	}
 
