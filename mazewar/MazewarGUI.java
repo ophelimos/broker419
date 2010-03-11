@@ -91,9 +91,8 @@ public class MazewarGUI extends JFrame {
 		// Set its constraints
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.BOTH;
-		c.weightx = 1.0;
-		c.weighty = 3.0;
-		c.gridwidth = GridBagConstraints.REMAINDER;
+		c.gridx = 1;
+		c.gridy = 0;
 		layout.setConstraints(overheadPanel, c);
 		overheadPanel.repaint();
 	}
@@ -192,8 +191,10 @@ public class MazewarGUI extends JFrame {
 				BorderFactory.createEtchedBorder(), "Scores"));
 		
 		GridBagConstraints c = new GridBagConstraints();
-		c.gridwidth = GridBagConstraints.REMAINDER;
-		c.weightx = 1.0;
+		c.ipadx = 300;
+		c.ipady = 100;
+		c.gridx = 0;
+		c.gridy = 1;
 		layout.setConstraints(scoreScrollPane, c);
 		
 		getContentPane().add(scoreScrollPane);
