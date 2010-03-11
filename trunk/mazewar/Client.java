@@ -270,6 +270,7 @@ public abstract class Client implements Serializable {
 		//notifyListeners(ClientEvent.fire);
 		MazewarMsg msg = new MazewarMsg();
 		msg.action = MazewarMsg.MW_MSG_FIRE;
+		
 		handlelocalEvent(4, msg);
 	}
 	
@@ -309,9 +310,10 @@ public abstract class Client implements Serializable {
 		//Set this packet as a firsttime packet
 		onetogo.wantACK = true;
 		
+		onetogo.msg.action = theaction;
 		//Add to the toNETWORK queue
 		Mazewar.toNetwork.addtoQueue(onetogo);
-		
+
 		//set the action for there packets
 		fortomaze.nextmove = theaction;
 		
@@ -324,6 +326,7 @@ public abstract class Client implements Serializable {
 		//Set this packet as a firsttime packet
 		fortomaze.wantACK = true;
 		
+		fortomaze.msg.action = theaction;
 		//Add to the toMAZE queue | must be in sorted order
 		Mazewar.toMaze.addtoSortedQueue(fortomaze);
 	}
