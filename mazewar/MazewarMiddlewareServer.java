@@ -104,6 +104,16 @@ public class MazewarMiddlewareServer extends Thread {
 					printPacket(receivedPacket);
 				}
 
+			} catch (ClassCastException e) {
+				Mazewar.consolePrintLn("Received garbage packet!  Killing connection...");
+				Mazewar.consolePrint("Connection failed with "
+						+ curPeer.hostname
+						+ "\n Removing from connection list...");
+				if (connectionDB.removePeer(curPeer)) {
+					Mazewar.consolePrint("Success!\n");
+				} else {
+					Mazewar.consolePrint("Failed!\n");
+				}
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
 				continue;
