@@ -339,14 +339,15 @@ public class MazewarMiddlewareServer extends Thread {
 
 		// Iterate through our network peers
 		OutputPeer curPeer = null;
-		while (networkPeers.hasMoreElements()) {
+		PeersInNetwork: while (networkPeers.hasMoreElements()) {
 			curPeer = networkPeers.nextElement();
 			for (int i = 0; i < startPacket.numPlayers; i++) {
-				if (!startPacket.playerlist[i].equals(curPeer.hostname)) {
-					// Kill the connection
-					connectionDB.removePeer(curPeer);
+				if (startPacket.playerlist[i].equals(curPeer.hostname)) {
+					continue PeersInNetwork;
 				}
 			}
+//			 Kill the connection (we haven't gotten out yet)
+			connectionDB.removePeer(curPeer);
 		}
 
 		// Make remote clients for everyone we're playing with
