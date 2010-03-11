@@ -60,7 +60,7 @@ public class MazewarGUI extends JFrame {
 	 * point for the data structure)
 	 * 
 	 */
-	public Vector<Peer> selectedPlayers = new Vector<Peer>();
+	public Vector<OutputPeer> selectedPlayers = new Vector<OutputPeer>();
 	
 	/**
 	 * Turn on the GUI client and set it to start receiving keystrokes

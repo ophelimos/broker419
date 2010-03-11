@@ -24,7 +24,7 @@ public class ConnectionDB {
 	// List of my peers on the network
 	public Vector<InputPeer> inputPeers = new Vector<InputPeer>();
 
-	private Vector<OutputPeer> outputPeers = new Vector<OutputPeer>();
+	public Vector<OutputPeer> outputPeers = new Vector<OutputPeer>();
 
 	// Used to update the listBox
 	private DefaultListModel stringified_peers = new DefaultListModel();

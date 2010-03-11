@@ -1,5 +1,6 @@
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.IOException;
 
 public class StartButtonListener implements MouseListener {
 
@@ -73,15 +74,33 @@ public class StartButtonListener implements MouseListener {
 			myTeam[i] = mazewarGUI.selectedPlayers.get(i).hostname;
 		}
 		Mazewar.consolePrint("\n");
-		
+
 		// Now add myself on to the end
 		myTeam[i] = Mazewar.hostname;
 
 		startGamePacket.playerlist = myTeam;
 
-		// Send the packet
-		Mazewar.toNetwork.addtoQueue(startGamePacket);
-		
+		// Send the packet to only the selected clients
+		// Mazewar.toNetwork.addtoQueue(startGamePacket);
+		for (i = 0; i < mazewarGUI.selectedPlayers.size(); i++) {
+			try {
+				mazewarGUI.selectedPlayers.get(i).out
+						.writeObject(startGamePacket);
+			} catch (IOException exc) {
+				Mazewar.consolePrintLn("Dropped the connection with "
+						+ mazewarGUI.selectedPlayers.get(i).hostname
+						+ " while trying to start the game");
+				// Broadcast our name, ensuring dropped connections get
+				// discovered properly
+				gamePacket nameMessage = new gamePacket();
+				nameMessage.type = gamePacket.GP_MYNAME;
+				nameMessage.senderName = Mazewar.localName;
+				nameMessage.wantACK = false;
+				nameMessage.ACK = false;
+				Mazewar.toNetwork.addtoQueue(nameMessage);
+			}
+		}
+
 		// Put it on my own queue, since I won't be receiving this one
 		Mazewar.toMaze.addtoSortedQueue(startGamePacket);
 	}
