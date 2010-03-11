@@ -21,6 +21,7 @@ public class ConnectionAcceptor extends Thread {
 	private final int acceptorTimeout = 1000;
 
 	public ConnectionAcceptor(ConnectionDB connectionDB, int port) {
+		super("Connection Acceptor");
 		this.connectionDB = connectionDB;
 
 		try {

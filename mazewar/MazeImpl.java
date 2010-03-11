@@ -80,7 +80,7 @@ public class MazeImpl extends Maze implements Serializable, CommLocalListener,
 			mazeVector.insertElementAt(colVector, i);
 		}
 
-		thread = new Thread(this);
+		thread = new Thread(this, "Maze Implementation");
 
 		// Initialized the random number generator
 		randomGen = new Random(seed);

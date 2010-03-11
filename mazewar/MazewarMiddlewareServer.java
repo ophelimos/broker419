@@ -27,6 +27,7 @@ public class MazewarMiddlewareServer extends Thread {
 
 	public MazewarMiddlewareServer(ConnectionDB connectionDB_in,
 			MazeImpl maze_in, MazewarSLP slpserver_in, MazewarGUI mazewarGUI_in) {
+		super("Mazewar Middleware Server");
 		this.connectionDB = connectionDB_in;
 		this.maze = maze_in;
 		this.slpserver = slpserver_in;
@@ -168,6 +169,20 @@ public class MazewarMiddlewareServer extends Thread {
 			}
 
 			if (mostRecentPacket.type == gamePacket.GP_STARTGAME) {
+				
+				// Make sure the packet's actually for us
+				boolean forUs = false;
+				for (int j = 0; j < mostRecentPacket.numPlayers; j++) {
+					if (mostRecentPacket.playerlist[i].equals(Mazewar.ipAddress)) {
+						forUs = true;
+						break;
+					}
+				}
+				
+				if (!forUs) {
+					continue;
+				}
+				
 				// Make sure we're in the right state
 				if (Mazewar.getStatus() == Mazewar.STATUS_PLAYING) {
 					Mazewar
@@ -311,6 +326,9 @@ public class MazewarMiddlewareServer extends Thread {
 	private void startGame(gamePacket startPacket) {
 		// ACK the successfully received packet
 		sendACK(startPacket);
+		
+		// Stop accepting connections
+		Mazewar.acceptingNewConnections = false;
 
 		// Shut down SLP
 		slpserver.stopServer();
@@ -338,7 +356,9 @@ public class MazewarMiddlewareServer extends Thread {
 
 		// Make remote clients for everyone we're playing with
 		for (int i = 0; i < startPacket.numPlayers; i++) {
-			RemoteClient newPlayer = new RemoteClient(startPacket.playerlist[i]);
+			// Find the player name corresponding to the hostname
+			String playerName = getPlayerName(startPacket.playerlist[i]);
+;			RemoteClient newPlayer = new RemoteClient(playerName);
 			Mazewar.actualPlayers.add(newPlayer);
 			maze.addClient(newPlayer);
 		}
@@ -350,6 +370,16 @@ public class MazewarMiddlewareServer extends Thread {
 		// Attach the keyboard to the GUIclient
 		mazewarGUI.turnOnGUIClient();
 		Mazewar.consolePrintLn("Starting game!");
+	}
+	
+	public String getPlayerName(String hostname) {
+		for (int i = 0; i < connectionDB.outputPeers.size(); i++) {
+			if (hostname.equals(connectionDB.outputPeers.get(i).hostname)) {
+				return connectionDB.outputPeers.get(i).playerName;
+			}
+		}
+		
+		return null;
 	}
 
 	/**
