@@ -285,6 +285,10 @@ public abstract class Client implements Serializable {
 		gamePacket onetogo = new gamePacket();
 		gamePacket fortomaze = new gamePacket();
 		
+		// Make sure we identify ourself in the cw
+		CommClientWrapper cw = new CommClientWrapper(Mazewar.localName);
+		msg.cw = cw;
+		
 		// Add the MazewarMsg's
 		onetogo.msg = msg;
 		fortomaze.msg = msg;

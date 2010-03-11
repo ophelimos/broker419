@@ -1,26 +1,29 @@
 import java.util.Vector;
 
-import javax.swing.DefaultListModel;
 import javax.swing.JList;
-import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 public class PlayerSelectionHandler implements ListSelectionListener {
 	
 	/**
-	 * Selected players
-	 * 
-	 */
-	public Vector<Peer> selectedPlayers = new Vector<Peer>();
-	
-	/**
 	 * Connection DB (where we pull our data out of)
 	 */
 	private ConnectionDB connectionDB;
 	
-	public PlayerSelectionHandler(ConnectionDB connectionDB) {
+	/**
+	 * The mazewar GUI where selectedPlayers is kept
+	 */
+	private MazewarGUI mazewarGUI;
+	
+	/**
+	 * Constructor
+	 * @param connectionDB
+	 * @param mazewarGUI
+	 */
+	public PlayerSelectionHandler(ConnectionDB connectionDB, MazewarGUI mazewarGUI) {
 		this.connectionDB = connectionDB;
+		this.mazewarGUI = mazewarGUI;
 	}
 
 	public void valueChanged(ListSelectionEvent e) {
@@ -31,7 +34,7 @@ public class PlayerSelectionHandler implements ListSelectionListener {
 		}
 		
 		// Every time our selection changes, remake the selectedPlayers vector
-		selectedPlayers.clear();
+		mazewarGUI.selectedPlayers.clear();
 		JList lsm = (JList) e.getSource();
 		int minIndex = lsm.getMinSelectionIndex();
 		int maxIndex = lsm.getMaxSelectionIndex();
@@ -39,7 +42,7 @@ public class PlayerSelectionHandler implements ListSelectionListener {
 		Vector<OutputPeer> availablePlayers = connectionDB.outputPeers;
 		for (int i = minIndex; i <= maxIndex; i++) {
 			if (lsm.isSelectedIndex(i)) {
-				selectedPlayers.add((Peer)availablePlayers.get(i));
+				mazewarGUI.selectedPlayers.add((Peer)availablePlayers.get(i));
 			}
 		}
 	}

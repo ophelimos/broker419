@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.util.Scanner;
+import java.util.Vector;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -43,6 +44,18 @@ import javax.swing.JTextPane;
  */
 
 public class Mazewar extends JFrame {
+
+	// The state the game is in
+	private static int status = 0;
+
+	public static final int STATUS_WAITING = 0;
+
+	public static final int STATUS_INVITING = 1;
+
+	public static final int STATUS_PLAYING = 2;
+	
+	// The people we're actually playing with right now
+	public static Vector<RemoteClient> actualPlayers = new Vector<RemoteClient>();
 
 	// The global port SLP is running on
 	public static int slpPort = 2048;
@@ -228,6 +241,42 @@ public class Mazewar extends JFrame {
 	}
 
 	/**
+	 * Synchronized getters and setters, since status could be modified by
+	 * multiple threads
+	 * 
+	 * @return
+	 */
+
+	public static synchronized boolean setInviting() {
+		if (status == STATUS_INVITING) {
+			consolePrintLn("Wait until your current invitation is processed before trying again");
+			return false;
+		}
+
+		if (status == STATUS_PLAYING) {
+			consolePrintLn("Can't start two games at once");
+			return false;
+		}
+
+		status = STATUS_INVITING;
+		return true;
+	}
+
+	public static synchronized boolean setPlaying() {
+		status = STATUS_PLAYING;
+		return true;
+	}
+
+	public static synchronized boolean setWaiting() {
+		status = STATUS_WAITING;
+		return true;
+	}
+
+	public static synchronized int getStatus() {
+		return status;
+	}
+
+	/**
 	 * Entry point for the game.
 	 * 
 	 * @param args
@@ -340,15 +389,15 @@ public class Mazewar extends JFrame {
 		// Make things get closed properly on exit
 		Runtime.getRuntime().addShutdownHook(new ShutdownThread());
 
-		/* Create and start the communications middleware */
-		middlewareServer = new MazewarMiddlewareServer(connectionDB, maze);
-		middlewareServer.start();
-
 		try {
 			/* Create the GUI */
 			if (!consoleMode) {
 				console = new JTextPane();
-				new MazewarGUI(connectionDB);
+				MazewarGUI mazewarGUI = new MazewarGUI(connectionDB);
+				/* Create and start the communications middleware */
+				middlewareServer = new MazewarMiddlewareServer(connectionDB,
+						maze, slpServer, mazewarGUI);
+				middlewareServer.start();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

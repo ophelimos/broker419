@@ -1,6 +1,5 @@
 import java.awt.Button;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.Vector;
@@ -12,12 +11,17 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
 /**
- * I'm extending all the main window GUI code into this class, so it doesn't clutter Mazewar()
+ * I'm extending all the main window GUI code into this class, so it doesn't
+ * clutter Mazewar()
  */
 public class MazewarGUI extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * The window title shown at the top
+	 */
+	private String windowTitle = "ECE419 Mazewar";
 	/**
 	 * The {@link GUIClient} for the game.
 	 */
@@ -32,18 +36,50 @@ public class MazewarGUI extends JFrame {
 	 * The table the displays the scores.
 	 */
 	private JTable scoreTable = null;
-	
+
 	/**
 	 * The table that displays the available players
-	 *
+	 * 
 	 */
 	private JList availablePlayers = null;
-	
+
 	/**
 	 * And the functions handling its changes
 	 */
 	PlayerSelectionHandler playerSelectionHandler;
+
+	/**
+	 * Selected players (manipulated elsewhere, but this gives a nice central
+	 * point for the data structure)
+	 * 
+	 */
+	public Vector<Peer> selectedPlayers = new Vector<Peer>();
 	
+	/**
+	 * Turn on the GUI client and set it to start receiving keystrokes
+	 *
+	 */
+	public void turnOnGUIClient() {
+
+		// The GUI client listens to keystrokes to generate actions
+		this.addKeyListener(guiClient);
+	}
+	
+	/**
+	 * Turn off the GUI client - might be useful for game end
+	 */
+	public void turnOffGUIClient() {
+		this.removeKeyListener(guiClient);
+	}
+	
+	/**
+	 * Set the title of the window so I can use it for debugging output as well
+	 *
+	 */
+	public void setTitle(String title) {
+		this.setTitle(windowTitle + " - " + title);
+	}
+
 	/**
 	 * Actually start the GUI
 	 * 
@@ -60,17 +96,14 @@ public class MazewarGUI extends JFrame {
 		assert (scoreModel != null);
 		Mazewar.maze.addMazeListener(scoreModel);
 
-		// Create the GUIClient and connect it to the KeyListener queue
-		guiClient = new GUIClient(Mazewar.localName);
-		Mazewar.maze.setName(Mazewar.localName);
-		Mazewar.maze.addClient(guiClient);
-
-		// The GUI client listens to keystrokes to generate actions
-		this.addKeyListener(guiClient);
-		
 		// Make the program end properly when I close the window
 		WindowHandler windowHandler = new WindowHandler();
 		this.addWindowListener(windowHandler);
+		
+		// Create the GUIClient, but don't connect it to the keyListener yet.
+		guiClient = new GUIClient(Mazewar.localName);
+		Mazewar.maze.setName(Mazewar.localName);
+		Mazewar.maze.addClient(guiClient);
 
 		// Create the panel that will display the maze.
 		overheadPanel = new OverheadMazePanel(Mazewar.maze, guiClient);
@@ -80,8 +113,8 @@ public class MazewarGUI extends JFrame {
 		// Don't allow editing the console from the GUI
 		Mazewar.console.setEditable(false);
 		Mazewar.console.setFocusable(false);
-		Mazewar.console.setBorder(BorderFactory.createTitledBorder(BorderFactory
-				.createEtchedBorder()));
+		Mazewar.console.setBorder(BorderFactory
+				.createTitledBorder(BorderFactory.createEtchedBorder()));
 
 		// Allow the console to scroll by putting it in a scrollpane
 		JScrollPane consoleScrollPane = new JScrollPane(Mazewar.console);
@@ -105,18 +138,18 @@ public class MazewarGUI extends JFrame {
 		Button startButton = new Button("Start");
 		startButton.setForeground(Color.white);
 		startButton.setBackground(Color.red);
-		StartButtonListener startButtonListener = new StartButtonListener();
+		StartButtonListener startButtonListener = new StartButtonListener(this);
 		startButton.addMouseListener(startButtonListener);
-		
+
 		// Create the list of available players
 		availablePlayers = new JList(connectionDB.getListModel());
 		availablePlayers.setBorder(BorderFactory.createTitledBorder(
 				BorderFactory.createEtchedBorder(), "Available Players"));
-		
+
 		// Make sure changes get handled
-		playerSelectionHandler = new PlayerSelectionHandler(connectionDB);
+		playerSelectionHandler = new PlayerSelectionHandler(connectionDB, this);
 		availablePlayers.addListSelectionListener(playerSelectionHandler);
-		
+
 		// Create the layout manager
 		GridBagLayout layout = new GridBagLayout();
 		GridBagConstraints c = new GridBagConstraints();
