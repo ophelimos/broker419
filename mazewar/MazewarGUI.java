@@ -78,6 +78,25 @@ public class MazewarGUI extends JFrame {
 	}
 	
 	/**
+	 * Add overhead panel - here so we don't need to add clients
+	 */
+	public void addOverheadPanel() {
+		overheadPanel = new OverheadMazePanel(Mazewar.maze, guiClient);
+		assert (overheadPanel != null);
+		Mazewar.maze.addMazeListener(overheadPanel);
+		getContentPane().add(overheadPanel);
+		
+		// Set its constraints
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.BOTH;
+		c.weightx = 1.0;
+		c.weighty = 3.0;
+		c.gridwidth = GridBagConstraints.REMAINDER;
+		layout.setConstraints(overheadPanel, c);
+		overheadPanel.repaint();
+	}
+	
+	/**
 	 * Remove the start button
 	 */
 	public void removeStartButton() {
@@ -98,39 +117,82 @@ public class MazewarGUI extends JFrame {
 	public void setWindowTitle(String title) {
 		this.setTitle(windowTitle + " - " + title);
 	}
-
+	
 	/**
-	 * Actually start the GUI
-	 * 
-	 * @param connectionDB
+	 * The layout manager
 	 */
-	public MazewarGUI(ConnectionDB connectionDB) {
-		super("ECE419 Mazewar");
-		Mazewar.consolePrintLn("Waiting for connections from other players.\n"
-				+ "Press the <Start Game> button when you're ready to begin!");
-
-		// Have the ScoreTableModel listen to the maze to find
+	public GridBagLayout layout = null;
+	
+	
+	/** Start the score table
+	 * 
+	 */
+	
+	public void startScoreTable() {
+//		 Have the ScoreTableModel listen to the maze to find
 		// out how to adjust scores.
 		ScoreTableModel scoreModel = new ScoreTableModel();
 		assert (scoreModel != null);
 		Mazewar.maze.addMazeListener(scoreModel);
-
-		// Make the program end properly when I close the window
-		WindowHandler windowHandler = new WindowHandler();
-		this.addWindowListener(windowHandler);
 		
-		// Create the GUIClient, but don't connect it to the keyListener yet.
-		guiClient = new GUIClient(Mazewar.localName);
-		Mazewar.maze.setName(Mazewar.localName);
-		// Don't add GUIClient until the game has actually started
-		// Mazewar.maze.addClient(guiClient);
+//		 Create the score table
+		scoreTable = new JTable(scoreModel);
+		assert (scoreTable != null);
+		scoreTable.setFocusable(false);
+		scoreTable.setRowSelectionAllowed(false);
+		
+//		 Allow the score table to scroll too.
+		JScrollPane scoreScrollPane = new JScrollPane(scoreTable);
+		assert (scoreScrollPane != null);
+		scoreScrollPane.setBorder(BorderFactory.createTitledBorder(
+				BorderFactory.createEtchedBorder(), "Scores"));
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridwidth = GridBagConstraints.REMAINDER;
+		c.weightx = 1.0;
+		layout.setConstraints(scoreScrollPane, c);
+		
+		getContentPane().add(scoreScrollPane);
+	}
+	
+	public void addStartButton() {
+//		 Create the start button
+		startButton = new Button("Start");
+		startButton.setForeground(Color.white);
+		startButton.setBackground(Color.red);
+		StartButtonListener startButtonListener = new StartButtonListener(this);
+		startButton.addMouseListener(startButtonListener);
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 0;
+		c.gridy = 1;
+		layout.setConstraints(startButton, c);
+		
+		getContentPane().add(startButton);
+	}
+	
+	public void addAvailablePlayers() {
+//		 Create the list of available players
+		availablePlayers = new JList(connectionDB.getListModel());
+		availablePlayers.setBorder(BorderFactory.createTitledBorder(
+				BorderFactory.createEtchedBorder(), "Available Players"));
 
-		// Create the panel that will display the maze.
-		overheadPanel = new OverheadMazePanel(Mazewar.maze, guiClient);
-		assert (overheadPanel != null);
-		Mazewar.maze.addMazeListener(overheadPanel);
-
-		// Don't allow editing the console from the GUI
+		// Make sure changes get handled
+		playerSelectionHandler = new PlayerSelectionHandler(connectionDB, this);
+		availablePlayers.addListSelectionListener(playerSelectionHandler);
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.gridx = 1;
+		c.gridy = 0;
+		c.ipadx = 200;
+		c.ipady = 200;
+		layout.setConstraints(availablePlayers, c);
+		
+		getContentPane().add(availablePlayers);
+	}
+	
+	public void addConsole() {
+//		 Don't allow editing the console from the GUI
 		Mazewar.console.setEditable(false);
 		Mazewar.console.setFocusable(false);
 		Mazewar.console.setBorder(BorderFactory
@@ -141,70 +203,58 @@ public class MazewarGUI extends JFrame {
 		assert (consoleScrollPane != null);
 		consoleScrollPane.setBorder(BorderFactory.createTitledBorder(
 				BorderFactory.createEtchedBorder(), "Console"));
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.BOTH;
+		
+		c.gridx = 0;
+		c.gridy = 0;
+		c.ipadx = 400;
+		c.ipady = 400;
+		layout.setConstraints(consoleScrollPane, c);
+		
+		getContentPane().add(consoleScrollPane);
+	}
+	
+	private ConnectionDB connectionDB;
 
-		// Create the score table
-		scoreTable = new JTable(scoreModel);
-		assert (scoreTable != null);
-		scoreTable.setFocusable(false);
-		scoreTable.setRowSelectionAllowed(false);
+	/**
+	 * Actually start the GUI
+	 * 
+	 * @param connectionDB
+	 */
+	public MazewarGUI(ConnectionDB connectionDB) {
+		super("ECE419 Mazewar");
+		
+		this.connectionDB = connectionDB;
+		
+		Mazewar.consolePrintLn("Waiting for connections from other players.\n"
+				+ "Press the <Start Game> button when you're ready to begin!");
 
-		// Allow the score table to scroll too.
-		JScrollPane scoreScrollPane = new JScrollPane(scoreTable);
-		assert (scoreScrollPane != null);
-		scoreScrollPane.setBorder(BorderFactory.createTitledBorder(
-				BorderFactory.createEtchedBorder(), "Scores"));
-
-		// Create the start button
-		startButton = new Button("Start");
-		startButton.setForeground(Color.white);
-		startButton.setBackground(Color.red);
-		StartButtonListener startButtonListener = new StartButtonListener(this);
-		startButton.addMouseListener(startButtonListener);
-
-		// Create the list of available players
-		availablePlayers = new JList(connectionDB.getListModel());
-		availablePlayers.setBorder(BorderFactory.createTitledBorder(
-				BorderFactory.createEtchedBorder(), "Available Players"));
-
-		// Make sure changes get handled
-		playerSelectionHandler = new PlayerSelectionHandler(connectionDB, this);
-		availablePlayers.addListSelectionListener(playerSelectionHandler);
+		// Make the program end properly when I close the window
+		WindowHandler windowHandler = new WindowHandler();
+		this.addWindowListener(windowHandler);
+		
+		// Create the GUIClient, but don't connect it to the keyListener yet.
+		guiClient = new GUIClient(Mazewar.localName);
+		Mazewar.maze.setName(Mazewar.localName);
+		// Don't add GUIClient until the game has actually started
+		//Mazewar.maze.addClient(guiClient);
 
 		// Create the layout manager
-		GridBagLayout layout = new GridBagLayout();
-		GridBagConstraints c = new GridBagConstraints();
+		layout = new GridBagLayout();
+		
 		getContentPane().setLayout(layout);
-
-		// Define the constraints on the components.
-		c.fill = GridBagConstraints.BOTH;
-		c.weightx = 1.0;
-		c.weighty = 3.0;
-		c.gridwidth = GridBagConstraints.REMAINDER;
-		layout.setConstraints(overheadPanel, c);
-		layout.setConstraints(startButton, c);
-		c.gridwidth = GridBagConstraints.RELATIVE;
-		c.weightx = 2.0;
-		c.weighty = 1.0;
-		layout.setConstraints(consoleScrollPane, c);
-		c.gridwidth = GridBagConstraints.RELATIVE;
-		layout.setConstraints(availablePlayers, c);
-		c.gridwidth = GridBagConstraints.REMAINDER;
-		c.weightx = 1.0;
-		layout.setConstraints(scoreScrollPane, c);
-
-		// Add the components
-		getContentPane().add(overheadPanel);
-		getContentPane().add(consoleScrollPane);
-		getContentPane().add(scoreScrollPane);
-		getContentPane().add(availablePlayers);
-		getContentPane().add(startButton);
+		
+		addConsole();
+		addAvailablePlayers();
+		addStartButton();
 
 		// Pack everything neatly.
 		pack();
 
 		// Let the magic begin.
 		setVisible(true);
-		overheadPanel.repaint();
 		this.requestFocusInWindow();
 	}
 }
