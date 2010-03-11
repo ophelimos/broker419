@@ -8,10 +8,28 @@ public class timestamp implements Serializable {
 	//A vector timestamp is owned by a client which has a player name
 	//Fixed size of 4
 	public Vector<vectorobj> mytimestamp = new Vector<vectorobj>(Mazewar.maxPlayers,1);
-	private Exception IllegalArgumentException;
-		
+	
+	public timestamp() {
+		// No first entry
+	}
+	
 	public timestamp(vectorobj firstentry) {
 		mytimestamp.add(firstentry);
+	}
+	
+	public timestamp(timestamp toCopy) {
+		for (int i = 0; i < toCopy.mytimestamp.size(); i++) {
+			this.mytimestamp.add(toCopy.mytimestamp.get(i).clone());
+		}
+	}
+	
+	public timestamp clone() {
+		timestamp newtimestamp = new timestamp();
+		for (int i = 0; i < this.mytimestamp.size(); i++) {
+			vectorobj me = this.mytimestamp.get(i).clone();
+			newtimestamp.mytimestamp.add(me);
+		}
+		return newtimestamp;
 	}
 	/*
 	 * addplayer is called when each localclient needs to add a remote player to its local timestamp
@@ -75,7 +93,8 @@ public class timestamp implements Serializable {
 	public void max(timestamp other) throws IllegalArgumentException {
 		try {
 			if (other.mytimestamp.size() != mytimestamp.size()){
-				throw IllegalArgumentException;
+				IllegalArgumentException myException = new IllegalArgumentException();
+				throw myException;
 			}
 			else {
 				int i =0;

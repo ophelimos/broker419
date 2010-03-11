@@ -20,18 +20,18 @@ public class clientQueue {
 		lineup.add(toadd);
 		return true;
 	}
-	
+
 	// Delete an element from the queue corresponding to a particular timestamp
 	public synchronized boolean removeFromQueue(gamePacket checkfor) {
 		for (int point = 0; point < lineup.size(); point++) {
 			// Check if these timestamps are equal
 			if (eqltimestamp(checkfor.timeogram, lineup.get(point).timeogram)) {
-				//the timestamps are the same for these packets so kill it
+				// the timestamps are the same for these packets so kill it
 				lineup.remove(point);
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -48,6 +48,7 @@ public class clientQueue {
 		}
 
 		// May have not added by now
+		lineup.add(linepoint, toadd);
 		return;
 	}
 
@@ -76,7 +77,8 @@ public class clientQueue {
 		return isgood;
 	}
 
-	public synchronized boolean isTimeLessThan(gamePacket toinsert, gamePacket tocheck) {
+	public synchronized boolean isTimeLessThan(gamePacket toinsert,
+			gamePacket tocheck) {
 		boolean isgood = false;
 		int point1 = 0, point2 = 0, sum1 = 0, sum2 = 0;
 		// Check for both timestmap sizes
@@ -99,7 +101,7 @@ public class clientQueue {
 		}
 		return isgood;
 	}
-	
+
 	public synchronized gamePacket getElement() {
 		// This lineup will return firstpacket, and then remove it as well
 		if (!lineup.isEmpty()) {
@@ -120,29 +122,34 @@ public class clientQueue {
 			// Check if these timestamps are equal
 			if (eqltimestamp(checkfor.timeogram, lineup.get(point).timeogram)
 					&& (lineup.get(point).ACK) && (checkfor.ACK)) {
-				//the timestamps are same for these packets so we shall increment the 
-				//trackACK on the packet in queue
+				// the timestamps are same for these packets so we shall
+				// increment the
+				// trackACK on the packet in queue
 				lineup.get(point).trackACK++;
 				foundinqueue = true;
 				break;
 			}
 		}
 
-		if (lineup.get(point).trackACK == checkfor.timeogram.mytimestamp.size()) {
-			// We found all the ACKs we need for this event
-			
-			// Remove that particular packet from the queue
-			gamePacket ackedPacket = lineup.remove(point);
-			
-			return ackedPacket;
+		// Handles if nothing is in the queue
+		if (foundinqueue) {
+			if (lineup.get(point).trackACK == checkfor.timeogram.mytimestamp
+					.size()) {
+				// We found all the ACKs we need for this event
+
+				// Remove that particular packet from the queue
+				gamePacket ackedPacket = lineup.remove(point);
+
+				return ackedPacket;
+			}
 		}
-		
-		//==========================================
-		//By now it is certain that this is the first ACK for this timestamp, so add in queue
-//		if(!foundinqueue) {
-//			checkfor.trackACK++;
-//			lineup.add(checkfor);
-//		}
+		// ==========================================
+		// By now it is certain that this is the first ACK for this timestamp,
+		// so add in queue
+		// if(!foundinqueue) {
+		// checkfor.trackACK++;
+		// lineup.add(checkfor);
+		// }
 		// We dont have all the ACKs yet
 		return null;
 	}
