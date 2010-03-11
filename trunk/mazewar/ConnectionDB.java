@@ -79,8 +79,8 @@ public class ConnectionDB {
 	public synchronized void addOutputPeer(OutputPeer peer) {
 
 		// Check if it's already in the vector
-		for (int i = 0; i < inputPeers.size(); i++) {
-			InputPeer tmp = (InputPeer) inputPeers.get(i);
+		for (int i = 0; i < outputPeers.size(); i++) {
+			OutputPeer tmp = (OutputPeer) outputPeers.get(i);
 			if (tmp.hostname.equals(peer.hostname)) {
 				return;
 			}

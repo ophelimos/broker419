@@ -109,7 +109,8 @@ public class MazewarMiddlewareServer extends Thread {
 				continue;
 			} catch (IOException e) {
 				if (debug) {
-					System.out.print(e.getStackTrace());
+					e.getStackTrace();
+					Mazewar.consolePrintLn("Connection broke trying to receive packets");
 				}
 				Mazewar.consolePrint("Connection failed with "
 						+ curPeer.hostname
