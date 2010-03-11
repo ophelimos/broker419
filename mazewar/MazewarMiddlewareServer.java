@@ -168,7 +168,7 @@ public class MazewarMiddlewareServer extends Thread {
 				// Make sure the packet's actually for us
 				boolean forUs = false;
 				for (int j = 0; j < mostRecentPacket.numPlayers; j++) {
-					if (mostRecentPacket.playerlist[i].equals(Mazewar.hostname)) {
+					if (mostRecentPacket.playerlist[j].equals(Mazewar.hostname)) {
 						forUs = true;
 						break;
 					}
