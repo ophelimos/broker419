@@ -261,8 +261,7 @@ public class MazewarMiddlewareServer extends Thread {
 				+ " NACK = " + packet.NACK);
 
 		// Timestamp
-		Mazewar.consolePrintLn("Timestamp: ");
-		packet.timeogram.printVTS();
+		Mazewar.consolePrintLn("Timestamp: " + packet.timeogram.printVTS());
 
 		// MazewarMsg
 		Mazewar.consolePrint("MazewarMsg = ");
