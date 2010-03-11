@@ -25,7 +25,7 @@ public class MazewarGUI extends JFrame {
 	/**
 	 * The {@link GUIClient} for the game.
 	 */
-	private GUIClient guiClient = null;
+	public GUIClient guiClient = null;
 
 	/**
 	 * The panel that displays the {@link Maze}.
@@ -122,7 +122,8 @@ public class MazewarGUI extends JFrame {
 		// Create the GUIClient, but don't connect it to the keyListener yet.
 		guiClient = new GUIClient(Mazewar.localName);
 		Mazewar.maze.setName(Mazewar.localName);
-		Mazewar.maze.addClient(guiClient);
+		// Don't add GUIClient until the game has actually started
+		// Mazewar.maze.addClient(guiClient);
 
 		// Create the panel that will display the maze.
 		overheadPanel = new OverheadMazePanel(Mazewar.maze, guiClient);

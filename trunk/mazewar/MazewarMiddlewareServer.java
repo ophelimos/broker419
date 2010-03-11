@@ -55,38 +55,9 @@ public class MazewarMiddlewareServer extends Thread {
 					printPacket(receivedPacket);
 				}
 
-				// This whole thing could be merged with below, but I'm not
-				// smart enough right now
-				if (receivedPacket.type == gamePacket.GP_STARTGAME) {
-
-					// There's three things it can be now: an invitation, an ACK
-					// for my invitation, or a NACK for my invitation
-
-					if (receivedPacket.NACK) {
-						// It's a NACK: purge corresponding invitation
-						Mazewar.waitingForAcks.removeFromQueue(receivedPacket);
-						continue;
-					}
-
-					if (receivedPacket.ACK) {
-						// It's an ACK: mark it off
-						gamePacket ackedPacket = Mazewar.waitingForAcks
-								.haveACK(receivedPacket);
-						if (ackedPacket != null) {
-							// Put it in the toMaze queue
-							Mazewar.toMaze.addtoSortedQueue(ackedPacket);
-						}
-						continue;
-					}
-
-					// All right: it's an invitation. Throw it on the queue, and
-					// processPackets() will figure out what to do with it
-					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
-
-					// Synchronize time stamps
+				// Synchronize time stamps - every time unless it's an ACK
+				if (!receivedPacket.ACK) {
 					Mazewar.localtimestamp.max(receivedPacket.timeogram);
-
-					continue;
 				}
 
 				// Handle ACKing
@@ -99,6 +70,17 @@ public class MazewarMiddlewareServer extends Thread {
 						// Put it in the toMaze queue
 						Mazewar.toMaze.addtoSortedQueue(ackedPacket);
 					}
+				}
+
+				if (receivedPacket.type == gamePacket.GP_STARTGAME) {
+
+					// The only thing it can be is a command. Throw it on
+					// the toMaze queue, and processPackets() will figure out
+					// what to
+					// do with it
+					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
+
+					continue;
 				}
 
 				if (receivedPacket.wantACK) {
@@ -169,7 +151,7 @@ public class MazewarMiddlewareServer extends Thread {
 			}
 
 			if (mostRecentPacket.type == gamePacket.GP_STARTGAME) {
-				
+
 				// Make sure the packet's actually for us
 				boolean forUs = false;
 				for (int j = 0; j < mostRecentPacket.numPlayers; j++) {
@@ -178,11 +160,13 @@ public class MazewarMiddlewareServer extends Thread {
 						break;
 					}
 				}
-				
+
 				if (!forUs) {
+					Mazewar
+							.consolePrintLn("Received extra StartGame packet - disregarding");
 					continue;
 				}
-				
+
 				// Make sure we're in the right state
 				if (Mazewar.getStatus() == Mazewar.STATUS_PLAYING) {
 					Mazewar
@@ -325,7 +309,7 @@ public class MazewarMiddlewareServer extends Thread {
 	 */
 	private void startGame(gamePacket startPacket) {
 		// No ACKing startGame packets
-		
+
 		// Stop accepting connections
 		Mazewar.acceptingNewConnections = false;
 
@@ -346,22 +330,27 @@ public class MazewarMiddlewareServer extends Thread {
 			curPeer = networkPeers.nextElement();
 			for (int i = 0; i < startPacket.numPlayers; i++) {
 				if (!startPacket.playerlist[i].equals(curPeer.hostname)) {
-//					 Kill the connection
+					// Kill the connection
 					connectionDB.removePeer(curPeer);
 				}
 			}
-			
 		}
 
 		// Make remote clients for everyone we're playing with
 		for (int i = 0; i < startPacket.numPlayers; i++) {
-			// Find the player name corresponding to the hostname
-			String playerName = getPlayerName(startPacket.playerlist[i]);
-;			RemoteClient newPlayer = new RemoteClient(playerName);
-			Mazewar.actualPlayers.add(newPlayer);
-			maze.addClient(newPlayer);
+			// If it's ourself, start the GUIclient
+			if (startPacket.playerlist[i].equals(Mazewar.hostname)) {
+				maze.addClient(mazewarGUI.guiClient);
+			} else {
+				// Find the player name corresponding to the hostname
+				String playerName = getPlayerName(startPacket.playerlist[i]);
+				// Add it as a Remote Client
+				RemoteClient newPlayer = new RemoteClient(playerName);
+				//Mazewar.actualPlayers.add(newPlayer);
+				maze.addClient(newPlayer);
+			}
 		}
-		
+
 		// Remove unneeded graphics
 		mazewarGUI.removeAvailablePlayers();
 		mazewarGUI.removeStartButton();
@@ -370,14 +359,14 @@ public class MazewarMiddlewareServer extends Thread {
 		mazewarGUI.turnOnGUIClient();
 		Mazewar.consolePrintLn("Starting game!");
 	}
-	
+
 	public String getPlayerName(String hostname) {
 		for (int i = 0; i < connectionDB.outputPeers.size(); i++) {
 			if (hostname.equals(connectionDB.outputPeers.get(i).hostname)) {
 				return connectionDB.outputPeers.get(i).playerName;
 			}
 		}
-		
+
 		return null;
 	}
 
