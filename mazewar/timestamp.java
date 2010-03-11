@@ -48,6 +48,18 @@ public class timestamp implements Serializable {
 		return true;
 	}
 	
+	/*
+	 * removeplayer from this vector timestamp
+	 */
+	public boolean removePlayer(String deadplayer) {
+		for (int n =0; n< mytimestamp.size(); n++) {
+			if (deadplayer.equalsIgnoreCase(mytimestamp.get(n).getplayer())) {
+				mytimestamp.remove(n);
+				return true;
+			}
+		}
+		return false;
+	}
 	/**
 	 * Get the current value of the logical clock for a player 
 	 */
