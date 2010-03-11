@@ -58,29 +58,32 @@ public class StartButtonListener implements MouseListener {
 		gamePacket startGamePacket = new gamePacket();
 		startGamePacket.type = gamePacket.GP_STARTGAME;
 		startGamePacket.wantACK = false;
-		
-		// TODO: Testing purposes
-//		vectorobj myname = new vectorobj(8787, "Bobbie");
-//		startGamePacket.timeogram = new timestamp(myname);
 
-		// Create a list of the players in the game
-		String[] myTeam = new String[mazewarGUI.selectedPlayers.size()];
-		startGamePacket.numPlayers = mazewarGUI.selectedPlayers.size();
+		// Create a list of the players in the game - including myself
+		String[] myTeam = new String[mazewarGUI.selectedPlayers.size() + 1];
+		startGamePacket.numPlayers = mazewarGUI.selectedPlayers.size() + 1;
 
 		// Print who we're starting it with while also filling in the selected
 		// players
 		Mazewar.consolePrint("Starting Mazewar with clients:");
-		for (int i = 0; i < mazewarGUI.selectedPlayers.size(); i++) {
+		int i;
+		for (i = 0; i < mazewarGUI.selectedPlayers.size(); i++) {
 			Mazewar.consolePrint(" "
 					+ mazewarGUI.selectedPlayers.get(i).playerName);
 			myTeam[i] = mazewarGUI.selectedPlayers.get(i).hostname;
 		}
 		Mazewar.consolePrint("\n");
+		
+		// Now add myself on to the end
+		myTeam[i] = Mazewar.hostname;
 
 		startGamePacket.playerlist = myTeam;
 
 		// Send the packet
 		Mazewar.toNetwork.addtoQueue(startGamePacket);
+		
+		// Put it on my own queue, since I won't be receiving this one
+		Mazewar.toMaze.addtoSortedQueue(startGamePacket);
 	}
 
 }
