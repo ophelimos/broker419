@@ -137,11 +137,15 @@ public class timestamp implements Serializable {
 		return tmpString;
 	}
 	
-	public void printVTS(){
-		for (int i= 0; i <= this.mytimestamp.size(); i++){
-			Mazewar.consolePrintLn(this.mytimestamp.get(i).getplayer() + ": " + this.mytimestamp.get(i).gettime() + "\n");
+	public String printVTS(){
+		String toreturn = null;
+		for (int i= 0; i < this.mytimestamp.size(); i++){
+			toreturn.concat(this.mytimestamp.get(i).getplayer());
+			toreturn.concat(" ");
+			toreturn.concat(Integer.toString(this.mytimestamp.get(i).gettime()));
+			toreturn.concat(" ");
 		}
-		Mazewar.consolePrintLn("\n");
+		toreturn.concat("\n");
+		return toreturn;
 	}
-
 }
