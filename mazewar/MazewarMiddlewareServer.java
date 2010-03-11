@@ -223,7 +223,7 @@ public class MazewarMiddlewareServer extends Thread {
 					break;
 				default:
 					Mazewar.consolePrintLn("Weird message received!!!");
-					break;
+					return;
 				}
 				maze.commLocalClientUpdate(msg.cw, ce, msg.cw_optional);
 			}
