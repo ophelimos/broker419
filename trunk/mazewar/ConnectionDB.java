@@ -119,6 +119,11 @@ public class ConnectionDB {
 	}
 	
 	public synchronized boolean addPlayerName(String playerName, String hostname) {
+		
+		// Add them to our local timestamp
+		vectorobj newguy = new vectorobj(0, playerName);
+		Mazewar.localtimestamp.addplayer(newguy);
+		
 		int position = stringified_peers.indexOf(hostname);
 		if (position == -1) {
 			return false;
@@ -138,6 +143,8 @@ public class ConnectionDB {
 	 */
 	public synchronized boolean removePeer(Peer peer) {
 		boolean success = true;
+		// Remove them from the timestamp
+		success = Mazewar.localtimestamp.removePlayer(peer.playerName);
 		success = inputPeers.remove(peer);
 		success = outputPeers.removeElement(peer);
 		success = stringified_peers.removeElement(peer.hostname);
