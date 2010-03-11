@@ -19,16 +19,18 @@ public class MazewarMiddlewareServer extends Thread {
 
 	private ConnectionDB connectionDB;
 
-	// Queues used for communication - moved to MazeWar
-	// public clientQueue toNetwork = new clientQueue();
-	// public clientQueue toMaze = new clientQueue();
-
 	MazeImpl maze = null;
 
+	MazewarSLP slpserver = null;
+	
+	MazewarGUI mazewarGUI = null;
+
 	public MazewarMiddlewareServer(ConnectionDB connectionDB_in,
-			MazeImpl maze_in) {
+			MazeImpl maze_in, MazewarSLP slpserver_in, MazewarGUI mazewarGUI_in) {
 		this.connectionDB = connectionDB_in;
 		this.maze = maze_in;
+		this.slpserver = slpserver_in;
+		this.mazewarGUI = mazewarGUI_in;
 	}
 
 	// Receive packets from the network
@@ -52,6 +54,40 @@ public class MazewarMiddlewareServer extends Thread {
 					printPacket(receivedPacket);
 				}
 
+				// This whole thing could be merged with below, but I'm not
+				// smart enough right now
+				if (receivedPacket.type == gamePacket.GP_STARTGAME) {
+
+					// There's three things it can be now: an invitation, an ACK
+					// for my invitation, or a NACK for my invitation
+
+					if (receivedPacket.NACK) {
+						// It's a NACK: purge corresponding invitation
+						Mazewar.waitingForAcks.removeFromQueue(receivedPacket);
+						continue;
+					}
+
+					if (receivedPacket.ACK) {
+						// It's an ACK: mark it off
+						gamePacket ackedPacket = Mazewar.waitingForAcks
+								.haveACK(receivedPacket);
+						if (ackedPacket != null) {
+							// Put it in the toMaze queue
+							Mazewar.toMaze.addtoSortedQueue(ackedPacket);
+						}
+						continue;
+					}
+
+					// All right: it's an invitation. Throw it on the queue, and
+					// processPackets() will figure out what to do with it
+					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
+
+					// Synchronize time stamps
+					Mazewar.localtimestamp.max(receivedPacket.timeogram);
+
+					continue;
+				}
+
 				// Handle ACKing
 				if (receivedPacket.ACK) {
 					// haveALL add the ACK count and it returns true if we have
@@ -63,12 +99,10 @@ public class MazewarMiddlewareServer extends Thread {
 						Mazewar.toMaze.addtoSortedQueue(ackedPacket);
 					}
 				}
+
 				if (receivedPacket.wantACK) {
 					// Send an ACK
-					gamePacket ackPacket = new gamePacket(receivedPacket);
-					ackPacket.ACK = true;
-					ackPacket.wantACK = false;
-					Mazewar.toNetwork.addtoQueue(ackPacket);
+					sendACK(receivedPacket);
 				}
 
 				if (receivedPacket.type == gamePacket.GP_COMMAND) {
@@ -80,9 +114,6 @@ public class MazewarMiddlewareServer extends Thread {
 				} else if (receivedPacket.type == gamePacket.GP_MYNAME) {
 					connectionDB.addPlayerName(receivedPacket.senderName,
 							curPeer.hostname);
-				} else if (receivedPacket.type == gamePacket.GP_STARTGAME) {
-					// Start the game
-					Mazewar.consolePrintLn("Starting the game!!!");
 				} else {
 					Mazewar.consolePrintLn("Error: untyped packet received!");
 					printPacket(receivedPacket);
@@ -133,42 +164,55 @@ public class MazewarMiddlewareServer extends Thread {
 				// Nothing left to process
 				return;
 			}
-			MazewarMsg msg = mostRecentPacket.msg;
 
-			ClientEvent ce = null;
-			switch (msg.action) {
-			case MazewarMsg.MW_MSG_LEFT:
-				ce = ClientEvent.turnLeft;
-				break;
-			case MazewarMsg.MW_MSG_RIGHT:
-				ce = ClientEvent.turnRight;
-				break;
-			case MazewarMsg.MW_MSG_FWD:
-				ce = ClientEvent.moveForward;
-				break;
-			case MazewarMsg.MW_MSG_BKWD:
-				ce = ClientEvent.moveBackward;
-				break;
-			case MazewarMsg.MW_MSG_FIRE:
-				ce = ClientEvent.fire;
-				break;
-			case MazewarMsg.MW_MSG_CLIENT_ADDED:
-				ce = ClientEvent.client_added;
-				break;
-			case MazewarMsg.MW_MSG_CLIENT_REMOVED:
-				ce = ClientEvent.client_removed;
-				break;
-			case MazewarMsg.MW_MSG_CLIENT_ADDED_FIN:
-				ce = ClientEvent.client_added_fin;
-				break;
-			case MazewarMsg.MW_MSG_CLIENT_KILLED:
-				ce = ClientEvent.client_killed;
-				break;
-			default:
-				Mazewar.consolePrintLn("Weird message received!!!");
-				break;
+			if (mostRecentPacket.type == gamePacket.GP_STARTGAME) {
+				// Make sure we're in the right state
+				if (Mazewar.getStatus() == Mazewar.STATUS_PLAYING) {
+					Mazewar
+							.consolePrintLn("Received invitation, but already playing!!!");
+					continue;
+				}
+
+				// All right: let's start the game
+				startGame(mostRecentPacket);
+
+			} else if (mostRecentPacket.type == gamePacket.GP_COMMAND) {
+				MazewarMsg msg = mostRecentPacket.msg;
+				ClientEvent ce = null;
+				switch (msg.action) {
+				case MazewarMsg.MW_MSG_LEFT:
+					ce = ClientEvent.turnLeft;
+					break;
+				case MazewarMsg.MW_MSG_RIGHT:
+					ce = ClientEvent.turnRight;
+					break;
+				case MazewarMsg.MW_MSG_FWD:
+					ce = ClientEvent.moveForward;
+					break;
+				case MazewarMsg.MW_MSG_BKWD:
+					ce = ClientEvent.moveBackward;
+					break;
+				case MazewarMsg.MW_MSG_FIRE:
+					ce = ClientEvent.fire;
+					break;
+				case MazewarMsg.MW_MSG_CLIENT_ADDED:
+					ce = ClientEvent.client_added;
+					break;
+				case MazewarMsg.MW_MSG_CLIENT_REMOVED:
+					ce = ClientEvent.client_removed;
+					break;
+				case MazewarMsg.MW_MSG_CLIENT_ADDED_FIN:
+					ce = ClientEvent.client_added_fin;
+					break;
+				case MazewarMsg.MW_MSG_CLIENT_KILLED:
+					ce = ClientEvent.client_killed;
+					break;
+				default:
+					Mazewar.consolePrintLn("Weird message received!!!");
+					break;
+				}
+				maze.commLocalClientUpdate(msg.cw, ce, msg.cw_optional);
 			}
-			maze.commLocalClientUpdate(msg.cw, ce, msg.cw_optional);
 		}
 
 	}
@@ -211,7 +255,8 @@ public class MazewarMiddlewareServer extends Thread {
 		Mazewar.consolePrintLn("Packet Info: type = " + packet.type
 				+ " nextmove = " + packet.nextmove + " trackACK = "
 				+ packet.trackACK + " senderName = " + packet.senderName
-				+ " wantACK = " + packet.wantACK + " ACK = " + packet.ACK);
+				+ " wantACK = " + packet.wantACK + " ACK = " + packet.ACK
+				+ " NACK = " + packet.NACK);
 
 		// Timestamp
 		Mazewar.consolePrintLn("Timestamp: " + packet.timeogram.toString());
@@ -255,6 +300,63 @@ public class MazewarMiddlewareServer extends Thread {
 			}
 		}
 		Mazewar.consolePrintLn("----End Packet Info----");
+	}
+
+	/**
+	 * Function to do all the stuff associated with starting a game.
+	 * 
+	 */
+	private void startGame(gamePacket startPacket) {
+		// ACK the successfully received packet
+		sendACK(startPacket);
+
+		// Shut down SLP
+		slpserver.stopServer();
+		
+		// Set our state to PLAYING
+		Mazewar.setPlaying();
+
+		// Boot all nodes except the ones we're playing with
+		
+		// Get the current list of output peers
+		Enumeration<OutputPeer> networkPeers = connectionDB.getOutputPeers();
+
+		// Iterate through our network peers
+		OutputPeer curPeer = null;
+		while (networkPeers.hasMoreElements()) {
+			curPeer = networkPeers.nextElement();
+			for (int i = 0; i < startPacket.numPlayers; i++) {
+				if (startPacket.playerlist[i].equals(curPeer.hostname)) {
+					continue;
+				}
+			}
+			// Kill the connection
+			connectionDB.removePeer(curPeer);
+		}
+		
+		// Make remote clients for everyone we're playing with
+		for (int i = 0; i < startPacket.numPlayers; i++) {
+			RemoteClient newPlayer = new RemoteClient(startPacket.playerlist[i]);
+			Mazewar.actualPlayers.add(newPlayer);
+			maze.addClient(newPlayer);
+		}
+
+		// Attach the keyboard to the GUIclient
+		mazewarGUI.turnOnGUIClient();
+		Mazewar.consolePrintLn("Starting game!");
+	}
+
+	/**
+	 * Included twice, so separated
+	 * 
+	 * @param packetToAck
+	 */
+	private void sendACK(gamePacket packetToACK) {
+		// Send an ACK
+		gamePacket ackPacket = new gamePacket(packetToACK);
+		ackPacket.ACK = true;
+		ackPacket.wantACK = false;
+		Mazewar.toNetwork.addtoQueue(ackPacket);
 	}
 
 	public void run() {

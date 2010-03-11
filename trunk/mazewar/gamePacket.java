@@ -33,10 +33,15 @@ public class gamePacket implements Serializable {
 
 	// True if this packet is returning an ACK
 	public boolean ACK = false;
+	
+//	 True if this packet is nacking start-game signal
+	public boolean NACK = false;
 
 	public MazewarMsg msg = null;
 
 	public String playerlist[];
+	
+	public int numPlayers;
 	
 	// Packet type
 	public int type = GP_UNSET;

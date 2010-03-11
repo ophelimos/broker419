@@ -12,6 +12,7 @@ import java.net.Socket;
 public abstract class Peer {
 	Socket socket = null;
 	String hostname = null;
+	String playerName = null;
 	int port = 0;
 	
 	Peer(String name_in, int port_in) {

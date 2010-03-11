@@ -20,6 +20,20 @@ public class clientQueue {
 		lineup.add(toadd);
 		return true;
 	}
+	
+	// Delete an element from the queue corresponding to a particular timestamp
+	public synchronized boolean removeFromQueue(gamePacket checkfor) {
+		for (int point = 0; point < lineup.size(); point++) {
+			// Check if these timestamps are equal
+			if (eqltimestamp(checkfor.timeogram, lineup.get(point).timeogram)) {
+				//the timestamps are the same for these packets so kill it
+				lineup.remove(point);
+				return true;
+			}
+		}
+		
+		return false;
+	}
 
 	// Use this to add an element to the communicating queue
 	public synchronized void addtoSortedQueue(gamePacket toadd) {
@@ -125,10 +139,10 @@ public class clientQueue {
 		
 		//==========================================
 		//By now it is certain that this is the first ACK for this timestamp, so add in queue
-		if(!foundinqueue) {
-			checkfor.trackACK++;
-			lineup.add(checkfor);
-		}
+//		if(!foundinqueue) {
+//			checkfor.trackACK++;
+//			lineup.add(checkfor);
+//		}
 		// We dont have all the ACKs yet
 		return null;
 	}
