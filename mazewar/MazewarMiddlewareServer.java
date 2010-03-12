@@ -77,7 +77,7 @@ public class MazewarMiddlewareServer extends Thread {
 					sendACK(receivedPacket);
 				}
 
-				/**** Sorting packets by type ******/
+				/** ** Sorting packets by type ***** */
 				if (receivedPacket.type == gamePacket.GP_STARTGAME) {
 
 					// The only thing it can be is a command. Throw it on
@@ -87,25 +87,26 @@ public class MazewarMiddlewareServer extends Thread {
 					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 
 					continue;
-					
+
 				} else if (receivedPacket.type == gamePacket.GP_COMMAND) {
 					// Synchronize our timestamps
 					Mazewar.localtimestamp.max(receivedPacket.timeogram);
 
 					// Put it on the toMaze queue
 					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
-					
+
 				} else if (receivedPacket.type == gamePacket.GP_MYNAME) {
 					connectionDB.addPlayerName(receivedPacket.senderName,
 							curPeer.hostname);
-					
+
 				} else {
 					Mazewar.consolePrintLn("Error: untyped packet received!");
 					printPacket(receivedPacket);
 				}
 
 			} catch (ClassCastException e) {
-				Mazewar.consolePrintLn("Received garbage packet!  Killing connection...");
+				Mazewar
+						.consolePrintLn("Received garbage packet!  Killing connection...");
 				Mazewar.consolePrint("Connection failed with "
 						+ curPeer.hostname
 						+ "\n Removing from connection list...");
@@ -120,7 +121,8 @@ public class MazewarMiddlewareServer extends Thread {
 			} catch (IOException e) {
 				if (debug) {
 					e.getStackTrace();
-					Mazewar.consolePrintLn("Connection broke trying to receive packets");
+					Mazewar
+							.consolePrintLn("Connection broke trying to receive packets");
 				}
 				Mazewar.consolePrint("Connection failed with "
 						+ curPeer.hostname
@@ -267,10 +269,9 @@ public class MazewarMiddlewareServer extends Thread {
 	public void printPacket(gamePacket packet) {
 		Mazewar.consolePrintLn("----Packet Info----");
 		Mazewar.consolePrintLn("Packet Info: type = " + packet.type
-				+ " nextmove = " + packet.nextmove + " trackACK = "
-				+ packet.trackACK + " senderName = " + packet.senderName
-				+ " wantACK = " + packet.wantACK + " ACK = " + packet.ACK
-				+ " NACK = " + packet.NACK);
+				+ " trackACK = " + packet.trackACK + " senderName = "
+				+ packet.senderName + " wantACK = " + packet.wantACK
+				+ " ACK = " + packet.ACK + " NACK = " + packet.NACK);
 
 		// Timestamp
 		packet.timeogram.printVTS();
@@ -346,7 +347,7 @@ public class MazewarMiddlewareServer extends Thread {
 					continue PeersInNetwork;
 				}
 			}
-//			 Kill the connection (we haven't gotten out yet)
+			// Kill the connection (we haven't gotten out yet)
 			connectionDB.removePeer(curPeer);
 		}
 
@@ -360,15 +361,15 @@ public class MazewarMiddlewareServer extends Thread {
 				String playerName = getPlayerName(startPacket.playerlist[i]);
 				// Add it as a Remote Client
 				RemoteClient newPlayer = new RemoteClient(playerName);
-				//Mazewar.actualPlayers.add(newPlayer);
+				// Mazewar.actualPlayers.add(newPlayer);
 				maze.addClient(newPlayer);
 			}
 		}
-		
+
 		// Remove unneeded graphics
 		mazewarGUI.removeAvailablePlayers();
 		mazewarGUI.removeStartButton();
-		
+
 		// Add maze graphics
 		mazewarGUI.addOverheadPanel();
 		mazewarGUI.addScoreTable();

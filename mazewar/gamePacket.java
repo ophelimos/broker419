@@ -20,8 +20,6 @@ public class gamePacket implements Serializable {
 	public static final int GP_MYNAME = 3;
 
 	/** **** Variables ****** */
-	public int nextmove = 0;
-
 	public int trackACK = 0;
 
 	public String senderName = null;
@@ -57,7 +55,6 @@ public class gamePacket implements Serializable {
 	// be changing
 	public gamePacket(gamePacket fromPacket) {
 		this.type = fromPacket.type;
-		this.nextmove = fromPacket.nextmove;
 		this.trackACK = fromPacket.trackACK;
 		this.senderName = fromPacket.senderName;
 		this.timeogram = fromPacket.timeogram;
@@ -65,10 +62,6 @@ public class gamePacket implements Serializable {
 		this.ACK = fromPacket.ACK;
 		this.msg = fromPacket.msg;
 		this.playerlist = fromPacket.playerlist;
-	}
-
-	public void setnextmove(int action) {
-		nextmove = action;
 	}
 
 	public void addtrack() {

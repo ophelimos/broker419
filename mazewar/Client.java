@@ -158,7 +158,7 @@ public abstract class Client implements Serializable {
 
 		assert (maze != null);
 
-		if (maze.canFire(this)) {
+		if (maze.canMoveForward(this)) {
 			notifyMoveForward();
 			return true;
 		} else {
@@ -230,7 +230,7 @@ public abstract class Client implements Serializable {
 		//notifyListeners(ClientEvent.moveForward);
 		MazewarMsg msg = new MazewarMsg();
 		msg.action = MazewarMsg.MW_MSG_FWD;
-		handlelocalEvent(0, msg);
+		handlelocalEvent(msg);
 	}
 
 	/**
@@ -240,7 +240,7 @@ public abstract class Client implements Serializable {
 		//notifyListeners(ClientEvent.moveBackward);
 		MazewarMsg msg = new MazewarMsg();
 		msg.action = MazewarMsg.MW_MSG_BKWD;
-		handlelocalEvent(1, msg);
+		handlelocalEvent(msg);
 	}
 
 	/**
@@ -250,7 +250,7 @@ public abstract class Client implements Serializable {
 		//notifyListeners(ClientEvent.turnRight);
 		MazewarMsg msg = new MazewarMsg();
 		msg.action = MazewarMsg.MW_MSG_RIGHT;
-		handlelocalEvent(3, msg);
+		handlelocalEvent(msg);
 	}
 
 	/**
@@ -260,7 +260,7 @@ public abstract class Client implements Serializable {
 		//notifyListeners(ClientEvent.turnLeft);
 		MazewarMsg msg = new MazewarMsg();
 		msg.action = MazewarMsg.MW_MSG_LEFT;
-		handlelocalEvent(2, msg);
+		handlelocalEvent(msg);
 	}
 
 	/**
@@ -271,7 +271,7 @@ public abstract class Client implements Serializable {
 		MazewarMsg msg = new MazewarMsg();
 		msg.action = MazewarMsg.MW_MSG_FIRE;
 		
-		handlelocalEvent(4, msg);
+		handlelocalEvent(msg);
 	}
 	
 
@@ -279,7 +279,8 @@ public abstract class Client implements Serializable {
 	 * All other players must be listening to this. We shall increment our own
 	 * timestamp everytime notifyListener is called
 	 */
-	private void handlelocalEvent(int theaction, MazewarMsg msg){
+	private void handlelocalEvent(MazewarMsg msg) {
+		
 		//Increment my own timestamp
 		Mazewar.localtimestamp.increment(Mazewar.localName);
 		
@@ -298,9 +299,6 @@ public abstract class Client implements Serializable {
 		onetogo.type = gamePacket.GP_COMMAND;
 		needsToBeAcked.type = gamePacket.GP_COMMAND;
 		
-		//set the action for there packets
-		onetogo.nextmove = theaction;
-		
 		//Set sender's name in packet
 		onetogo.senderName = Mazewar.localName;
 
@@ -310,12 +308,8 @@ public abstract class Client implements Serializable {
 		//Set this packet as a firsttime packet
 		onetogo.wantACK = true;
 		
-		onetogo.msg.action = theaction;
 		//Add to the toNETWORK queue
 		Mazewar.toNetwork.addtoQueue(onetogo);
-
-		//set the action for there packets
-		needsToBeAcked.nextmove = theaction;
 		
 		//Set sender's name in packet
 		needsToBeAcked.senderName = Mazewar.localName;
@@ -325,8 +319,7 @@ public abstract class Client implements Serializable {
 		
 		//Set this packet as a firsttime packet
 		needsToBeAcked.wantACK = true;
-		
-		needsToBeAcked.msg.action = theaction;
+
 		//Add to the toMAZE queue | must be in sorted order
 		Mazewar.waitingForAcks.addtoSortedQueue(needsToBeAcked);
 	}
