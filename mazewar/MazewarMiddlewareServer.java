@@ -50,7 +50,8 @@ public class MazewarMiddlewareServer extends Thread {
 				// connection's down
 				if (receivedInfo == null) {
 					if (Mazewar.debugMode) {
-						Mazewar.consoleErrorPrintLn("Received NULL on input stream");
+						Mazewar
+								.consoleErrorPrintLn("Received NULL on input stream");
 					}
 					IOException nullReceived = new IOException();
 					throw nullReceived;
@@ -119,7 +120,8 @@ public class MazewarMiddlewareServer extends Thread {
 							badReceivingPeer = outputs.nextElement();
 							if (badReceivingPeer.hostname
 									.equals(curPeer.hostname)) {
-								Mazewar.consoleErrorPrintLn("Asking for a resend!");
+								Mazewar
+										.consoleErrorPrintLn("Asking for a resend!");
 								badReceivingPeer.out
 										.writeObject(packetToResend);
 							}
@@ -175,15 +177,17 @@ public class MazewarMiddlewareServer extends Thread {
 							curPeer.hostname);
 
 				} else {
-					Mazewar.consoleErrorPrintLn("Error: untyped packet received!");
+					Mazewar
+							.consoleErrorPrintLn("Error: untyped packet received!");
 					printPacket(receivedPacket);
 				}
 
 			} catch (ClassCastException e) {
+
 				Mazewar
 						.consoleErrorPrintLn("Received garbage packet!  Killing connection...");
 				Mazewar.consoleErrorPrintLn(e.getMessage());
-				Mazewar.consoleErrorPrintLn(receivedPacket.toString());
+				// Mazewar.consoleErrorPrintLn(receivedPacket.toString());
 				killConnection(curPeer);
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
@@ -291,7 +295,8 @@ public class MazewarMiddlewareServer extends Thread {
 					break;
 				default:
 					if (Mazewar.debugMode) {
-						Mazewar.consoleErrorPrintLn("Weird message received!!!");
+						Mazewar
+								.consoleErrorPrintLn("Weird message received!!!");
 					}
 					return;
 				}
