@@ -271,7 +271,7 @@ public class MazewarMiddlewareServer extends Thread {
 		Mazewar.consolePrintLn("Packet Info: type = " + packet.type
 				+ " trackACK = " + packet.trackACK + " senderName = "
 				+ packet.senderName + " wantACK = " + packet.wantACK
-				+ " ACK = " + packet.ACK + " NACK = " + packet.NACK + "Sender of msg: " + Mazewar.localName);
+				+ " ACK = " + packet.ACK + " NACK = " + packet.NACK + "\nSender of msg: " + packet.senderName + "\n");
 
 		// Timestamp
 		packet.timeogram.printVTS();
