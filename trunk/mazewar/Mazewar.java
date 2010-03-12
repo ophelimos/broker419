@@ -55,6 +55,8 @@ public class Mazewar extends JFrame {
 	public static final int STATUS_INVITING = 1;
 
 	public static final int STATUS_PLAYING = 2;
+	
+	public static boolean debugMode = false;
 
 	// The people we're actually playing with right now
 	public static Vector<RemoteClient> actualPlayers = new Vector<RemoteClient>();
@@ -93,7 +95,7 @@ public class Mazewar extends JFrame {
 	private static final long serialVersionUID = (long) 1;
 
 	// Program usage string
-	private static final String usageString = "Usage: mazewar [-c] [-p <port>] [-n <name>]";
+	private static final String usageString = "Usage: mazewar [-c] [-d] [-p <port>] [-n <name>]";
 
 	// Console-mode variable: don't bother with the GUI, and print everything to
 	// the screen
@@ -154,6 +156,30 @@ public class Mazewar extends JFrame {
 			System.out.println(msg);
 		} else {
 			console.setText(console.getText() + msg + "\n");
+		}
+	}
+	
+	/**
+	 * Write a message to the system call, or not at all, depending on whether debugging is enabled
+	 * 
+	 * @param msg
+	 *            The {@link String} to print.
+	 */
+	public static synchronized void consoleErrorPrintLn(String msg) {
+		if (debugMode) {
+			System.out.println(msg);
+		}
+	}
+	
+	/**
+	 * Write a message to the system call, or not at all, depending on whether debugging is enabled
+	 * 
+	 * @param msg
+	 *            The {@link String} to print.
+	 */
+	public static synchronized void consoleErrorPrint(String msg) {
+		if (debugMode) {
+			System.out.print(msg);
 		}
 	}
 
@@ -320,6 +346,9 @@ public class Mazewar extends JFrame {
 				} else {
 					System.out.println(usageString);
 				}
+			} else if (args[i].equals("-d")) {
+				debugMode = true;
+				continue;
 			}
 		}
 
