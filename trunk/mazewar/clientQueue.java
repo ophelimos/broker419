@@ -168,7 +168,7 @@ public class clientQueue {
 		}
 
 		for (point2 = 0; point2 < value2.mytimestamp.size(); point2++) {
-			sum2 = value2.mytimestamp.get(point2).gettime();
+			sum2 += value2.mytimestamp.get(point2).gettime();
 		}
 
 		if (sum2 == sum1) {
