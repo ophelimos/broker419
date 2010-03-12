@@ -23,7 +23,7 @@ public class timestamp implements Serializable {
 		}
 	}
 
-	public timestamp clone() {
+	public synchronized timestamp clone() {
 		timestamp newtimestamp = new timestamp();
 		for (int i = 0; i < this.mytimestamp.size(); i++) {
 			vectorobj me = this.mytimestamp.get(i).clone();
@@ -39,7 +39,7 @@ public class timestamp implements Serializable {
 	 * player twice
 	 */
 
-	public boolean addplayer(vectorobj newguy) {
+	public synchronized boolean addplayer(vectorobj newguy) {
 		int i = 0;
 		for (i = 0; i < mytimestamp.size(); i++) {
 			if (mytimestamp.elementAt(i).playername
@@ -54,7 +54,7 @@ public class timestamp implements Serializable {
 	/*
 	 * removeplayer from this vector timestamp
 	 */
-	public boolean removePlayer(String deadplayer) {
+	public synchronized boolean removePlayer(String deadplayer) {
 		for (int n =0; n< mytimestamp.size(); n++) {
 			if (deadplayer.equalsIgnoreCase(mytimestamp.get(n).getplayer())) {
 				mytimestamp.remove(n);
@@ -66,7 +66,7 @@ public class timestamp implements Serializable {
 	/**
 	 * Get the current value of the logical clock for a player
 	 */
-	public int get(vectorobj reqplayer) throws IllegalArgumentException {
+	public synchronized int get(vectorobj reqplayer) throws IllegalArgumentException {
 		for (int i = 0; i < mytimestamp.size(); i++) {
 			if (mytimestamp.get(i).playername
 					.equalsIgnoreCase(reqplayer.playername)) {
@@ -84,7 +84,7 @@ public class timestamp implements Serializable {
 	 * in list, this vector timestamp is [1, 3, 5] after invoking increment
 	 * 
 	 */
-	public void increment(String thename) {
+	public synchronized void increment(String thename) {
 		for (int i = 0; i < mytimestamp.size(); i++) {
 			if (mytimestamp.get(i).playername.equalsIgnoreCase(thename)) {
 				int temp = mytimestamp.get(i).gettime();
@@ -108,7 +108,7 @@ public class timestamp implements Serializable {
 	 *             if other.size() != size()
 	 * 
 	 */
-	public void max(timestamp other) throws IllegalArgumentException {
+	public synchronized void max(timestamp other) throws IllegalArgumentException {
 		
 		int i = 0;
 		for (i = 0; i < mytimestamp.size(); i++) {
@@ -144,7 +144,7 @@ public class timestamp implements Serializable {
 	 * @return true if other is causally next
 	 * 
 	 */
-	public boolean canDeliver(String myname, vectorobj other)
+	public synchronized boolean canDeliver(String myname, vectorobj other)
 			throws IllegalArgumentException {
 		int i = 0;
 		for (i = 0; i < mytimestamp.size(); i++) {
