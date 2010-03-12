@@ -26,7 +26,7 @@ import java.io.Serializable;
  */
 
 public class Direction implements Serializable {
-        
+	
         /* Internals ******************************************************/
         
 	private static final long serialVersionUID = 1L;

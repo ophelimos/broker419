@@ -34,12 +34,12 @@ public class timestamp implements Serializable {
 
 	/*
 	 * addplayer is called when each localclient needs to add a remote player to
-	 * its local timestamp
-	 *  - checks for having less than 4 players - checks to not add the same
-	 * player twice
+	 * its local timestamp - checks for having less than 4 players - checks to
+	 * not add the same player twice
 	 */
 
 	public synchronized boolean addplayer(vectorobj newguy) {
+		Mazewar.consolePrintLn("Adding player " + newguy.getplayer() + "to timestamp");
 		int i = 0;
 		for (i = 0; i < mytimestamp.size(); i++) {
 			if (mytimestamp.elementAt(i).playername
@@ -48,6 +48,7 @@ public class timestamp implements Serializable {
 			}
 		}
 		mytimestamp.add(newguy);
+		printVTS();
 		return true;
 	}
 
@@ -55,18 +56,22 @@ public class timestamp implements Serializable {
 	 * removeplayer from this vector timestamp
 	 */
 	public synchronized boolean removePlayer(String deadplayer) {
+		Mazewar.consolePrintLn("Removing player " + deadplayer + "from timestamp");
 		for (int n = 0; n < mytimestamp.size(); n++) {
 			if (deadplayer.equalsIgnoreCase(mytimestamp.get(n).getplayer())) {
 				mytimestamp.remove(n);
+				printVTS();
 				return true;
 			}
 		}
 		return false;
 	}
+
 	/**
 	 * Get the current value of the logical clock for a player
 	 */
-	public synchronized int get(vectorobj reqplayer) throws IllegalArgumentException {
+	public synchronized int get(vectorobj reqplayer)
+			throws IllegalArgumentException {
 		for (int i = 0; i < mytimestamp.size(); i++) {
 			if (mytimestamp.get(i).playername
 					.equalsIgnoreCase(reqplayer.playername)) {
@@ -91,6 +96,8 @@ public class timestamp implements Serializable {
 				mytimestamp.get(i).settime(temp + 1);
 			}
 		}
+		Mazewar.consolePrintLn("Incrementing timestamp");
+		printVTS();
 	}
 
 	/**
@@ -108,22 +115,24 @@ public class timestamp implements Serializable {
 	 *             if other.size() != size()
 	 * 
 	 */
-	public synchronized void max(timestamp other) throws IllegalArgumentException {
-		
+	public synchronized void max(timestamp other)
+			throws IllegalArgumentException {
+
 		int i = 0;
 		for (i = 0; i < mytimestamp.size(); i++) {
 			// Check for same player name and that mytimestamp's value
 			// for the player is lower than the other'
-			if (((mytimestamp.get(i).gettime() < other.mytimestamp.get(
-					i).gettime()))
+			if (((mytimestamp.get(i).gettime() < other.mytimestamp.get(i)
+					.gettime()))
 					&& (mytimestamp.get(i).getplayer()
 							.equalsIgnoreCase(other.mytimestamp.get(i)
 									.getplayer()))) {
 
-				mytimestamp.get(i).settime(
-						other.mytimestamp.get(i).gettime());
+				mytimestamp.get(i).settime(other.mytimestamp.get(i).gettime());
 			}
 		}
+		Mazewar.consolePrintLn("Timestamps synchronized to:");
+		printVTS();
 	}
 
 	/**
