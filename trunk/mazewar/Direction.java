@@ -33,8 +33,9 @@ public class Direction implements Serializable {
 
 		/**
          * Create a random number generator to produce random directions.
-         */
+         * 
         private static Random randomGen = new Random();
+         */
         
         /** 
          * Internal representation of directions
@@ -92,8 +93,7 @@ public class Direction implements Serializable {
         /**
          * Create a {@link Direction} randomly.
          * @return A random Cardinal {@link Direction}.
-         */
-        public static Direction random() {
+         *  public static Direction random() {
                 switch(randomGen.nextInt(4)) {
                         case NORTH:
                                 return South;
@@ -104,9 +104,10 @@ public class Direction implements Serializable {
                         case WEST:
                                 return East;
                 }
-                /* Impossible */
                 return null;
         }
+         */
+       
         
         /** 
          * Create a new {@link Direction} by rotating this one 

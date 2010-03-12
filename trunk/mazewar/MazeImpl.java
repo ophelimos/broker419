@@ -234,10 +234,20 @@ public class MazeImpl extends Maze implements Serializable, CommLocalListener,
 			point = new Point(randomGen.nextInt(maxX), randomGen.nextInt(maxY));
 			cell = getCellImpl(point);
 		}
-
-		Direction d = Direction.random();
+		//1001010 Fixed directions
+		Direction d = Direction.North;
+		int temp = 0;
 		while (cell.isWall(d)) {
-			d = Direction.random();
+			if (temp == 0){
+				d = Direction.South;
+			}
+			if(temp == 1) {
+				d = Direction.East;
+			}
+			if(temp == 2) {
+				d = Direction.West;
+			}
+			temp++;
 		}
 
 		addClient(client, point, d);
@@ -654,9 +664,19 @@ public class MazeImpl extends Maze implements Serializable, CommLocalListener,
 						.nextInt(maxY));
 				cell = getCellImpl(point);
 			}
-			Direction d = Direction.random();
+			Direction d = Direction.North;
+			int temp = 0;
 			while (cell.isWall(d)) {
-				d = Direction.random();
+				if (temp == 0){
+					d = Direction.South;
+				}
+				if(temp == 1) {
+					d = Direction.East;
+				}
+				if(temp == 2) {
+					d = Direction.West;
+				}
+				temp++;
 			}
 
 			// this will be done by the callback
