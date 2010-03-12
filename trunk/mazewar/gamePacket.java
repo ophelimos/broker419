@@ -18,7 +18,7 @@ public class gamePacket implements Serializable {
 	public static final int GP_COMMAND = 1;
 	public static final int GP_STARTGAME = 2;
 	public static final int GP_MYNAME = 3;
-	public static final int GP_RESEND = 3;
+	public static final int GP_RESEND = 4;
 
 	/** **** Variables ****** */
 	public int trackACK = 0;

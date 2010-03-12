@@ -34,6 +34,19 @@ public class clientQueue {
 
 		return false;
 	}
+	
+	// Delete an element from the queue corresponding to a particular timestamp
+	public synchronized gamePacket findInQueue(gamePacket checkfor) {
+		for (int point = 0; point < lineup.size(); point++) {
+			// Check if these timestamps are equal
+			if (eqltimestamp(checkfor.timeogram, lineup.get(point).timeogram)) {
+				// the timestamps are the same for these packets so send it back
+				return lineup.get(point);
+			}
+		}
+
+		return null;
+	}
 
 	// Use this to add an element to the communicating queue
 	public synchronized void addtoSortedQueue(gamePacket toadd) {
