@@ -435,48 +435,31 @@ public class MazeImpl extends Maze implements Serializable, CommLocalListener,
 			isConnected.signal();
 			lock.unlock();
 		} else if (ce.equals(ClientEvent.turnLeft)) {
-			if (!cw.name.equals(this.name)) {
 				Client c = name2clientLookup.get(cw.name);
 				rotateClientLeft(c);
-			}
 		} else if (ce.equals(ClientEvent.turnRight)) {
-			if (!cw.name.equals(this.name)) {
 				Client c = name2clientLookup.get(cw.name);
 				rotateClientRight(c);
-
-			}
 		} else if (ce.equals(ClientEvent.moveForward)) {
-			if (!cw.name.equals(this.name)) {
 				Client c = name2clientLookup.get(cw.name);
 				moveClientForward(c);
-
-			}
 		} else if (ce.equals(ClientEvent.moveBackward)) {
-			if (!cw.name.equals(this.name)) {
 				Client c = name2clientLookup.get(cw.name);
 				moveClientBackward(c);
-
-			}
 		} else if (ce.equals(ClientEvent.fire)) {
-			if (!cw.name.equals(this.name)) {
 				Client c = name2clientLookup.get(cw.name);
 				clientFire(c);
-
-			}
 		} else if (ce.equals(ClientEvent.client_added)) {
-			if (!cw.name.equals(this.name)) {
 				// this.addRemoteClient(c);
 				Client c = new RemoteClient(cw.name);
 				this.addRemoteClient(c, cw.point, cw.orientation);
 				System.out.println("MazeImpl: Remote Client to be added: "
 						+ c.getName());
-			}
 		} else if (ce.equals(ClientEvent.client_removed)) {
-			if (!cw.name.equals(this.name)) {
 				Client c = name2clientLookup.get(cw.name);
 				this.removeClient(c);
-			}
 		} else if (ce.equals(ClientEvent.client_killed)) {
+			// TODO: what do we do if killed?
 			Client target = name2clientLookup.get(cw_optional.name);
 			Client source = name2clientLookup.get(cw.name);
 			if (target instanceof GUIClient) {
@@ -487,10 +470,10 @@ public class MazeImpl extends Maze implements Serializable, CommLocalListener,
 
 			}
 		}
-
 		update();
 
 	}
+
 
 	/**
 	 * Set the name of the maze client (null if server)
