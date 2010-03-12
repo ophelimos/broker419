@@ -291,6 +291,8 @@ public abstract class Client implements Serializable {
 		CommClientWrapper cw = new CommClientWrapper(Mazewar.localName);
 		msg.cw = cw;
 		
+		// cw_optional only matters for killing people
+		
 		// Add the MazewarMsg's
 		onetogo.msg = msg;
 		needsToBeAcked.msg = msg;
@@ -301,25 +303,15 @@ public abstract class Client implements Serializable {
 		
 		//Set sender's name in packet
 		onetogo.senderName = Mazewar.localName;
-
-		//Set the timestamps for these packets
-		onetogo.timeogram = Mazewar.localtimestamp;
+		needsToBeAcked.senderName = Mazewar.localName;
 		
 		//Set this packet as a firsttime packet
 		onetogo.wantACK = true;
+		needsToBeAcked.wantACK = true;
 		
 		//Add to the toNETWORK queue
 		Mazewar.toNetwork.addtoQueue(onetogo);
 		
-		//Set sender's name in packet
-		needsToBeAcked.senderName = Mazewar.localName;
-
-		//Set the timestamps for these packets
-		needsToBeAcked.timeogram = Mazewar.localtimestamp;
-		
-		//Set this packet as a firsttime packet
-		needsToBeAcked.wantACK = true;
-
 		//Add to the toMAZE queue | must be in sorted order
 		Mazewar.waitingForAcks.addtoSortedQueue(needsToBeAcked);
 	}

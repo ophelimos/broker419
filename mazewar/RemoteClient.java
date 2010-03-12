@@ -33,6 +33,7 @@ public class RemoteClient extends Client {
          */
         public RemoteClient(String name) {
                 super(name);
+                assert(name != null);
         }
 
         /**

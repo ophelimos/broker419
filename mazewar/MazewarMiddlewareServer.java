@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.Enumeration;
+import java.util.Random;
+import java.util.Vector;
 
 /**
  * The Mazewar middleware server that sits between the network and the queues,
@@ -41,16 +43,34 @@ public class MazewarMiddlewareServer extends Thread {
 		// Iterate through our network peers, receiving one packet from each
 		InputPeer curPeer = null;
 		while (networkPeers.hasMoreElements()) {
+			gamePacket receivedPacket = null;
 			try {
 				curPeer = networkPeers.nextElement();
-				gamePacket receivedPacket = (gamePacket) curPeer.in
-						.readObject();
+
+				Object receivedInfo = curPeer.in.readObject();
 				// I'm not sure when we get null here, but it means the
 				// connection's down
-				if (receivedPacket == null) {
+				if (receivedInfo == null) {
+					Mazewar.consolePrintLn("Received NULL on input stream");
 					IOException nullReceived = new IOException();
 					throw nullReceived;
 				}
+
+				/*
+				 * For some absolutely bizarre reason, about 25% of the time
+				 * what gets sent is actually just the timestamp, not the entire
+				 * gamePacket. In this circumstance, we're going to have to ask
+				 * the thing to resend to us
+				 */
+				if (receivedInfo instanceof Vector) {
+					Vector<vectorobj> receivedVector = (Vector<vectorobj>) receivedInfo;
+					// Recreate the gamePacket and send it as a resend request
+					
+
+				}
+
+				// If it's not NULL, it should be a gamePacket
+				receivedPacket = (gamePacket) receivedInfo;
 				if (debug) {
 					printPacket(receivedPacket);
 				}
@@ -105,31 +125,18 @@ public class MazewarMiddlewareServer extends Thread {
 			} catch (ClassCastException e) {
 				Mazewar
 						.consolePrintLn("Received garbage packet!  Killing connection...");
-				Mazewar.consolePrint("Connection failed with "
-						+ curPeer.hostname
-						+ "\n Removing from connection list...");
-				if (connectionDB.removePeer(curPeer)) {
-					Mazewar.consolePrint("Success!\n");
-				} else {
-					Mazewar.consolePrint("Failed!\n");
-				}
+				Mazewar.consolePrintLn(e.getMessage());
+				Mazewar.consolePrintLn(receivedPacket.toString());
+				killConnection(curPeer);
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
 				continue;
 			} catch (IOException e) {
 				if (debug) {
 					e.getStackTrace();
-					Mazewar
-							.consolePrintLn("Connection broke trying to receive packets");
+					Mazewar.consolePrintLn("Connection broke on RECEIVE");
 				}
-				Mazewar.consolePrint("Connection failed with "
-						+ curPeer.hostname
-						+ "\n Removing from connection list...");
-				if (connectionDB.removePeer(curPeer)) {
-					Mazewar.consolePrint("Success!\n");
-				} else {
-					Mazewar.consolePrint("Failed!\n");
-				}
+				killConnection(curPeer);
 			} catch (ClassNotFoundException e) {
 				System.out.println("Node " + curPeer.hostname
 						+ "sent unrecognized packet!");
@@ -249,14 +256,10 @@ public class MazewarMiddlewareServer extends Thread {
 					Mazewar.consolePrintLn("Sent packet:");
 					printPacket(packetToSend);
 				} catch (IOException e) {
-					Mazewar.consolePrintLn("Connection failed with "
-							+ curPeer.hostname
-							+ "\n Removing from connection list...");
-					if (connectionDB.removePeer(curPeer)) {
-						Mazewar.consolePrint("Success!\n");
-					} else {
-						Mazewar.consolePrint("Failed!\n");
+					if (debug) {
+						Mazewar.consolePrintLn("Connection broke on SEND");
 					}
+					killConnection(curPeer);
 				}
 			}
 		}
@@ -271,7 +274,8 @@ public class MazewarMiddlewareServer extends Thread {
 		Mazewar.consolePrintLn("Packet Info: type = " + packet.type
 				+ " trackACK = " + packet.trackACK + " senderName = "
 				+ packet.senderName + " wantACK = " + packet.wantACK
-				+ " ACK = " + packet.ACK + " NACK = " + packet.NACK + "\nSender of msg: " + packet.senderName + "\n");
+				+ " ACK = " + packet.ACK + " NACK = " + packet.NACK
+				+ "\nSender of msg: " + packet.senderName + "\n");
 
 		// Timestamp
 		packet.timeogram.printVTS();
@@ -325,7 +329,9 @@ public class MazewarMiddlewareServer extends Thread {
 		// No ACKing startGame packets
 
 		// Stop accepting connections
-		Mazewar.acceptingNewConnections = false;
+		// Left enabled for now, since I want to try seeing if we can
+		// re-establish connections
+		// Mazewar.acceptingNewConnections = false;
 
 		// Shut down SLP
 		slpserver.stopServer();
@@ -350,12 +356,13 @@ public class MazewarMiddlewareServer extends Thread {
 			// Kill the connection (we haven't gotten out yet)
 			connectionDB.removePeer(curPeer);
 		}
-		
-//		 Remove unneeded graphics
+
+		// Remove unneeded graphics
 		mazewarGUI.removeAvailablePlayers();
 		mazewarGUI.removeStartButton();
 
-		// Add maze graphics - BEFORE doing anything to the maze (i.e. adding players)
+		// Add maze graphics - BEFORE doing anything to the maze (i.e. adding
+		// players)
 		mazewarGUI.addOverheadPanel();
 		mazewarGUI.addScoreTable();
 
@@ -367,6 +374,12 @@ public class MazewarMiddlewareServer extends Thread {
 			} else {
 				// Find the player name corresponding to the hostname
 				String playerName = getPlayerName(startPacket.playerlist[i]);
+				// If that name is NULL, make it something obvious
+				if (playerName == null) {
+					Random generator = new Random();
+					playerName = "NullName"
+							+ Integer.toString(generator.nextInt());
+				}
 				// Add it as a Remote Client
 				RemoteClient newPlayer = new RemoteClient(playerName);
 				// Mazewar.actualPlayers.add(newPlayer);
@@ -379,6 +392,7 @@ public class MazewarMiddlewareServer extends Thread {
 		// Attach the keyboard to the GUIclient
 		mazewarGUI.turnOnGUIClient();
 		Mazewar.consolePrintLn("Starting game!");
+		mazewarGUI.requestFocusInWindow();
 	}
 
 	public String getPlayerName(String hostname) {
@@ -389,6 +403,43 @@ public class MazewarMiddlewareServer extends Thread {
 		}
 
 		return null;
+	}
+
+	public boolean restartConnection(Peer curPeer) {
+		// Try to re-establish it
+		OutputPeer tryagain = new OutputPeer(curPeer.hostname, curPeer.port);
+		return connectionDB.addOutputPeer(tryagain);
+	}
+
+	public boolean killConnection(Peer curPeer) {
+		Mazewar.consolePrint("Connection failed with " + curPeer.hostname
+				+ "\n Removing from connection list...");
+
+		boolean success = false;
+		success = connectionDB.removePeer(curPeer);
+
+		// Try to re-establish it
+		if (restartConnection(curPeer)) {
+			Mazewar.consolePrint("Re-established!\n");
+			return true;
+		} else {
+			Mazewar.consolePrintLn("Failed to re-establish :(");
+		}
+		// Take it out of the game if we're playing
+		if (Mazewar.getStatus() == Mazewar.STATUS_PLAYING) {
+			ClientEvent ce = ClientEvent.client_removed;
+			CommClientWrapper cw = new CommClientWrapper(curPeer.playerName);
+			CommClientWrapper cw_optional = null;
+			maze.commLocalClientUpdate(cw, ce, cw_optional);
+		}
+
+		if (success) {
+			Mazewar.consolePrint("Success!\n");
+		} else {
+			Mazewar.consolePrint("Failed!\n");
+		}
+
+		return success;
 	}
 
 	/**

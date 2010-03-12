@@ -60,9 +60,6 @@ public class ConnectionDB {
 			// that might not be coming
 			peer.socket.setSoTimeout(1);
 
-			// Also put it in the list of stringified peers
-			stringified_peers.addElement(peer.hostname);
-
 			peer.in = new ObjectInputStream(peer.socket.getInputStream());
 
 		} catch (IOException e) {
@@ -76,13 +73,13 @@ public class ConnectionDB {
 						+ peer.hostname);
 	}
 
-	public synchronized void addOutputPeer(OutputPeer peer) {
+	public synchronized boolean addOutputPeer(OutputPeer peer) {
 
 		// Check if it's already in the vector
 		for (int i = 0; i < outputPeers.size(); i++) {
 			OutputPeer tmp = (OutputPeer) outputPeers.get(i);
 			if (tmp.hostname.equals(peer.hostname)) {
-				return;
+				return false;
 			}
 		}
 
@@ -105,17 +102,28 @@ public class ConnectionDB {
 
 			peer.out.writeObject(nameMessage);
 
+			// Also put it in the list of stringified peers
+			stringified_peers.addElement(peer.hostname);
+
+			// And if it's already got an inputPeer, notify anyone who's waiting
+			for (int i = 0; i < inputPeers.size(); i++) {
+				if (inputPeers.get(i).hostname.equals(peer.hostname)) {
+					notify();
+				}
+			}
+
 		} catch (UnknownHostException e) {
 			Mazewar.consolePrintLn("Invalid hostname received from SLP!!!");
-			return;
+			return false;
 		} catch (IOException e) {
 			Mazewar
 					.consolePrintLn("I/O exception connecting to SLP-received address");
-			return;
+			return false;
 		}
 
 		outputPeers.addElement(peer);
 		Mazewar.consolePrintLn("Connected to peer " + peer.hostname);
+		return true;
 	}
 
 	public synchronized boolean addPlayerName(String playerName, String hostname) {
@@ -124,10 +132,18 @@ public class ConnectionDB {
 		vectorobj newguy = new vectorobj(0, playerName);
 		Mazewar.localtimestamp.addplayer(newguy);
 
-		int position = stringified_peers.indexOf(hostname);
-		if (position == -1) {
-			return false;
+		while (stringified_peers.indexOf(hostname) == -1) {
+			// We need to wait until it actually gets there (adds the output
+			// peer), thus requiring some waiting and signaling
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				Mazewar
+						.consolePrintLn("Waiting for peer to appear on output list interrupted!");
+			}
 		}
+
+		int position = stringified_peers.indexOf(hostname);
 
 		// Otherwise, it's there, replace it
 		stringified_peers.set(position, playerName + "@" + hostname);
@@ -146,9 +162,21 @@ public class ConnectionDB {
 		// Remove them from the timestamp - if we've already connected
 		if (peer.playerName != null) {
 			success = Mazewar.localtimestamp.removePlayer(peer.playerName);
+			if (success) {
+				Mazewar.consolePrintLn("Peer removed from timestamp");
+			}
 			success = inputPeers.remove(peer);
+			if (success) {
+				Mazewar.consolePrintLn("Peer removed from inputPeers");
+			}
 			success = outputPeers.removeElement(peer);
-			success = stringified_peers.removeElement(peer.hostname);
+			if (success) {
+				Mazewar.consolePrintLn("Peer removed from outputPeers");
+			}
+			success = stringified_peers.removeElement(peer.playerName + "@" + peer.hostname);
+			if (success) {
+				Mazewar.consolePrintLn("Peer removed from stringified peers");
+			}
 		}
 		return success;
 	}

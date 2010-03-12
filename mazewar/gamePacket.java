@@ -18,6 +18,7 @@ public class gamePacket implements Serializable {
 	public static final int GP_COMMAND = 1;
 	public static final int GP_STARTGAME = 2;
 	public static final int GP_MYNAME = 3;
+	public static final int GP_RESEND = 3;
 
 	/** **** Variables ****** */
 	public int trackACK = 0;
@@ -57,7 +58,7 @@ public class gamePacket implements Serializable {
 		this.type = fromPacket.type;
 		this.trackACK = fromPacket.trackACK;
 		this.senderName = fromPacket.senderName;
-		this.timeogram = fromPacket.timeogram;
+		this.timeogram = fromPacket.timeogram.clone();
 		this.wantACK = fromPacket.wantACK;
 		this.ACK = fromPacket.ACK;
 		this.msg = fromPacket.msg;
