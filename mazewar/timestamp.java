@@ -39,7 +39,7 @@ public class timestamp implements Serializable {
 	 */
 
 	public synchronized boolean addplayer(vectorobj newguy) {
-		Mazewar.consolePrintLn("Adding player " + newguy.getplayer() + "to timestamp");
+		Mazewar.consolePrintLn("Adding player " + newguy.getplayer() + " to timestamp");
 		int i = 0;
 		for (i = 0; i < mytimestamp.size(); i++) {
 			if (mytimestamp.elementAt(i).playername
@@ -118,6 +118,11 @@ public class timestamp implements Serializable {
 	public synchronized void max(timestamp other)
 			throws IllegalArgumentException {
 
+		// If the timestamps aren't the same size, don't do it
+		if (mytimestamp.size() != other.mytimestamp.size()) {
+			Mazewar.consolePrintLn("Timestamp size mismatch on synch");
+			return;
+		}
 		int i = 0;
 		for (i = 0; i < mytimestamp.size(); i++) {
 			// Check for same player name and that mytimestamp's value
