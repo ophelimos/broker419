@@ -148,8 +148,9 @@ public class ConnectionDB {
 		// Otherwise, it's there, replace it
 		stringified_peers.set(position, playerName + "@" + hostname);
 
-		// Do the same thing with inputPeers
+		// Do the same thing with inputPeers and outputPeers
 		inputPeers.get(position).playerName = playerName;
+		outputPeers.get(position).playerName = playerName;
 		return true;
 	}
 
