@@ -350,6 +350,14 @@ public class MazewarMiddlewareServer extends Thread {
 			// Kill the connection (we haven't gotten out yet)
 			connectionDB.removePeer(curPeer);
 		}
+		
+//		 Remove unneeded graphics
+		mazewarGUI.removeAvailablePlayers();
+		mazewarGUI.removeStartButton();
+
+		// Add maze graphics - BEFORE doing anything to the maze (i.e. adding players)
+		mazewarGUI.addOverheadPanel();
+		mazewarGUI.addScoreTable();
 
 		// Make remote clients for everyone we're playing with
 		for (int i = 0; i < startPacket.numPlayers; i++) {
@@ -365,14 +373,6 @@ public class MazewarMiddlewareServer extends Thread {
 				maze.addClient(newPlayer);
 			}
 		}
-
-		// Remove unneeded graphics
-		mazewarGUI.removeAvailablePlayers();
-		mazewarGUI.removeStartButton();
-
-		// Add maze graphics
-		mazewarGUI.addOverheadPanel();
-		mazewarGUI.addScoreTable();
 
 		mazewarGUI.pack();
 
