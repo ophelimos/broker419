@@ -123,18 +123,21 @@ public class timestamp implements Serializable {
 			Mazewar.consolePrintLn("Timestamp size mismatch on synch");
 			return;
 		}
-		int i = 0;
+		int i = 0, k=0;
 		for (i = 0; i < mytimestamp.size(); i++) {
 			// Check for same player name and that mytimestamp's value
 			// for the player is lower than the other'
-			if (((mytimestamp.get(i).gettime() < other.mytimestamp.get(i)
-					.gettime()))
-					&& (mytimestamp.get(i).getplayer()
-							.equalsIgnoreCase(other.mytimestamp.get(i)
-									.getplayer()))) {
+			for (k=0; k < mytimestamp.size(); k++){
+				if (((mytimestamp.get(i).gettime() < other.mytimestamp.get(k)
+						.gettime()))
+						&& (mytimestamp.get(i).getplayer()
+								.equalsIgnoreCase(other.mytimestamp.get(k)
+										.getplayer()))) {
 
-				mytimestamp.get(i).settime(other.mytimestamp.get(i).gettime());
+					mytimestamp.get(i).settime(other.mytimestamp.get(k).gettime());
+				}
 			}
+			
 		}
 		Mazewar.consolePrintLn("Timestamps synchronized to:");
 		printVTS();
