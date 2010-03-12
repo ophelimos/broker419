@@ -19,6 +19,7 @@ public class gamePacket implements Serializable {
 	public static final int GP_STARTGAME = 2;
 	public static final int GP_MYNAME = 3;
 	public static final int GP_RESEND = 4;
+	public static final int GP_RESPAWN = 5;
 
 	/** **** Variables ****** */
 	public int trackACK = 0;
@@ -42,6 +43,7 @@ public class gamePacket implements Serializable {
 	
 	public int numPlayers;
 	
+	//public Point clientPosition;
 	// Packet type
 	public int type = GP_UNSET;
 
@@ -51,7 +53,10 @@ public class gamePacket implements Serializable {
 		senderName = Mazewar.localName;
 		timeogram = Mazewar.localtimestamp.clone();
 	}
-
+	/*
+	public void setClientPoint(Point passPoint){
+		clientPosition = new Point(passPoint.getX(), passPoint.getY());
+	}*/
 	// Copy constructor - just shallow copies for now, since nothing else should
 	// be changing
 	public gamePacket(gamePacket fromPacket) {
