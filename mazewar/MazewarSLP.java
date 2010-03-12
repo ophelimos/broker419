@@ -52,8 +52,8 @@ public class MazewarSLP extends Thread {
 			attributes.put("name", Mazewar.localName);
 			advertiser.register(mazewarService, attributes);
 		} catch (ServiceLocationException e) {
-			Mazewar.consolePrintLn("Failed to initialize jSLP server");
-			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
+			Mazewar.consoleErrorPrintLn("Failed to initialize jSLP server");
+			Mazewar.consoleErrorPrintLn("Error Code: " + e.getErrorCode());
 		}
 	}
 
@@ -62,8 +62,8 @@ public class MazewarSLP extends Thread {
 		try {
 			locator = ServiceLocationManager.getLocator(new Locale("en"));
 		} catch (ServiceLocationException e) {
-			Mazewar.consolePrintLn("Failed to initialize jSLP locator");
-			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
+			Mazewar.consoleErrorPrintLn("Failed to initialize jSLP locator");
+			Mazewar.consoleErrorPrintLn("Error Code: " + e.getErrorCode());
 		}
 	}
 
@@ -75,8 +75,8 @@ public class MazewarSLP extends Thread {
 			tmpClients = locator.findServices(new ServiceType(
 					"service:mazewar:server"), null, null);
 		} catch (ServiceLocationException e) {
-			Mazewar.consolePrintLn("Failed to scan network");
-			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
+			Mazewar.consoleErrorPrintLn("Failed to scan network");
+			Mazewar.consoleErrorPrintLn("Error Code: " + e.getErrorCode());
 		}
 
 		return tmpClients;
@@ -94,7 +94,7 @@ public class MazewarSLP extends Thread {
 			try {
 				cur = (ServiceURL) slpPeers.next();
 			} catch (ServiceLocationException e) {
-				Mazewar.consolePrintLn("Error iterating through SLP peers");
+				Mazewar.consoleErrorPrintLn("Error iterating through SLP peers");
 				return;
 			}
 			// Give ConnectionDB the information it needs to add it
@@ -120,6 +120,10 @@ public class MazewarSLP extends Thread {
 
 	public void stopServer() {
 		try {
+			if (advertiser == null) {
+				Mazewar.consoleErrorPrintLn("Trying to stop the server a second time!!!");
+				return;
+			}
 			killServer = true;
 			mazewarService = new ServiceURL("service:mazewar:server://"
 					+ advertiser.getMyIP() + ":" + Mazewar.slpPort,
@@ -129,8 +133,8 @@ public class MazewarSLP extends Thread {
 			mazewarService = null;
 			locator = null;
 		} catch (ServiceLocationException e) {
-			Mazewar.consolePrintLn("Failed to shut down jSLP server");
-			Mazewar.consolePrintLn("Error Code: " + e.getErrorCode());
+			Mazewar.consoleErrorPrintLn("Failed to shut down jSLP server");
+			Mazewar.consoleErrorPrintLn("Error Code: " + e.getErrorCode());
 		}
 	}
 

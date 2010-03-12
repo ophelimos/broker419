@@ -63,7 +63,7 @@ public class ConnectionDB {
 			peer.in = new ObjectInputStream(peer.socket.getInputStream());
 
 		} catch (IOException e) {
-			Mazewar.consolePrintLn("I/O exception forming input stream");
+			Mazewar.consoleErrorPrintLn("I/O exception forming input stream");
 			return;
 		}
 
@@ -113,11 +113,11 @@ public class ConnectionDB {
 			}
 
 		} catch (UnknownHostException e) {
-			Mazewar.consolePrintLn("Invalid hostname received from SLP!!!");
+			Mazewar.consoleErrorPrintLn("Invalid hostname received from SLP!!!");
 			return false;
 		} catch (IOException e) {
 			Mazewar
-					.consolePrintLn("I/O exception connecting to SLP-received address");
+					.consoleErrorPrintLn("I/O exception connecting to SLP-received address");
 			return false;
 		}
 
@@ -139,7 +139,7 @@ public class ConnectionDB {
 				wait();
 			} catch (InterruptedException e) {
 				Mazewar
-						.consolePrintLn("Waiting for peer to appear on output list interrupted!");
+						.consoleErrorPrintLn("Waiting for peer to appear on output list interrupted!");
 			}
 		}
 
@@ -164,19 +164,19 @@ public class ConnectionDB {
 		if (peer.playerName != null) {
 			success = Mazewar.localtimestamp.removePlayer(peer.playerName);
 			if (success) {
-				Mazewar.consolePrintLn("Peer removed from timestamp");
+				Mazewar.consoleErrorPrintLn("Peer removed from timestamp");
 			}
 			success = inputPeers.remove(peer);
 			if (success) {
-				Mazewar.consolePrintLn("Peer removed from inputPeers");
+				Mazewar.consoleErrorPrintLn("Peer removed from inputPeers");
 			}
 			success = outputPeers.removeElement(peer);
-			if (success) {
-				Mazewar.consolePrintLn("Peer removed from outputPeers");
+			if (success && Mazewar.debugMode) {
+				Mazewar.consoleErrorPrintLn("Peer removed from outputPeers");
 			}
 			success = stringified_peers.removeElement(peer.playerName + "@" + peer.hostname);
 			if (success) {
-				Mazewar.consolePrintLn("Peer removed from stringified peers");
+				Mazewar.consoleErrorPrintLn("Peer removed from stringified peers");
 			}
 		}
 		return success;

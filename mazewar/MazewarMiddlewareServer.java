@@ -17,8 +17,6 @@ public class MazewarMiddlewareServer extends Thread {
 	// Reasonable batch of packets to process at once
 	private final int processBatch = 256;
 
-	private boolean debug = true;
-
 	private ConnectionDB connectionDB;
 
 	MazeImpl maze = null;
@@ -51,7 +49,9 @@ public class MazewarMiddlewareServer extends Thread {
 				// I'm not sure when we get null here, but it means the
 				// connection's down
 				if (receivedInfo == null) {
-					Mazewar.consolePrintLn("Received NULL on input stream");
+					if (Mazewar.debugMode) {
+						Mazewar.consoleErrorPrintLn("Received NULL on input stream");
+					}
 					IOException nullReceived = new IOException();
 					throw nullReceived;
 				}
@@ -80,7 +80,10 @@ public class MazewarMiddlewareServer extends Thread {
 							badSendingPeer = outputs.nextElement();
 							if (badSendingPeer.hostname
 									.equals(curPeer.hostname)) {
-								Mazewar.consolePrintLn("Asking for a resend!");
+								if (Mazewar.debugMode) {
+									Mazewar
+											.consoleErrorPrintLn("Asking for a resend!");
+								}
 								badSendingPeer.out.writeObject(resendRq);
 							}
 						}
@@ -92,7 +95,7 @@ public class MazewarMiddlewareServer extends Thread {
 
 				// If it's not NULL, it should be a gamePacket
 				receivedPacket = (gamePacket) receivedInfo;
-				if (debug) {
+				if (Mazewar.debugMode) {
 					printPacket(receivedPacket);
 				}
 
@@ -101,9 +104,9 @@ public class MazewarMiddlewareServer extends Thread {
 					// Find the packet in waitingForAck
 					gamePacket packetToResend = Mazewar.waitingForAcks
 							.findInQueue(receivedPacket);
-					if (packetToResend == null) {
+					if (packetToResend == null && Mazewar.debugMode) {
 						Mazewar
-								.consolePrintLn("Something's really weird: "
+								.consoleErrorPrintLn("Something's really weird: "
 										+ "not finding a packet to resend in the waitingForAcks queue");
 					}
 					// Resend the packet
@@ -116,7 +119,7 @@ public class MazewarMiddlewareServer extends Thread {
 							badReceivingPeer = outputs.nextElement();
 							if (badReceivingPeer.hostname
 									.equals(curPeer.hostname)) {
-								Mazewar.consolePrintLn("Asking for a resend!");
+								Mazewar.consoleErrorPrintLn("Asking for a resend!");
 								badReceivingPeer.out
 										.writeObject(packetToResend);
 							}
@@ -172,23 +175,23 @@ public class MazewarMiddlewareServer extends Thread {
 							curPeer.hostname);
 
 				} else {
-					Mazewar.consolePrintLn("Error: untyped packet received!");
+					Mazewar.consoleErrorPrintLn("Error: untyped packet received!");
 					printPacket(receivedPacket);
 				}
 
 			} catch (ClassCastException e) {
 				Mazewar
-						.consolePrintLn("Received garbage packet!  Killing connection...");
-				Mazewar.consolePrintLn(e.getMessage());
-				Mazewar.consolePrintLn(receivedPacket.toString());
+						.consoleErrorPrintLn("Received garbage packet!  Killing connection...");
+				Mazewar.consoleErrorPrintLn(e.getMessage());
+				Mazewar.consoleErrorPrintLn(receivedPacket.toString());
 				killConnection(curPeer);
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
 				continue;
 			} catch (IOException e) {
-				if (debug) {
+				if (Mazewar.debugMode) {
 					e.getStackTrace();
-					Mazewar.consolePrintLn("Connection broke on RECEIVE");
+					Mazewar.consoleErrorPrintLn("Connection broke on RECEIVE");
 				}
 				killConnection(curPeer);
 			} catch (ClassNotFoundException e) {
@@ -213,7 +216,7 @@ public class MazewarMiddlewareServer extends Thread {
 			if (!Mazewar.waitingForAcks.lineup.isEmpty()) {
 				if (Mazewar.toMaze.isTimeLessThan(Mazewar.waitingForAcks.lineup
 						.get(0), Mazewar.toMaze.lineup.get(0))) {
-					Mazewar.consolePrintLn("Waiting for an ACK...");
+					Mazewar.consoleErrorPrintLn("Waiting for an ACK...");
 					break;
 				}
 			}
@@ -236,16 +239,20 @@ public class MazewarMiddlewareServer extends Thread {
 				}
 
 				if (!forUs) {
-					Mazewar
-							.consolePrintLn("Received extra StartGame packet - disregarding");
+					if (Mazewar.debugMode) {
+						Mazewar
+								.consoleErrorPrintLn("Received extra StartGame packet - disregarding");
+					}
 					continue;
 				}
 
 				// Make sure we're in the right state
 				if (Mazewar.getStatus() == Mazewar.STATUS_PLAYING) {
-					Mazewar
-							.consolePrintLn("Received invitation, but already playing!!!");
-					continue;
+					if (Mazewar.debugMode) {
+						Mazewar
+								.consoleErrorPrintLn("Received invitation, but already playing!!!");
+						continue;
+					}
 				}
 
 				// All right: let's start the game
@@ -283,7 +290,9 @@ public class MazewarMiddlewareServer extends Thread {
 					ce = ClientEvent.client_killed;
 					break;
 				default:
-					Mazewar.consolePrintLn("Weird message received!!!");
+					if (Mazewar.debugMode) {
+						Mazewar.consoleErrorPrintLn("Weird message received!!!");
+					}
 					return;
 				}
 				maze.commLocalClientUpdate(msg.cw, ce, msg.cw_optional);
@@ -307,12 +316,12 @@ public class MazewarMiddlewareServer extends Thread {
 				try {
 					curPeer = networkPeers.nextElement();
 					curPeer.out.writeObject(packetToSend);
-					Mazewar.consolePrintLn("Sent packet:");
-					printPacket(packetToSend);
-				} catch (IOException e) {
-					if (debug) {
-						Mazewar.consolePrintLn("Connection broke on SEND");
+					if (Mazewar.debugMode) {
+						Mazewar.consoleErrorPrintLn("Sent packet:");
+						printPacket(packetToSend);
 					}
+				} catch (IOException e) {
+					Mazewar.consoleErrorPrintLn("Connection broke on SEND");
 					killConnection(curPeer);
 				}
 			}
@@ -368,7 +377,7 @@ public class MazewarMiddlewareServer extends Thread {
 				Mazewar.consolePrint("client_killed\n");
 				break;
 			default:
-				Mazewar.consolePrintLn("BAD\n");
+				Mazewar.consolePrint("BAD\n");
 				break;
 			}
 		}
@@ -480,7 +489,7 @@ public class MazewarMiddlewareServer extends Thread {
 				Mazewar.consolePrint("Re-established!\n");
 				return true;
 			} else {
-				Mazewar.consolePrintLn("Failed to re-establish :(");
+				Mazewar.consoleErrorPrintLn("Failed to re-establish :(");
 			}
 		}
 		// Take it out of the game if we're playing

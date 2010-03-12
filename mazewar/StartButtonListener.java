@@ -87,7 +87,7 @@ public class StartButtonListener implements MouseListener {
 				mazewarGUI.selectedPlayers.get(i).out
 						.writeObject(startGamePacket);
 			} catch (IOException exc) {
-				Mazewar.consolePrintLn("Dropped the connection with "
+				Mazewar.consoleErrorPrintLn("Dropped the connection with "
 						+ mazewarGUI.selectedPlayers.get(i).hostname
 						+ " while trying to start the game");
 				// Broadcast our name, ensuring dropped connections get

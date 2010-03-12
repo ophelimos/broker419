@@ -39,7 +39,7 @@ public class timestamp implements Serializable {
 	 */
 
 	public synchronized boolean addplayer(vectorobj newguy) {
-		Mazewar.consolePrintLn("Adding player " + newguy.getplayer() + " to timestamp");
+		Mazewar.consoleErrorPrintLn("Adding player " + newguy.getplayer() + " to timestamp");
 		int i = 0;
 		for (i = 0; i < mytimestamp.size(); i++) {
 			if (mytimestamp.elementAt(i).playername
@@ -56,7 +56,7 @@ public class timestamp implements Serializable {
 	 * removeplayer from this vector timestamp
 	 */
 	public synchronized boolean removePlayer(String deadplayer) {
-		Mazewar.consolePrintLn("Removing player " + deadplayer + "from timestamp");
+		Mazewar.consoleErrorPrintLn("Removing player " + deadplayer + "from timestamp");
 		for (int n = 0; n < mytimestamp.size(); n++) {
 			if (deadplayer.equalsIgnoreCase(mytimestamp.get(n).getplayer())) {
 				mytimestamp.remove(n);
@@ -96,7 +96,7 @@ public class timestamp implements Serializable {
 				mytimestamp.get(i).settime(temp + 1);
 			}
 		}
-		Mazewar.consolePrintLn("Incrementing timestamp");
+		Mazewar.consoleErrorPrintLn("Incrementing timestamp");
 		printVTS();
 	}
 
@@ -120,7 +120,7 @@ public class timestamp implements Serializable {
 
 		// If the timestamps aren't the same size, don't do it
 		if (mytimestamp.size() != other.mytimestamp.size()) {
-			Mazewar.consolePrintLn("Timestamp size mismatch on synch");
+			Mazewar.consoleErrorPrintLn("Timestamp size mismatch on synch");
 			return;
 		}
 		int i = 0, k=0;
@@ -139,7 +139,7 @@ public class timestamp implements Serializable {
 			}
 			
 		}
-		Mazewar.consolePrintLn("Timestamps synchronized to:");
+		Mazewar.consoleErrorPrintLn("Timestamps synchronized to:");
 		printVTS();
 	}
 
@@ -193,14 +193,14 @@ public class timestamp implements Serializable {
 	}
 
 	public void printVTS() {
-		Mazewar.consolePrint("Timestamp: ");
+		Mazewar.consoleErrorPrint("Timestamp: ");
 		for (int i = 0; i < this.mytimestamp.size(); i++) {
 			Mazewar
-					.consolePrint(this.mytimestamp.get(i).getplayer()
+					.consoleErrorPrint(this.mytimestamp.get(i).getplayer()
 							+ " "
 							+ Integer.toString(this.mytimestamp.get(i)
 									.gettime()) + " ");
 		}
-		Mazewar.consolePrint("\n");
+		Mazewar.consoleErrorPrint("\n");
 	}
 }
