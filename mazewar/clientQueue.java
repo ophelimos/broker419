@@ -133,8 +133,9 @@ public class clientQueue {
 
 		// Handles if nothing is in the queue
 		if (foundinqueue) {
-			if (lineup.get(point).trackACK == checkfor.timeogram.mytimestamp
-					.size()) {
+			// Check for N-1 acks
+			if (lineup.get(point).trackACK == (checkfor.timeogram.mytimestamp
+					.size() - 1)) {
 				// We found all the ACKs we need for this event
 
 				// Remove that particular packet from the queue
