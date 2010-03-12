@@ -109,28 +109,20 @@ public class timestamp implements Serializable {
 	 * 
 	 */
 	public void max(timestamp other) throws IllegalArgumentException {
-		try {
-			if (other.mytimestamp.size() != mytimestamp.size()) {
-				IllegalArgumentException myException = new IllegalArgumentException();
-				throw myException;
-			} else {
-				int i = 0;
-				for (i = 0; i < mytimestamp.size(); i++) {
-					// Check for same player name and that mytimestamp's value
-					// for the player is lower than the other'
-					if (((mytimestamp.get(i).gettime() < other.mytimestamp.get(
-							i).gettime()))
-							&& (mytimestamp.get(i).getplayer()
-									.equalsIgnoreCase(other.mytimestamp.get(i)
-											.getplayer()))) {
+		
+		int i = 0;
+		for (i = 0; i < mytimestamp.size(); i++) {
+			// Check for same player name and that mytimestamp's value
+			// for the player is lower than the other'
+			if (((mytimestamp.get(i).gettime() < other.mytimestamp.get(
+					i).gettime()))
+					&& (mytimestamp.get(i).getplayer()
+							.equalsIgnoreCase(other.mytimestamp.get(i)
+									.getplayer()))) {
 
-						mytimestamp.get(i).settime(
-								other.mytimestamp.get(i).gettime());
-					}
-				}
+				mytimestamp.get(i).settime(
+						other.mytimestamp.get(i).gettime());
 			}
-		} catch (Exception e) {
-			System.out.println("Vector timestamps do not match in size!\n");
 		}
 	}
 
