@@ -50,9 +50,9 @@ public class clientQueue {
 
 	// Use this to add an element to the communicating queue
 	public synchronized void addtoSortedQueue(gamePacket toadd) {
-		int linepoint = 0;
 
-		while (linepoint < lineup.size()) {
+		int linepoint;
+		for(linepoint = 0; linepoint < lineup.size(); linepoint++) {
 			// Check for the correct conditions of timestamp
 			if (checktimestamp(toadd, lineup.get(linepoint))) {
 				lineup.add(linepoint + 1, toadd);

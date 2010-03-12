@@ -48,7 +48,7 @@ public class GUIClient extends LocalClient implements KeyListener {
     - Wait for all the other clients to send ACK and then permit keyPressed to update the local mazewar
     */
     
-    public void keyPressed(KeyEvent e) {
+    public synchronized void keyPressed(KeyEvent e) {
         // If the user pressed Q, invoke the cleanup code and quit. 
         if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
 	            System.exit(0);

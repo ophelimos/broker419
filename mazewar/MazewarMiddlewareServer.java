@@ -87,7 +87,7 @@ public class MazewarMiddlewareServer extends Thread {
 					} catch (IOException e) {
 						killConnection(curPeer);
 					}
-
+					continue;
 				}
 
 				// If it's not NULL, it should be a gamePacket
@@ -117,13 +117,14 @@ public class MazewarMiddlewareServer extends Thread {
 							if (badReceivingPeer.hostname
 									.equals(curPeer.hostname)) {
 								Mazewar.consolePrintLn("Asking for a resend!");
-								badReceivingPeer.out.writeObject(packetToResend);
+								badReceivingPeer.out
+										.writeObject(packetToResend);
 							}
 						}
 					} catch (IOException e) {
 						killConnection(curPeer);
 					}
-					
+
 					// Certainly don't try to process past this point
 					continue;
 				}
@@ -381,11 +382,6 @@ public class MazewarMiddlewareServer extends Thread {
 	private void startGame(gamePacket startPacket) {
 		// No ACKing startGame packets
 
-		// Stop accepting connections
-		// Left enabled for now, since I want to try seeing if we can
-		// re-establish connections
-		// Mazewar.acceptingNewConnections = false;
-
 		// Shut down SLP
 		slpserver.stopServer();
 
@@ -393,6 +389,9 @@ public class MazewarMiddlewareServer extends Thread {
 		Mazewar.setPlaying();
 
 		// Boot all nodes except the ones we're playing with
+
+		// Stop accepting connections
+		Mazewar.acceptingNewConnections = false;
 
 		// Get the current list of output peers
 		Enumeration<OutputPeer> networkPeers = connectionDB.getOutputPeers();
@@ -408,6 +407,10 @@ public class MazewarMiddlewareServer extends Thread {
 			}
 			// Kill the connection (we haven't gotten out yet)
 			connectionDB.removePeer(curPeer);
+
+			// And remove them from the timestamp
+			Mazewar.localtimestamp.removePlayer(curPeer.playerName);
+
 		}
 
 		// Remove unneeded graphics
@@ -472,11 +475,13 @@ public class MazewarMiddlewareServer extends Thread {
 		success = connectionDB.removePeer(curPeer);
 
 		// Try to re-establish it
-		if (restartConnection(curPeer)) {
-			Mazewar.consolePrint("Re-established!\n");
-			return true;
-		} else {
-			Mazewar.consolePrintLn("Failed to re-establish :(");
+		if (Mazewar.acceptingNewConnections) {
+			if (restartConnection(curPeer)) {
+				Mazewar.consolePrint("Re-established!\n");
+				return true;
+			} else {
+				Mazewar.consolePrintLn("Failed to re-establish :(");
+			}
 		}
 		// Take it out of the game if we're playing
 		if (Mazewar.getStatus() == Mazewar.STATUS_PLAYING) {
