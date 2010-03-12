@@ -65,7 +65,28 @@ public class MazewarMiddlewareServer extends Thread {
 				if (receivedInfo instanceof Vector) {
 					Vector<vectorobj> receivedVector = (Vector<vectorobj>) receivedInfo;
 					// Recreate the gamePacket and send it as a resend request
-					
+					gamePacket resendRq = new gamePacket();
+					resendRq.type = gamePacket.GP_RESEND;
+					timestamp receivedTimestamp = new timestamp();
+					receivedTimestamp.mytimestamp = receivedVector;
+					resendRq.timeogram = receivedTimestamp;
+
+					Enumeration<OutputPeer> outputs = connectionDB
+							.getOutputPeers();
+					try {
+						// Find the right one
+						OutputPeer badSendingPeer = null;
+						while (outputs.hasMoreElements()) {
+							badSendingPeer = outputs.nextElement();
+							if (badSendingPeer.hostname
+									.equals(curPeer.hostname)) {
+								Mazewar.consolePrintLn("Asking for a resend!");
+								badSendingPeer.out.writeObject(resendRq);
+							}
+						}
+					} catch (IOException e) {
+						killConnection(curPeer);
+					}
 
 				}
 
@@ -73,6 +94,38 @@ public class MazewarMiddlewareServer extends Thread {
 				receivedPacket = (gamePacket) receivedInfo;
 				if (debug) {
 					printPacket(receivedPacket);
+				}
+
+				// If it's a resend, process it and be embarrassed
+				if (receivedPacket.type == gamePacket.GP_RESEND) {
+					// Find the packet in waitingForAck
+					gamePacket packetToResend = Mazewar.waitingForAcks
+							.findInQueue(receivedPacket);
+					if (packetToResend == null) {
+						Mazewar
+								.consolePrintLn("Something's really weird: "
+										+ "not finding a packet to resend in the waitingForAcks queue");
+					}
+					// Resend the packet
+					Enumeration<OutputPeer> outputs = connectionDB
+							.getOutputPeers();
+					try {
+						// Find the right one
+						OutputPeer badReceivingPeer = null;
+						while (outputs.hasMoreElements()) {
+							badReceivingPeer = outputs.nextElement();
+							if (badReceivingPeer.hostname
+									.equals(curPeer.hostname)) {
+								Mazewar.consolePrintLn("Asking for a resend!");
+								badReceivingPeer.out.writeObject(packetToResend);
+							}
+						}
+					} catch (IOException e) {
+						killConnection(curPeer);
+					}
+					
+					// Certainly don't try to process past this point
+					continue;
 				}
 
 				// Synchronize time stamps - every time unless it's an ACK
