@@ -121,7 +121,7 @@ public class clientQueue {
 		for (point = 0; point < lineup.size(); point++) {
 			// Check if these timestamps are equal
 			if (eqltimestamp(checkfor.timeogram, lineup.get(point).timeogram)
-					&& (lineup.get(point).ACK) && (checkfor.ACK)) {
+					&& (lineup.get(point).wantACK) && (checkfor.ACK)) {
 				// the timestamps are same for these packets so we shall
 				// increment the
 				// trackACK on the packet in queue
