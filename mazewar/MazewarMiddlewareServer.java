@@ -70,6 +70,7 @@ public class MazewarMiddlewareServer extends Thread {
 						// Put it in the toMaze queue
 						Mazewar.toMaze.addtoSortedQueue(ackedPacket);
 					}
+					continue;
 				}
 
 				if (receivedPacket.wantACK) {
