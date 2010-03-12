@@ -355,7 +355,7 @@ public class Mazewar extends JFrame {
 		}
 
 		// Create the maze
-		maze = new MazeImpl(new Point(mazeWidth, mazeHeight), mazeSeed);
+		maze = new MazeImpl(new Point(mazeWidth, mazeHeight), 55);// mazeSeed);
 		assert (maze != null);
 
 		// Set up network queues

@@ -469,7 +469,6 @@ public class MazeImpl extends Maze implements Serializable, CommLocalListener,
 				Client c = name2clientLookup.get(cw.name);
 				this.removeClient(c);
 		} else if (ce.equals(ClientEvent.client_killed)) {
-			// TODO: what do we do if killed?
 			Client target = name2clientLookup.get(cw_optional.name);
 			Client source = name2clientLookup.get(cw.name);
 			if (target instanceof GUIClient) {
