@@ -151,9 +151,12 @@ public class MazewarGUI extends JFrame {
 	 * Remove the player list
 	 */
 	public void removeAvailablePlayers() {
-		getContentPane().remove(availablePlayers);
-		availablePlayers.removeListSelectionListener(playerSelectionHandler);
-		availablePlayers = null;
+		if(availablePlayers != null){
+			getContentPane().remove(availablePlayers);
+			availablePlayers.removeListSelectionListener(playerSelectionHandler);
+			availablePlayers = null;
+		}
+		
 	}
 	
 	/**
