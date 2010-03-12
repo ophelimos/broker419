@@ -59,8 +59,8 @@ public class ConnectionDB {
 			// Only spend a maximum of a millisecond waiting for a packet
 			// that might not be coming
 			peer.socket.setSoTimeout(1);
-			
-//			 Also put it in the list of stringified peers
+
+			// Also put it in the list of stringified peers
 			stringified_peers.addElement(peer.hostname);
 
 			peer.in = new ObjectInputStream(peer.socket.getInputStream());
@@ -95,14 +95,14 @@ public class ConnectionDB {
 			peer.socket.setSoTimeout(1);
 
 			peer.out = new ObjectOutputStream(peer.socket.getOutputStream());
-			
+
 			// Send it a message telling it what our name is
 			gamePacket nameMessage = new gamePacket();
 			nameMessage.type = gamePacket.GP_MYNAME;
 			nameMessage.senderName = Mazewar.localName;
 			nameMessage.wantACK = false;
 			nameMessage.ACK = false;
-			
+
 			peer.out.writeObject(nameMessage);
 
 		} catch (UnknownHostException e) {
@@ -117,21 +117,21 @@ public class ConnectionDB {
 		outputPeers.addElement(peer);
 		Mazewar.consolePrintLn("Connected to peer " + peer.hostname);
 	}
-	
+
 	public synchronized boolean addPlayerName(String playerName, String hostname) {
-		
+
 		// Add them to our local timestamp
 		vectorobj newguy = new vectorobj(0, playerName);
 		Mazewar.localtimestamp.addplayer(newguy);
-		
+
 		int position = stringified_peers.indexOf(hostname);
 		if (position == -1) {
 			return false;
 		}
-		
+
 		// Otherwise, it's there, replace it
 		stringified_peers.set(position, playerName + "@" + hostname);
-		
+
 		// Do the same thing with inputPeers
 		inputPeers.get(position).playerName = playerName;
 		return true;
@@ -143,25 +143,27 @@ public class ConnectionDB {
 	 */
 	public synchronized boolean removePeer(Peer peer) {
 		boolean success = true;
-		// Remove them from the timestamp
-		success = Mazewar.localtimestamp.removePlayer(peer.playerName);
-		success = inputPeers.remove(peer);
-		success = outputPeers.removeElement(peer);
-		success = stringified_peers.removeElement(peer.hostname);
+		// Remove them from the timestamp - if we've already connected
+		if (peer.playerName != null) {
+			success = Mazewar.localtimestamp.removePlayer(peer.playerName);
+			success = inputPeers.remove(peer);
+			success = outputPeers.removeElement(peer);
+			success = stringified_peers.removeElement(peer.hostname);
+		}
 		return success;
 	}
 
 	/**
 	 * Expose the dataListener functions of outputPeers
 	 */
-	 public synchronized void addListDataListener(ListDataListener l) {
-	 stringified_peers.addListDataListener(l);
-	 }
-		
-	 public synchronized void removeListDataListener(ListDataListener l) {
-	 stringified_peers.removeListDataListener(l);
-	 }
-	 
+	public synchronized void addListDataListener(ListDataListener l) {
+		stringified_peers.addListDataListener(l);
+	}
+
+	public synchronized void removeListDataListener(ListDataListener l) {
+		stringified_peers.removeListDataListener(l);
+	}
+
 	public synchronized DefaultListModel getListModel() {
 		return stringified_peers;
 	}

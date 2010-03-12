@@ -55,7 +55,7 @@ public class timestamp implements Serializable {
 	 * removeplayer from this vector timestamp
 	 */
 	public synchronized boolean removePlayer(String deadplayer) {
-		for (int n =0; n< mytimestamp.size(); n++) {
+		for (int n = 0; n < mytimestamp.size(); n++) {
 			if (deadplayer.equalsIgnoreCase(mytimestamp.get(n).getplayer())) {
 				mytimestamp.remove(n);
 				return true;
