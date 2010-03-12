@@ -36,6 +36,7 @@ public class GUIClient extends LocalClient implements KeyListener {
      */
     public GUIClient(String name) {
             super(name);
+            assert (name != null);
     }
     
     /**
