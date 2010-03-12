@@ -90,9 +90,6 @@ public class MazewarMiddlewareServer extends Thread {
 					continue;
 
 				} else if (receivedPacket.type == gamePacket.GP_COMMAND) {
-					// Synchronize our timestamps
-					Mazewar.localtimestamp.max(receivedPacket.timeogram);
-
 					// Put it on the toMaze queue
 					Mazewar.toMaze.addtoSortedQueue(receivedPacket);
 
@@ -249,6 +246,8 @@ public class MazewarMiddlewareServer extends Thread {
 				try {
 					curPeer = networkPeers.nextElement();
 					curPeer.out.writeObject(packetToSend);
+					Mazewar.consolePrintLn("Sent packet:");
+					printPacket(packetToSend);
 				} catch (IOException e) {
 					Mazewar.consolePrintLn("Connection failed with "
 							+ curPeer.hostname
