@@ -46,7 +46,7 @@ import javax.swing.JTextPane;
  */
 
 public class Mazewar extends JFrame {
-
+ 
 	// The state the game is in
 	private static int status = 0;
 
