@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Random;
 import java.util.Vector;
@@ -338,8 +339,8 @@ public class MazewarMiddlewareServer extends Thread {
 	 * 
 	 */
 	public void printPacket(gamePacket packet) {
-		Mazewar.consolePrintLn("----Packet Info----");
-		Mazewar.consolePrintLn("Packet Info: type = " + packet.type
+		Mazewar.consoleErrorPrintLn("----Packet Info----");
+		Mazewar.consoleErrorPrintLn("Packet Info: type = " + packet.type
 				+ " trackACK = " + packet.trackACK + " senderName = "
 				+ packet.senderName + " wantACK = " + packet.wantACK
 				+ " ACK = " + packet.ACK + " NACK = " + packet.NACK
@@ -349,44 +350,44 @@ public class MazewarMiddlewareServer extends Thread {
 		packet.timeogram.printVTS();
 
 		// MazewarMsg
-		Mazewar.consolePrint("MazewarMsg = ");
+		Mazewar.consoleErrorPrint("MazewarMsg = ");
 		if (packet.msg == null) {
-			Mazewar.consolePrint("null\n");
+			Mazewar.consoleErrorPrint("null\n");
 		} else {
 			switch (packet.msg.action) {
 			case MazewarMsg.MW_MSG_LEFT:
-				Mazewar.consolePrint("turnLeft\n");
+				Mazewar.consoleErrorPrint("turnLeft\n");
 				break;
 			case MazewarMsg.MW_MSG_RIGHT:
-				Mazewar.consolePrint("turnRight\n");
+				Mazewar.consoleErrorPrint("turnRight\n");
 				break;
 			case MazewarMsg.MW_MSG_FWD:
-				Mazewar.consolePrint("moveForward\n");
+				Mazewar.consoleErrorPrint("moveForward\n");
 				break;
 			case MazewarMsg.MW_MSG_BKWD:
-				Mazewar.consolePrint("moveBackward\n");
+				Mazewar.consoleErrorPrint("moveBackward\n");
 				break;
 			case MazewarMsg.MW_MSG_FIRE:
-				Mazewar.consolePrint("fire\n");
+				Mazewar.consoleErrorPrint("fire\n");
 				break;
 			case MazewarMsg.MW_MSG_CLIENT_ADDED:
-				Mazewar.consolePrint("client_added\n");
+				Mazewar.consoleErrorPrint("client_added\n");
 				break;
 			case MazewarMsg.MW_MSG_CLIENT_REMOVED:
-				Mazewar.consolePrint("client_removed\n");
+				Mazewar.consoleErrorPrint("client_removed\n");
 				break;
 			case MazewarMsg.MW_MSG_CLIENT_ADDED_FIN:
-				Mazewar.consolePrint("client_added_fin\n");
+				Mazewar.consoleErrorPrint("client_added_fin\n");
 				break;
 			case MazewarMsg.MW_MSG_CLIENT_KILLED:
-				Mazewar.consolePrint("client_killed\n");
+				Mazewar.consoleErrorPrint("client_killed\n");
 				break;
 			default:
-				Mazewar.consolePrint("BAD\n");
+				Mazewar.consoleErrorPrint("BAD\n");
 				break;
 			}
 		}
-		Mazewar.consolePrintLn("----End Packet Info----");
+		Mazewar.consoleErrorPrintLn("----End Packet Info----");
 	}
 
 	/**
@@ -435,6 +436,9 @@ public class MazewarMiddlewareServer extends Thread {
 		// players)
 		mazewarGUI.addOverheadPanel();
 		mazewarGUI.addScoreTable();
+		
+		// Ensure consistent ordering by sorting the playerlist alphabetically
+		Arrays.sort(startPacket.playerlist);
 
 		// Make remote clients for everyone we're playing with
 		for (int i = 0; i < startPacket.numPlayers; i++) {
@@ -524,6 +528,8 @@ public class MazewarMiddlewareServer extends Thread {
 		gamePacket ackPacket = new gamePacket(packetToACK);
 		ackPacket.ACK = true;
 		ackPacket.wantACK = false;
+		// Put my name on the ACK
+		ackPacket.senderName = Mazewar.localName;
 		Mazewar.toNetwork.addtoQueue(ackPacket);
 	}
 
