@@ -1,0 +1,14 @@
+GET
+Bucket:bucket0
+Key:foo.txt
+.
+GET
+Bucket:bucket1
+Key:bar.txt
+.
+GET
+Bucket:doesnotexist
+Key:nothere
+.
+BYE
+.

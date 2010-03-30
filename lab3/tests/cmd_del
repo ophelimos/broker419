@@ -1,0 +1,10 @@
+DELETE
+Bucket:bucket0
+Key:foo.txt
+.
+DELETE
+Bucket:doesnotexist
+Key:nothere
+.
+BYE
+.

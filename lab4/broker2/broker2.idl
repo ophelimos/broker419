@@ -1,0 +1,32 @@
+// IDL interface for the online broker
+
+interface Broker
+{
+    enum BrokerErrors
+    {
+        InvalidSymbol, // thrown when the symbol cannot be found
+        QuoteOutofRange, // thrown with an out-of-range quote update
+        SymbolExists // thrown when the symbol name already exists
+    };
+
+    exception BrokerErrorException
+    {
+        BrokerErrors type;
+    };
+
+    // for the client to retrieve quotes
+    unsigned long quote(in string symbol)
+        raises (BrokerErrorException);
+
+    // for the stock exchange to add symbols to the broker's list
+    void addSymbol(in string symbol)
+        raises (BrokerErrorException);
+
+    // for the stock exchange to remove symbols from the broker's list 
+    void removeSymbol(in string symbol)
+        raises (BrokerErrorException);
+
+    // for the stock exchange to update the price for a symbol
+    void updateQuote(in string symbol, in unsigned long quote)
+        raises (BrokerErrorException);
+};

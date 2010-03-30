@@ -1,0 +1,153 @@
+<project name="Orbacus Build Imports" default="..." basedir=".">
+
+    <!-- shows system variables and information -->
+    <target name="sysinfo">
+        <echo>os.name          = ${os.name}</echo>
+        <echo>os.arch          = ${os.arch}</echo>
+        <echo>os.version       = ${os.version}</echo>
+        <echo>java.home        = ${java.home}</echo>
+        <echo>java.version     = ${java.version}</echo>
+        <echo>java.vendor      = ${java.vendor}</echo>
+        <echo>ant.java.version = ${ant.java.version}</echo>
+    </target>
+    
+    <!-- shows the help when asked -->
+    <target name="help">
+        <echo>
+            To build and install the complete Orbacus for Java type:
+                ant -Dinstall.dir=[install_folder]
+                e.g. ant -Dinstall.dir=/opt/JOB-4.3
+            To build the entire Orbacus but skip installation type:
+                ant -Dno.install=1
+            To perform a minimal build and installation 
+            (no demos or tests) type:
+                ant min -Dinstall.dir=[install_folder]
+
+            To skip the demo building stage, use the 
+            no.demos=1 property
+            
+            To skip the test building stage, use the 
+            no.tests=1 property
+
+            Combinations of these can be specified.  
+            Here are some examples:
+                ant -Dinstall.dir=[install_folder] -Dno.demos=1
+                ant -Dno.install=1 -Dno.tests=1
+
+            Cleaning a build can be done using the clean command:
+                ant clean
+
+            Installation after a build can be performed using 
+            the install command:
+            ant install -Dinstall.dir=[install_folder]
+
+            Multiple threads are using during building which helps
+            speed up compilation times on multiprocessor machines.  
+            The default number of threads is 4 but this can be 
+            changed with the 'build.threads' property:
+                e.g. -Dbuild.threads=2
+
+            To optimize your final Java programs, edit the ob.javac 
+            task in the imports.xml file in the top-level folder.
+
+            To obtain system information type:
+                ant sysinfo
+        </echo>
+    </target>
+
+    <!-- installation check -->
+    <target name="install.check" unless="install.dir">
+        <echo level="error">
+            You must set your install destination folder.
+            Use the -Dinstall.dir option on your ant command-line.
+            Eg. 'ant -Dinstall.dir="/opt/JOB-4.3"'
+        </echo>
+        <fail message="No installation folder set"/>
+    </target>
+
+    <!-- general demo/test cleanup task -->
+    <target name="cleanup.demos.tests">
+        <delete>
+            <fileset dir="." includes="*.ref *.log core*"/>
+        </delete>
+        <delete dir="generated" failonerror="false"/>
+        <delete dir="classes" failonerror="false"/>
+    </target>
+
+    <!-- get the runtime jar(s) -->
+    <condition property="runtime.jars"
+        value="${java.home}/lib/rt.jar">
+        <not>
+            <contains string="${java.vendor}" substring="IBM"/>
+        </not>
+    </condition>
+    <condition property="runtime.jars"
+        value="${java.home}/lib/core.jar:${java.home}/lib/graphics.jar">
+        <contains string="${java.vendor}" substring="IBM"/>
+    </condition>
+    
+    <!-- set bootclasspath properly -->
+    <condition property="boot.classpath" 
+        value="${sub.dir}/lib:${top.dir}/ob/lib:${runtime.jars}">
+        <contains string="${ant.java.version}" substring="1.4"/>
+    </condition>
+    <condition property="boot.classpath" 
+        value="${sub.dir}/lib:${top.dir}/ob/lib:${runtime.jars}">
+        <contains string="${ant.java.version}" substring="1.5"/>
+    </condition>
+    <condition property="boot.classpath" 
+        value="${sub.dir}/lib:${top.dir}/ob/lib:${runtime.jars}">
+        <contains string="${ant.java.version}" substring="1.6"/>
+    </condition>
+    <condition property="boot.classpath" value="">
+        <not> <isset property="boot.classpath"/> </not>
+    </condition>
+
+    <!-- Number of threads used during building -->
+    <condition property="build.threads" value="4">
+        <not> <isset property="build.threads"/> </not>
+    </condition>
+
+    <!-- jar filename properties -->
+    <property name="ob.jar" value="${top.dir}/ob/lib/OB.jar"/>
+    <property name="balancer.jar" 
+        value="${top.dir}/balancer/lib/OBBalancer.jar"/>
+    <property name="bidir.jar"
+        value="${top.dir}/bidir/lib/OBBiDir.jar"/>
+    <property name="event.jar"
+        value="${top.dir}/event/lib/OBEvent.jar"/>
+    <property name="imr.jar" value="${top.dir}/imr/lib/OBIMR.jar"/>
+    <property name="naming.jar"
+        value="${top.dir}/naming/lib/OBNaming.jar"/>
+    <property name="property.jar"
+        value="${top.dir}/property/lib/OBProperty.jar"/>
+    <property name="time.jar" value="${top.dir}/time/lib/OBTime.jar"/>
+    <property name="udp.jar" value="${top.dir}/udp/lib/OBUDP.jar"/>
+    <property name="watson.jar"
+        value="${top.dir}/watson/lib/OBWatson.jar"/>
+    <property name="util.jar" value="${top.dir}/util/lib/OBUtil.jar"/>
+
+    <!-- idl folders -->
+    <property name="ob.idl.dir" value="${top.dir}/ob/idl"/>
+
+    <!-- preset javac command -->
+    <presetdef name="ob.javac">
+        <javac debug="false"
+               debuglevel="lines,vars,source"
+               optimize="on"
+               deprecation="off"
+               verbose="no"
+               srcdir="." 
+               destdir="classes"
+               classpath=".:generated:../lib:${ob.jar}:${java.class.path}"
+               bootclasspath="${boot.classpath}">
+        </javac>
+    </presetdef>
+
+    <!-- preset jidl command -->
+    <presetdef name="jidl">
+        <exec executable="jidl" dir=".">
+        </exec>
+    </presetdef>
+    
+</project>

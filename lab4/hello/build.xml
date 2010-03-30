@@ -1,0 +1,68 @@
+<project name="Orbacus 4.3" default="build" basedir=".">
+
+    <property name="top.dir" value="/acad2/ece419s/corba/JOB-4.3.3"/>
+    <property name="sub.dir" value="../.."/>
+    
+    <!-- initialize the building -->
+    <target name="init">
+        <mkdir dir="generated"/>
+        <mkdir dir="classes"/>
+    </target>
+
+    <!-- generate appropriate source from idls -->
+    <target name="jidl">
+        <jidl>
+            <arg line="--package hello 
+                       --output-dir generated Hello.idl"/>
+        </jidl>
+    </target>
+    
+    <!-- build the source -->
+    <target name="build" depends="init,jidl">
+        <ob.javac>
+            <include name="*.java"/>
+            <include name="generated/hello/*.java"/>
+        </ob.javac>
+    </target>
+
+    <!-- clean up the built items -->
+    <target name="clean">
+        <antcall target="cleanup.demos.tests"/>
+    </target>
+
+    <!-- run the demo -->
+    <target name="run" depends="build">
+    </target>
+ 
+    <!-- preset jidl command -->
+    <presetdef name="jidl">
+        <exec executable="jidl" dir=".">
+        </exec>
+    </presetdef>
+ 
+    <!-- preset javac command -->
+    <presetdef name="ob.javac">
+        <javac debug="false"
+               debuglevel="lines,vars,source"
+               optimize="on"
+               deprecation="off"
+               verbose="no"
+               srcdir="." 
+               destdir="classes"
+               classpath=".:generated:../lib:${ob.jar}:${java.class.path}"
+               bootclasspath="${boot.classpath}">
+        </javac>
+    </presetdef>
+
+    <!-- general demo/test cleanup task -->
+    <target name="cleanup.demos.tests">
+        <delete>
+            <fileset dir="." includes="*.ref *.log core*"/>
+        </delete>
+        <delete dir="generated" failonerror="false"/>
+        <delete dir="classes" failonerror="false"/>
+    </target>
+
+
+  
+</project>

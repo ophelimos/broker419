@@ -1,0 +1,77 @@
+For a detailed description of this example, please have a look at the
+"Getting started" section of the ORBacus manual.
+
+
+Unix
+====
+
+To start this demo, first run the server with:
+
+CLASSPATH=../../lib:classes:$CLASSPATH java hello.Server
+
+Or you can start the TIE server using:
+
+CLASSPATH=../../lib:classes:$CLASSPATH java hello.Server_tie
+
+Start the client with:
+
+CLASSPATH=../../lib:classes:$CLASSPATH java hello.Client
+
+The collocated demo can be started using:
+
+CLASSPATH=../../lib:classes:$CLASSPATH java hello.Collocated
+
+
+Windows
+=======
+
+To start this demo, first run the server with:
+
+set CLASSPATH=..\..\lib;classes;%CLASSPATH%
+java hello.Server
+
+Or you can start the TIE server using:
+
+set CLASSPATH=..\..\lib;classes;%CLASSPATH%
+java hello.Server_tie
+
+Start the client with:
+
+set CLASSPATH=..\..\lib;classes;%CLASSPATH%
+java hello.Client
+
+The collocated demo can be started using:
+
+set CLASSPATH=..\..\lib;classes;%CLASSPATH%
+java hello.Collocated
+
+If you use the Microsoft Visual J++, use the command "jview" instead
+of "java".
+
+
+Applet
+======
+
+The client can also be run as an applet with the "appletviewer" tool.
+The server automatically generates the file "Hello.html".
+
+Under Unix, you can run the client with:
+
+CLASSPATH=../../lib:classes:$CLASSPATH appletviewer Hello.html
+
+Under Windows, use:
+
+set CLASSPATH=..\..\lib;classes;%CLASSPATH%
+appletviewer Hello.html
+
+
+Netscape
+========
+
+In order to use this applet in Netscape, the Hello.html file must be
+loaded from a Web server. If you load the file from the local filesystem,
+Netscape will raise a SecurityException when the applet attempts to
+contact the server.
+
+Note that the Hello server must be running on the same host as the Web
+server.
