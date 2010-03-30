@@ -190,6 +190,8 @@ public class MazewarMiddlewareServer extends Thread {
 				Mazewar.consoleErrorPrintLn(e.getMessage());
 				// Mazewar.consoleErrorPrintLn(receivedPacket.toString());
 				killConnection(curPeer);
+				// Actually die
+				System.exit(1);
 			} catch (SocketTimeoutException e) {
 				// On timeout, simply try the next peer
 				continue;
