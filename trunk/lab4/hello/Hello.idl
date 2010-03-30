@@ -1,0 +1,15 @@
+// **********************************************************************
+//
+// Copyright (c) 2002
+// IONA Technologies, Inc.
+// Waltham, MA, USA
+//
+// All Rights Reserved
+//
+// **********************************************************************
+
+interface Hello
+{
+    void say_hello();
+    void shutdown();
+};

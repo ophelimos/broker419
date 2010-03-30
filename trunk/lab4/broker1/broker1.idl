@@ -1,0 +1,7 @@
+// IDL interface for the online broker
+
+interface Broker
+{
+    // for the client to retrieve quotes
+    unsigned long quote(in string symbol);
+};

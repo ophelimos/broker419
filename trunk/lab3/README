@@ -1,0 +1,8 @@
+# README
+# ----------------------------------------
+
+This is DDS (codename) and it is supposed to be a
+distributed and scalable datastore. The API is 
+similar to S3.
+
+At this point, the implementation is very basic.
