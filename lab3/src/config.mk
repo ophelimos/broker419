@@ -11,9 +11,9 @@ CCC=g++
 CFLAGS=-g -O4
 CLIBS=-lpthread -lhermes -labacus -ldb
 
-CODE_BASE=CHANGE_THIS_TO_POINT_TO_YOUR_DIR
+CODE_BASE=${HOME}/ece419/lab3
 
-LIB_BASE=CHANGE_THIS_TO_POINT_TO_YOUR_DIR
+LIB_BASE=${HOME}/ece419/lab3
 
 ABACUS_DIR=${LIB_BASE}/lib/abacus_c
 HERMES_DIR=${LIB_BASE}/lib/hermes_c
