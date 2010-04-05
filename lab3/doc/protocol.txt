@@ -1,0 +1,27 @@
+English description of our gossip-based eventually-consistent replication algorithm for DDS keymaps
+
+Basic description of the way things already work:
+
+DDS starts up with knowledge of a certain number of storage servers (given in stores_file), and the location of one peer.
+
+i.e.
+"USAGE: dds.exe <port> <stores_file> <keymap> <gossip-period-secs> <peer-dds-host> <peer-dds-port> (with peering)\n"
+
+It starts up Abacus (its event database) and Hermes (its networking component) as separate threads, and then starts gossiping every gossip_period_secs.
+
+TODO: Decide how gossip works.  Currently, dds only gossips with its one given peer.  To make a gossip protocol really work, it needs a list of gossipers, and needs to randomly select from the list.
+
+TODO: Make sure when we gossip (in __dds_do_gossip) we actually send what we want.  Currently, we send the output of map_listall, which isn't even defined yet.  What we're probably going to want to send at least is:
+
+1.  The events we've received / Our keymap
+2.  The peers we know of
+
+TODO: Make sure when we receive gossip (__dds_handle_gossip) we handle whatever additional we're sending in the gossip
+
+TODO: Fill in the functions in keymap - JAMES
+
+Keymap database format:
+
+The key is just a DBT of the key value.
+The data will just be a inode_t with all the values filled in.
+

@@ -24,3 +24,8 @@ hms_parser.o: hms_parser.c
 clean:
 	rm -f *.o *.exe *.a *.so *.*~ *~
 
+# Used for emacs' flymake syntax checker
+check-syntax:
+	$(CC) $(CFLAGS) ${INCLUDES} -DCACHING_ON -Wall -Wextra -fsyntax-only $(CHK_SOURCES)
+
+.PHONY: clean check-syntax
