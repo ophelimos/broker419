@@ -9,6 +9,7 @@
  **/
 
 #include <dds.h>
+#include <sys/time.h>
 
 /* Global Variables */
 /* ----------------------------------------------------------------- */
@@ -351,7 +352,7 @@ static int __dds_do_gossip(char *peer_host_name, int peer_port, map_t *map) {
   if(n_nodes == 0 || nodes == NULL ) { goto err; }
 
   /* Connect to peer */
-  //fprintf(stdout, "Gossiping with peer at %s:%d\n", peer_host_name, peer_port );
+  fprintf(stdout, "Gossiping with peer at %s:%d\n", peer_host_name, peer_port );
   int conn_fd = hms_endpoint_connect( peer_host_name, peer_port );
   DIE_IF_EQUAL( conn_fd, -1, "Could not connect to dds peer", err, &erred );
   /* Init Endpoint */
@@ -444,9 +445,9 @@ static int __dds_handle_put( hms_endpoint *endpoint, hms_msg *msg, int verb_id )
   int i = 0;
   for(i=0; i < n_store_locations; i++) {
     /* Inform */
-    //fprintf(stdout, "[NOTE]: PUT %s:%s at %s:%d\n",
-    //bucket_name, key_name, 
-    //store_locations[i].host_name, store_locations[i].port );
+    fprintf(stdout, "[NOTE]: PUT %s:%s at %s:%d\n",
+    bucket_name, key_name, 
+    store_locations[i].host_name, store_locations[i].port );
     /* Open Connection */
     int conn_fd = hms_endpoint_connect( store_locations[i].host_name,store_locations[i].port );
     DIE_IF_EQUAL( conn_fd, -1, "Could not connect to storage node", err, &erred );
@@ -478,7 +479,7 @@ static int __dds_handle_put( hms_endpoint *endpoint, hms_msg *msg, int verb_id )
     struct timeval tv; gettimeofday( &tv, NULL );
     ret = map_put(keymap, &object, store_locations, n_store_locations, tv.tv_sec);
     DIE_IF_NOT_EQUAL( ret, 0, "Could not add meta-data into KeyMap", err, &erred );
-    //fprintf(stdout, "[NOTE]: PUT of %s:%s was successful\n", bucket_name, key_name );
+    fprintf(stdout, "[NOTE]: PUT of %s:%s was successful\n", bucket_name, key_name );
   }
 
   /* Send Reply */
@@ -708,9 +709,9 @@ static int __dds_handle_delete( hms_endpoint *endpoint, hms_msg *msg, int verb_i
   int i = 0;
   for(i=0; i < n_store_nodes; i++) {
     /* Inform */
-    //fprintf(stdout, "[NOTE]: DELETE %s:%s at %s:%d\n",
-    //bucket_name, key_name, 
-    //store_nodes[i].host_name, store_nodes[i].port );
+    fprintf(stdout, "[NOTE]: DELETE %s:%s at %s:%d\n",
+    bucket_name, key_name, 
+    store_nodes[i].host_name, store_nodes[i].port );
     /* Open Connection */
     int conn_fd = hms_endpoint_connect( store_nodes[i].host_name,store_nodes[i].port );
     DIE_IF_EQUAL( conn_fd, -1, "Could not connect to storage node", err, &erred );
