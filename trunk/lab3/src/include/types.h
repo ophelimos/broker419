@@ -27,13 +27,20 @@ typedef struct loc_t {
 } loc_t;
 
 #define INODE_MAX_LOCATIONS 8
+#define TIMESTAMP_MAX_DDS 4
 
 typedef struct inode_t {
   obj_t object;
   int n_locations;
   loc_t locations[INODE_MAX_LOCATIONS];
   unsigned long ts_delete;
-  unsigned long ts_put;  
+  unsigned long ts_put;
+
+    /* Each inode has its own associated timestamp */
+    int n_dds;
+    char dds_name[TIMESTAMP_MAX_DDS][MAX_HOST_NAME_LEN];
+    int timestamp[TIMESTAMP_MAX_DDS];
+    
 } inode_t;
 
 #endif
