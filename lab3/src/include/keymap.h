@@ -21,7 +21,8 @@ struct map_t;
 typedef struct map_t {
   DB *db;
     DB_ENV *env;
-  pthread_mutex_t lock;
+    /* I'm using transactions, so I don't need to use a pthread mutex */
+/*  pthread_mutex_t lock;*/
 } map_t;
 
 map_t* map_init(char *filename);

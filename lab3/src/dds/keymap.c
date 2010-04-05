@@ -20,6 +20,9 @@
 /* Environment directory where all the DB stuff is stored */
 #define ENV_DIR "."
 
+/* A nice default array size for map_list, without growing it */
+#define DEFAULT_ARRAY_SIZE 32
+
 
 /**
  * db_error_handler()
@@ -34,6 +37,28 @@ db_error_handler(const DB_ENV *dbenv, const char *error_prefix, const char *msg)
     fprintf(stderr, "%s%s", error_prefix, msg);
 }
 
+/**
+ * copy_inode()
+ * ------------------
+ * Make a deep malloc'd copy of an inode_t
+ *
+ **/
+
+inode_t* copy_inode(inode_t* input)
+{
+    inode_t* output = malloc(sizeof(inode_t));
+    output->object = input->object;
+    output->n_locations = input->n_locations;
+    int i;
+    for (i = 0; i < input->n_locations; i++)
+    {
+        output->locations[i] = input->locations[i];
+    }
+    output->ts_put = input->ts_put;
+    output->ts_delete = input->ts_delete;
+
+    return output;
+}
 
 /**
  * map_init()
@@ -47,7 +72,14 @@ map_t* map_init(char *filename) {
 
     /* Make a Berkeley DB environment (needed for anything useful) */
     DB_ENV* new_env;
-    error = new_env->open(new_env, ENV_DIR, DB_CREATE | DB_INIT_MPOOL, 0);
+    int env_flags = DB_CREATE |    /* Create the environment */
+                DB_INIT_TXN  | /* Initialize transactions */
+                DB_INIT_LOCK | /* Initialize locking. */
+                DB_INIT_LOG  | /* Initialize logging */
+                DB_INIT_MPOOL | /* Initialize the in-memory cache. */
+        DB_THREAD;             /* Be re-entrant */
+
+    error = new_env->open(new_env, ENV_DIR, env_flags, 0);
     if ( error != 0 )
     {
         fprintf(stderr, "Environment open failed: %s\n", db_strerror(error));
@@ -70,7 +102,7 @@ map_t* map_init(char *filename) {
     new_db->set_errcall(new_db, db_error_handler);
     new_db->set_errpfx(new_db, "DDS DB Error:");
 
-    error = new_db->open(new_db, NULL, filename, NULL, DB_BTREE, DB_CREATE, 0665);
+    error = new_db->open(new_db, NULL, filename, NULL, DB_BTREE, DB_CREATE | DB_AUTO_COMMIT, 0665);
     if (error != 0)
     {
         new_db->err(new_db, error, "Database open failed: %s", filename);
@@ -112,7 +144,8 @@ int map_put( map_t *map, obj_t *object, loc_t *locations, int n_locations, unsig
 
     data.data = &db_data;
     data.size = sizeof(inode_t);
-    
+
+    /* Should be auto-transactioned */
     int error = map->db->put(map->db, NULL, &key, &data, 0);
     if (error != 0)
     {
@@ -126,7 +159,7 @@ int map_put( map_t *map, obj_t *object, loc_t *locations, int n_locations, unsig
 
 
 int map_get( map_t *map, obj_t *object, loc_t **locations, int *n_locations, int *is_deleted) {
-
+    int error;
     /* I'm assuming that map and object are valid, and the rest need to be filled in */
 
     /* Declare and clear structures */
@@ -144,10 +177,28 @@ int map_get( map_t *map, obj_t *object, loc_t **locations, int *n_locations, int
     data.data = &gotten_data;
     /* data.size is set automatically */
 
-    int error = map->db->get(map->db, NULL, &key, &data, 0);
+    /* Start a transaction */
+    DB_TXN *txn = NULL;
+    error = map->env->txn_begin(map->env, NULL, &txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction begin failed");
+        return error;
+    }
+
+    error = map->db->get(map->db, txn, &key, &data, 0);
     if (error != 0)
     {
         map->db->err(map->db, error, "Database get failed");
+        txn->abort(txn);
+        return error;
+    }
+
+    /* End the transaction */
+    error = txn->commit(txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction commit failed");
         return error;
     }
 
@@ -170,15 +221,82 @@ int map_get( map_t *map, obj_t *object, loc_t **locations, int *n_locations, int
     {
         *is_deleted = 0;
     }
+
+    /* Sanity checking */
+    assert(!strcmp(object->key_name, gotten_data.object.key_name));
+    assert(!strcmp(object->bucket_name, gotten_data.object.bucket_name));
     
     return error;
 }
 
+/**
+ * map_del()
+ * ---------
+ * Implemented as "just update the ts_delete time, don't actually delete the node"
+ *
+ */
 int map_del( map_t *map, obj_t *object, unsigned long ts_delete) {
+    int error = 0;
 
-    /* This one I'm not totally sure about.  I'm going to implement it
-     * as an actual delete, but we might at some point want it just to
-     * be an update of the delete time */
+    /* Start a transaction */
+    DB_TXN *txn = NULL;
+    error = map->env->txn_begin(map->env, NULL, &txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction begin failed");
+        return error;
+    }
+    
+    /**** Get the node *****/
+    
+    /* Declare and clear structures */
+    DBT key;
+    memset(&key, 0, sizeof(key));
+    DBT data;
+    memset(&data, 0, sizeof(data));
+
+    /* Set the key */
+    key.data = object->key_name;
+    key.size = MAX_KEY_NAME_LEN;
+
+    /* Make some memory for the data */
+    inode_t gotten_data;
+    data.data = &gotten_data;
+    /* data.size is set automatically */
+
+    /* RMW = Read Modify Write, used since about to put it */
+    error = map->db->get(map->db, txn, &key, &data, DB_RMW ); 
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Database get failed");
+        txn->abort(txn);
+        return error;
+    }
+    
+    /**** Change its deleted time value *****/
+    gotten_data.ts_delete = ts_delete;
+
+    /**** Put it back - should overwrite the current structure ****/
+    error = map->db->put(map->db, txn, &key, &data, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Database put failed");
+        txn->abort(txn);
+        return error;
+    }
+
+    /* End the transaction */
+    error = txn->commit(txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction commit failed");
+        return error;
+    }
+    
+    return error;
+
+    /* If, for some reason, I need to implement an actual delete, here it is */
+#ifdef ACTUAL_DELETE
 
     /* Declare and clear structures */
     DBT key;
@@ -188,34 +306,192 @@ int map_del( map_t *map, obj_t *object, unsigned long ts_delete) {
     key.data = object->key_name;
     key.size = MAX_KEY_NAME_LEN;
     
-    int error = map->db->del(map->db, NULL, &key, 0);
+    int error = map->db->del(map->db, txn, &key, 0);
 
     if (error != 0)
     {
         map->db->err(map->db, error, "Database get failed");
+        txn->abort(txn);
+        return error;
+    }
+#endif
+}
+
+/**
+ * map_list()
+ * ----------
+ * Looks to me like this function is supposed to return all the nodes that
+ * are in the given bucket, only showing the "deleted" ones if show_deleted
+ * is asserted.
+ */
+int map_list( map_t *map, obj_t *object, inode_t **nodes, unsigned *n_nodes, int show_deleted ) {
+    int error;
+    
+    /* Start a transaction */
+    DB_TXN *txn = NULL;
+    error = map->env->txn_begin(map->env, NULL, &txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction begin failed");
+        return error;
+    }
+
+    /* Implemented using a cursor, since that seems to be the modern Berkeley DB way */
+    DBC* cursorp;
+    map->db->cursor(map->db, txn, &cursorp, 0);
+
+    /* Declare and clear structures */
+    DBT key;
+    memset(&key, 0, sizeof(key));
+    DBT data;
+    memset(&data, 0, sizeof(data));
+
+    *n_nodes = 0;
+
+    /* Create an array that might be big enough.  We'll resize it later if it's not */
+    unsigned int cur_array_size = DEFAULT_ARRAY_SIZE;
+    *nodes = malloc(cur_array_size*sizeof(inode_t));
+
+
+    /* Iterate over the entire set, expanding the array as necessary to fit in new values */
+    while ((error = cursorp->get(cursorp, &key, &data, DB_NEXT)) == 0)
+    {
+        /* Cast what we got out of the database properly */
+        inode_t* gotten_data = data.data;
+
+        /* Check if it's the same bucket */
+        if (!strcmp(object->bucket_name, gotten_data->object.bucket_name))
+        {
+            /* Only show deleted ones with show_deleted */
+            if (!show_deleted && gotten_data->ts_delete > gotten_data->ts_put)
+            {
+                continue;
+            }
+            
+            if (*n_nodes > cur_array_size)
+            {
+                /* Expand the size of the array */
+                cur_array_size *= 2;
+                *nodes = realloc(*nodes, cur_array_size*sizeof(inode_t));
+            }
+
+            /* Copy in the value */
+            *nodes[*n_nodes] = *copy_inode(gotten_data);
+            (*n_nodes)++;
+        }
+    }
+    if (error != DB_NOTFOUND) {
+        map->db->err(map->db, error, "Database listall failed");
+        txn->abort(txn);
+        return error;
+    }
+
+    /* Make the *nodes array actually be the right size */
+    *nodes = realloc(*nodes, (*n_nodes)*sizeof(inode_t));
+
+    /* Close the cursor - BEFORE the transaction */
+    cursorp->close(cursorp);
+
+    /* End the transaction */
+    error = txn->commit(txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction commit failed");
         return error;
     }
     
     return error;
 }
 
-int map_list( map_t *map, obj_t *object, inode_t **nodes, unsigned *n_nodes, int show_deleted ) {
-
-  /* TODO: Implement this */
-  return -1;
-
-}
+/**
+ * map_listall()
+ * ----------
+ * List ALL the nodes stored in the entire keymap
+ */
 
 int map_listall( map_t *map, inode_t **nodes, unsigned *n_nodes ) {
+    int error;
+    
+    /* Start a transaction */
+    DB_TXN *txn = NULL;
+    error = map->env->txn_begin(map->env, NULL, &txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction begin failed");
+        return error;
+    }
 
-  /* TODO: Implement this */
-  return -1;
+    /* Implemented using a cursor, since that seems to be the modern Berkeley DB way */
+    DBC* cursorp;
+    map->db->cursor(map->db, txn, &cursorp, 0);
+
+    /* Declare and clear structures */
+    DBT key;
+    memset(&key, 0, sizeof(key));
+    DBT data;
+    memset(&data, 0, sizeof(data));
+
+    *n_nodes = 0;
+
+    /* Iterate over the entire set, just to find out how many there are */
+    while ((error = cursorp->get(cursorp, &key, &data, DB_NEXT)) == 0) {
+        (*n_nodes)++;
+    }
+    if (error != DB_NOTFOUND) {
+        map->db->err(map->db, error, "Database listall failed");
+        txn->abort(txn);
+        return error;
+    }
+
+    /* Now that we know how many there are, create an array big enough */
+    *nodes = malloc(*n_nodes*sizeof(inode_t));
+
+    /* And iterate through again to fill the array */
+    unsigned int i;
+    for (i = 0,
+             error = cursorp->get(cursorp, &key, &data, DB_FIRST);
+         (i < *n_nodes)
+             && (error == 0);
+         i++,
+             error = cursorp->get(cursorp, &key, &data, DB_NEXT))
+    {
+        /* Cast what we got out of the database properly */
+        inode_t* gotten_data = data.data;
+
+        /* Copy all the inode_t info into a new one and put it in the array */
+        *nodes[i] = *copy_inode(gotten_data);
+    }
+    if (error != DB_NOTFOUND) {
+        map->db->err(map->db, error, "Database listall failed (2nd iteration)");
+        txn->abort(txn);
+        return error;
+    }
+
+    /* Close the cursor - BEFORE the txn*/
+    cursorp->close(cursorp);
+
+    /* End the transaction */
+    error = txn->commit(txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction commit failed");
+        return error;
+    }
+    
+    return error;
 }
 
+/**
+ * map_merge()
+ * ----------
+ * Upon receiving gossip from someone else, go through our keymap,
+ * and merge any newer (as identified by the timestamp) nodes
+ *
+ */
 int map_merge( map_t *map, inode_t *nodes, int n_nodes ) {
 
-  /* TODO: Implement this */
-  return -1;
+    /* TODO: Implement this */
+    return -1;
 
 }
 
