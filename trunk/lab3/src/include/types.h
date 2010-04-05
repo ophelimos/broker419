@@ -37,7 +37,6 @@ typedef struct inode_t {
   unsigned long ts_put;
 
     /* Each inode has its own associated timestamp */
-    int n_dds;
     char dds_name[TIMESTAMP_MAX_DDS][MAX_HOST_NAME_LEN];
     int timestamp[TIMESTAMP_MAX_DDS];
     
