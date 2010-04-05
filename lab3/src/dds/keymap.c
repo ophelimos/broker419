@@ -56,6 +56,11 @@ inode_t* copy_inode(inode_t* input)
     }
     output->ts_put = input->ts_put;
     output->ts_delete = input->ts_delete;
+    for (i = 0; i < TIMESTAMP_MAX_DDS; i++)
+    {
+        output->timestamp[i] = input->timestamp[i];
+        strncpy(output->dds_name[i], input->dds_name[i], MAX_HOST_NAME_LEN);
+    }
 
     return output;
 }
@@ -112,7 +117,6 @@ map_t* map_init(char *filename) {
     map_t* map = malloc(sizeof(map_t));
     map->db = new_db;
     map->env = new_env;
-    /* Initialize the lock? */
 
     return map;
 }
@@ -489,7 +493,11 @@ int map_listall( map_t *map, inode_t **nodes, unsigned *n_nodes ) {
  *
  */
 int map_merge( map_t *map, inode_t *nodes, int n_nodes ) {
+    int error;
 
+
+
+    
     /* TODO: Implement this */
     return -1;
 
