@@ -36,7 +36,7 @@ db_error_handler(const DB_ENV *dbenv, const char *error_prefix, const char *msg)
 {
     fprintf(stderr, "%s%s\n", error_prefix, msg);
     /* Print some statistics */
-    dbenv->stat_print((DB_ENV*) dbenv, 0);
+//    dbenv->stat_print((DB_ENV*) dbenv, 0);
 }
 
 /**
@@ -74,6 +74,13 @@ map_t* map_init(char *filename) {
 
     /* Make a Berkeley DB environment (needed for anything useful) */
     DB_ENV* new_env;
+    error = db_env_create(&new_env, 0);
+    if (error != 0) {
+        fprintf(stderr, "Error creating environment handle: %s\n",
+            db_strerror(error));
+        exit(1);
+    }
+
     int env_flags = DB_CREATE |    /* Create the environment */
                 DB_INIT_TXN  | /* Initialize transactions */
                 DB_INIT_LOCK | /* Initialize locking. */
@@ -176,11 +183,17 @@ int map_get( map_t *map, obj_t *object, loc_t **locations, int *n_locations, int
     /* Make some memory for the data */
     inode_t gotten_data;
     data.data = &gotten_data;
-    /* data.size is set automatically */
+    data.ulen = sizeof(inode_t);
+    data.flags = DB_DBT_USERMEM;
 
     /* Start a transaction */
     DB_TXN *txn = NULL;
     error = map->env->txn_begin(map->env, NULL, &txn, 0);
+    if (error == DB_NOTFOUND)
+    {
+        /* Not really a database error, so just return an error code */
+        return error;
+    }
     if (error != 0)
     {
         map->db->err(map->db, error, "Transaction begin failed");
@@ -207,6 +220,8 @@ int map_get( map_t *map, obj_t *object, loc_t **locations, int *n_locations, int
     
     /* Locations is expected to be malloc'd */
     *locations = malloc(sizeof(loc_t) * gotten_data.n_locations);
+    /* Debugging: initialize the locations data to 0 */
+    memset(locations, 0, sizeof(loc_t) * gotten_data.n_locations);
     int i;
     for (i = 0; i < gotten_data.n_locations; i++)
     {
@@ -263,7 +278,8 @@ int map_del( map_t *map, obj_t *object, unsigned long ts_delete) {
     /* Make some memory for the data */
     inode_t gotten_data;
     data.data = &gotten_data;
-    /* data.size is set automatically */
+    data.size = sizeof(inode_t);
+    data.flags = DB_DBT_USERMEM;
 
     /* RMW = Read Modify Write, used since about to put it */
     error = map->db->get(map->db, txn, &key, &data, DB_RMW ); 
@@ -346,6 +362,10 @@ int map_list( map_t *map, obj_t *object, inode_t **nodes, unsigned *n_nodes, int
     memset(&key, 0, sizeof(key));
     DBT data;
     memset(&data, 0, sizeof(data));
+
+    /* Allocate memory to put the data into */
+    data.size = sizeof(inode_t);
+    data.flags = DB_DBT_USERMEM;
 
     *n_nodes = 0;
 
@@ -431,6 +451,10 @@ int map_listall( map_t *map, inode_t **nodes, unsigned *n_nodes ) {
     memset(&key, 0, sizeof(key));
     DBT data;
     memset(&data, 0, sizeof(data));
+
+    /* Allocate memory to put the data into */
+    data.size = sizeof(inode_t);
+    data.flags = DB_DBT_USERMEM;
 
     *n_nodes = 0;
 
@@ -520,7 +544,8 @@ int map_merge( map_t *map, inode_t *nodes, int n_nodes ) {
         /* Make some memory for the data */
         inode_t gotten_data;
         data.data = &gotten_data;
-        /* data.size is set automatically */
+        data.size = sizeof(inode_t);
+        data.flags = DB_DBT_USERMEM;
 
         error = map->db->get(map->db, txn, &key, &data, 0);
 

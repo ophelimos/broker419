@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
   hermes = hermes_init(1, port, ops );
 
   //TODO: call the function to connect to a peer here
-  has_peer = findNeighbours();
+//  has_peer = findNeighbours();
 
   /* do nothing */
   /* hermes runs on its own */
