@@ -8,8 +8,9 @@
 
 CC=gcc
 CCC=g++
-CFLAGS=-g -O4
-CLIBS=-lpthread -lhermes -labacus -ldb
+CFLAGS=-g -O0
+CLIBS=-lpthread -lhermes -labacus /cad2/ece419s/db/lib/libdb-4.7.a
+#CLIBS=-lpthread -lhermes -labacus -ldb
 
 CODE_BASE=${HOME}/ece419/lab3
 
