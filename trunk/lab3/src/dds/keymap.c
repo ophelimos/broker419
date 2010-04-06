@@ -34,7 +34,9 @@
 void
 db_error_handler(const DB_ENV *dbenv, const char *error_prefix, const char *msg)
 {
-    fprintf(stderr, "%s%s", error_prefix, msg);
+    fprintf(stderr, "%s%s\n", error_prefix, msg);
+    /* Print some statistics */
+    dbenv->stat_print((DB_ENV*) dbenv, 0);
 }
 
 /**
@@ -56,11 +58,6 @@ inode_t* copy_inode(inode_t* input)
     }
     output->ts_put = input->ts_put;
     output->ts_delete = input->ts_delete;
-    for (i = 0; i < TIMESTAMP_MAX_DDS; i++)
-    {
-        output->timestamp[i] = input->timestamp[i];
-        strncpy(output->dds_name[i], input->dds_name[i], MAX_HOST_NAME_LEN);
-    }
 
     return output;
 }
@@ -494,13 +491,102 @@ int map_listall( map_t *map, inode_t **nodes, unsigned *n_nodes ) {
  */
 int map_merge( map_t *map, inode_t *nodes, int n_nodes ) {
     int error;
+    int i;
 
+    /* Start a transaction */
+    DB_TXN *txn = NULL;
+    error = map->env->txn_begin(map->env, NULL, &txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction begin failed");
+        return error;
+    }
 
+    /* Iterate through all the nodes we've received as gossip */
+    for (i = 0; i < n_nodes; i++)
+    {
+        /* Find the corresponding timestamp in our keymap */
 
-    
-    /* TODO: Implement this */
-    return -1;
+        /* Declare and clear structures */
+        DBT key;
+        memset(&key, 0, sizeof(key));
+        DBT data;
+        memset(&data, 0, sizeof(data));
 
+        /* Set the key */
+        key.data = nodes[i].object.key_name;
+        key.size = MAX_KEY_NAME_LEN;
+
+        /* Make some memory for the data */
+        inode_t gotten_data;
+        data.data = &gotten_data;
+        /* data.size is set automatically */
+
+        error = map->db->get(map->db, txn, &key, &data, 0);
+
+        if (error == DB_NOTFOUND)
+        {
+            /* If we didn't find the record, add it */
+            data.data = &nodes[i];
+            data.size = sizeof(inode_t);
+            error = map->db->put(map->db, txn, &key, &data, 0);
+            if (error != 0)
+            {
+                map->db->err(map->db, error, "Database put failed");
+                txn->abort(txn);
+                return error;
+            }
+
+            /* Go to the next one */
+            continue;
+        }
+
+        /* Some other getting error */
+        if (error != 0)
+        {
+            map->db->err(map->db, error, "Database get failed");
+            txn->abort(txn);
+            return error;
+        }
+
+        /* All right, we found it in the database */
+
+        /* We're using physical timestamps here, and we have four of
+         * them.  We need to find out which record (received or
+         * current) has the absolute highest timestamp, and then if
+         * that's the received one, copy it over */
+
+        if (
+            ((nodes[i].ts_put > gotten_data.ts_put) && (nodes[i].ts_put > gotten_data.ts_delete))
+            ||
+            ((nodes[i].ts_delete > gotten_data.ts_put) && (nodes[i].ts_delete > gotten_data.ts_delete)))
+        {
+            /* Copy it over */
+            data.data = &nodes[i];
+            error = map->db->put(map->db, txn, &key, &data, 0);
+            if (error != 0)
+            {
+                map->db->err(map->db, error, "Database put failed");
+                txn->abort(txn);
+                return error;
+            }
+
+            /* Go to the next one */
+            continue;
+        }
+        
+        /* Our copy was newer, don't do anything */
+    }
+
+    /* End the transaction */
+    error = txn->commit(txn, 0);
+    if (error != 0)
+    {
+        map->db->err(map->db, error, "Transaction commit failed");
+        return error;
+    }
+
+    return error;
 }
 
 /* Close the Berkeley DB, ensuring on-disk persistence */
