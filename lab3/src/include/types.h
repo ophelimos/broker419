@@ -33,13 +33,11 @@ typedef struct inode_t {
   obj_t object;
   int n_locations;
   loc_t locations[INODE_MAX_LOCATIONS];
+    /* These are the only timestamps I'm going to need, since I'm
+     * implementing coherency, not locking: if there's a race, the
+     * latest person wins */
   unsigned long ts_delete;
   unsigned long ts_put;
-
-    /* Each inode has its own associated timestamp */
-    char dds_name[TIMESTAMP_MAX_DDS][MAX_HOST_NAME_LEN];
-    int timestamp[TIMESTAMP_MAX_DDS];
-    
 } inode_t;
 
 #endif
