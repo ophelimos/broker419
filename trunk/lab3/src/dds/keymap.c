@@ -17,8 +17,13 @@
 #include <cmd.h>
 #include <keymap.h>
 
+/* For mkdir */
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 /* Environment directory where all the DB stuff is stored */
-#define ENV_DIR "."
+#define ENV_DIR "./db"
 
 /* A nice default array size for map_list, without growing it */
 #define DEFAULT_ARRAY_SIZE 32
@@ -87,6 +92,18 @@ map_t* map_init(char *filename) {
                 DB_INIT_LOG  | /* Initialize logging */
                 DB_INIT_MPOOL | /* Initialize the in-memory cache. */
         DB_THREAD;             /* Be re-entrant */
+
+    /* If ENV_DIR doesn't exist, create it */
+    errno = 0;
+    error = mkdir(ENV_DIR, 0700);
+    if (error != 0)
+    {
+        if (errno != EEXIST)
+        {
+            fprintf(stderr, "Failed to create DB directory %s\n", ENV_DIR);
+            exit (1);
+        }
+    }
 
     error = new_env->open(new_env, ENV_DIR, env_flags, 0);
     if ( error != 0 )
@@ -164,8 +181,6 @@ int map_put( map_t *map, obj_t *object, loc_t *locations, int n_locations, unsig
     return error;
 }
 
-
-
 int map_get( map_t *map, obj_t *object, loc_t **locations, int *n_locations, int *is_deleted) {
     int error;
     /* I'm assuming that map and object are valid, and the rest need to be filled in */
@@ -220,12 +235,11 @@ int map_get( map_t *map, obj_t *object, loc_t **locations, int *n_locations, int
     
     /* Locations is expected to be malloc'd */
     *locations = malloc(sizeof(loc_t) * gotten_data.n_locations);
-    /* Debugging: initialize the locations data to 0 */
-    memset(locations, 0, sizeof(loc_t) * gotten_data.n_locations);
     int i;
     for (i = 0; i < gotten_data.n_locations; i++)
     {
-        *locations[i] = gotten_data.locations[i];
+        /* Evidently dereference has too low of an operator precedence */
+        (*locations)[i] = gotten_data.locations[i];
     }
 
     *n_locations = gotten_data.n_locations;
@@ -278,7 +292,7 @@ int map_del( map_t *map, obj_t *object, unsigned long ts_delete) {
     /* Make some memory for the data */
     inode_t gotten_data;
     data.data = &gotten_data;
-    data.size = sizeof(inode_t);
+    data.ulen = sizeof(inode_t);
     data.flags = DB_DBT_USERMEM;
 
     /* RMW = Read Modify Write, used since about to put it */
@@ -359,13 +373,13 @@ int map_list( map_t *map, obj_t *object, inode_t **nodes, unsigned *n_nodes, int
 
     /* Declare and clear structures */
     DBT key;
-    memset(&key, 0, sizeof(key));
+    memset(&key, 0, sizeof(DBT));
     DBT data;
-    memset(&data, 0, sizeof(data));
+    memset(&data, 0, sizeof(DBT));
 
     /* Allocate memory to put the data into */
-    data.size = sizeof(inode_t);
-    data.flags = DB_DBT_USERMEM;
+//    data.ulen = sizeof(inode_t);
+//    data.flags = DB_DBT_USERMEM;
 
     *n_nodes = 0;
 
@@ -396,8 +410,9 @@ int map_list( map_t *map, obj_t *object, inode_t **nodes, unsigned *n_nodes, int
                 *nodes = realloc(*nodes, cur_array_size*sizeof(inode_t));
             }
 
-            /* Copy in the value */
-            *nodes[*n_nodes] = *copy_inode(gotten_data);
+            /* Copy in the value - remember operator precedence */
+            inode_t* copied_inode = copy_inode(gotten_data);
+            (*nodes)[*n_nodes] = *copied_inode;
             (*n_nodes)++;
         }
     }
@@ -453,7 +468,7 @@ int map_listall( map_t *map, inode_t **nodes, unsigned *n_nodes ) {
     memset(&data, 0, sizeof(data));
 
     /* Allocate memory to put the data into */
-    data.size = sizeof(inode_t);
+    data.ulen = sizeof(inode_t);
     data.flags = DB_DBT_USERMEM;
 
     *n_nodes = 0;
@@ -484,7 +499,8 @@ int map_listall( map_t *map, inode_t **nodes, unsigned *n_nodes ) {
         inode_t* gotten_data = data.data;
 
         /* Copy all the inode_t info into a new one and put it in the array */
-        *nodes[i] = *copy_inode(gotten_data);
+        inode_t* copied_inode = copy_inode(gotten_data);
+        (*nodes)[i] = *copied_inode;
     }
     if (error != DB_NOTFOUND) {
         map->db->err(map->db, error, "Database listall failed (2nd iteration)");
@@ -544,7 +560,7 @@ int map_merge( map_t *map, inode_t *nodes, int n_nodes ) {
         /* Make some memory for the data */
         inode_t gotten_data;
         data.data = &gotten_data;
-        data.size = sizeof(inode_t);
+        data.ulen = sizeof(inode_t);
         data.flags = DB_DBT_USERMEM;
 
         error = map->db->get(map->db, txn, &key, &data, 0);
