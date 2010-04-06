@@ -22,9 +22,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-/* Environment directory where all the DB stuff is stored */
-#define ENV_DIR "./db"
-
 /* A nice default array size for map_list, without growing it */
 #define DEFAULT_ARRAY_SIZE 32
 
@@ -93,19 +90,19 @@ map_t* map_init(char *filename) {
                 DB_INIT_MPOOL | /* Initialize the in-memory cache. */
         DB_THREAD;             /* Be re-entrant */
 
-    /* If ENV_DIR doesn't exist, create it */
+    /* Make a db directory where the filename is */
     errno = 0;
-    error = mkdir(ENV_DIR, 0700);
+    error = mkdir(filename, 0700);
     if (error != 0)
     {
         if (errno != EEXIST)
         {
-            fprintf(stderr, "Failed to create DB directory %s\n", ENV_DIR);
+            fprintf(stderr, "Failed to create DB directory %s\n", filename);
             exit (1);
         }
     }
 
-    error = new_env->open(new_env, ENV_DIR, env_flags, 0);
+    error = new_env->open(new_env, filename, env_flags, 0);
     if ( error != 0 )
     {
         fprintf(stderr, "Environment open failed: %s\n", db_strerror(error));
@@ -648,6 +645,6 @@ void map_close( map_t *map)
     }
     if ( error != 0 )
     {
-        map->env->err(map->env, error, "Environment close failed: %s", ENV_DIR);
+        map->env->err(map->env, error, "Environment close failed");
     }
 }
