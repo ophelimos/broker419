@@ -6,6 +6,12 @@
  * This unifies several stores
  * on one machine.
  * 
+ * NOTE: the list is updated as follows:
+ *
+ * whenever someone sends me a request for hte list, i check if their name is in the list
+ * if their name is not in list, then i add them, else ill just give them the list
+ *
+ * TODO: remove them from the list when they go down
  **/
 
 #include <dds.h>
@@ -19,8 +25,8 @@
 /* ----------------------------------------------------------------- */
 //1001010
 struct namesOfDDS {
-	char namelist[MAXNAMES][200];
-	int portlist[MAXNAMES];
+	char namelist[MAXNAMES][200] = {NULL,NULL,NULL,NULL};
+	int portlist[MAXNAMES]= {0,0,0,0};
 	totalnames =0;
 };
 
@@ -128,13 +134,23 @@ int main(int argc, char **argv) {
     gossip_period_secs = atoi(argv[4]);
     strncpy(peer_dds, argv[5], 255);
     peer_port = atoi(argv[6]);
+
+    //copy myself and this peer to mylist
+    strcpy(mylist.namelist[0],gethostname());
+    mylist.porlist[0] = port;
+    mylist.totalnames++;
+
+    strcpy(mylist.namelist[1],peer_dds);
+    mylist.portlist[1] = peer_port;
+    mylist.totalnames++;
+
     has_peer = 1;					//has_peer gets set to 1 here because we want to connect to a peer now
   } else if( argc == 4 ) {
     port = atoi( argv[1] );
     strncpy(stores_file, argv[2], 255);
     strncpy(keymap_file, argv[3], 255);
     // Lonely, I am so lonely, I must add my self to my own list of names
-    gethostname(mylist.namelist[0], sizeof(mylist.namelist[0]));
+    strcpy(mylist.namelist[0],gethostname());
     mylist.porlist[0] = port;
     mylist.totalnames++;
   } else {
@@ -180,12 +196,12 @@ int main(int argc, char **argv) {
     	//First we get a list of all DDSes on the network
     	__dds_do_getnames(peer_dds, peer_port, mylist); //sends mylist to the other peer and has it updated
     	
-    	//TODO how to check @ this point that we actually have the list?
+    	//TODO how to check @ this point that we actually have the new list? maybe it doesnt matter...
 
 
     	//Randomly pick atleast one DDS from this list and connect
-    	//generates a psuedo-random integer between 0 and 10
-    	int pickthisfromlist = (int)((10)*rand()/(RAND_MAX+1.0));
+    	//generates a psuedo-random integer between 0 and mylist.totalnames
+    	int pickthisfromlist = (int)((mylist.totalnames)*rand()/(RAND_MAX+1.0));
     	//Pick the random host from list to gossip with
     	strcpy(peer_dds, mylist.namelist[pickthisfromlist]);
     	peer_port = mylist.portlist[pickthisfromlist];
@@ -1133,6 +1149,8 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
   DIE_IF_NOT_EQUAL( ret, 0, "Could not get body", err, &erred );
 
   //make a copy of the list
+  //TODO must add the guy who messaged me to mylist before i send it back
+  //HOW do we get their hostname so that we can add to the list?
   listtosend = (struct namesOfDDS*) buffer;
   ret = copymylist(listtosend);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not create a copy list", err, &erred );
