@@ -1195,7 +1195,7 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 //copy from my DDSlist to the one passed in this function
 static int copymylist(struct namesofDDS *tocopylist) {
 	int i =0;
-	for	(i =0; i < mylist.totalnames; i++){
+	for	(i =0; i < MAXNAMES; i++){
 		strcpy(tocopylist.namelist[i], mylist.namelist[i]);
 		tocopylist.portlist[i] = mylist.portlist[i];
 	}
@@ -1252,7 +1252,7 @@ static int __dds_handle_gavenames( hms_endpoint *endpoint, hms_msg *msg, int ver
 //copy from the given DDS list to mylist
 static int copytomylist(struct namesOfDDS *tocopylist) {
 	int i =0;
-	for	(i =0; i < tocopylist.totalnames; i++){
+	for	(i =0; i < MAXNAMES; i++){
 		strcpy(mylist.namelist[i], tocopylist.namelist[i]);
 		mylist.portlist[i] = tocopylist.portlist[i];
 	}
@@ -1263,7 +1263,7 @@ static int copytomylist(struct namesOfDDS *tocopylist) {
 static int synclist(struct namesofDDS *listfrompeer) {
 	int i =0, j =0, inlist =0;
 	
-	for (i =1; i<4; i++){//check if the peers name is alredy in the list or not
+	for (i =1; i<MAXNAMES; i++){//check if the peers name is alredy in the list or not
 		if (strcmp(mylist.namelist[i], lisfrompeer.namelist[0]) ==0){
 			return 0;
 		}
