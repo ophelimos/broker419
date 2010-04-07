@@ -19,19 +19,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAXNAMES 4;
+#define MAXNAMES 4
 
 /* Global Variables */
 /* ----------------------------------------------------------------- */
 //1001010
 struct namesOfDDS {
-	char namelist[MAXNAMES][200] = {NULL,NULL,NULL,NULL};
-	int portlist[MAXNAMES]= {0,0,0,0};
-	totalnames =0;
+	char namelist[MAXNAMES][200];
+	int portlist[MAXNAMES];
+	int totalnames;
 };
 
 //This srtuct holds the whole list of all DDS peers and the total number of them 
-static namesofDDS mylist;
+static struct namesOfDDS mylist;
 //1001010
 
 /* my port */
@@ -98,10 +98,11 @@ static int __dds_dump_stats( FILE *fd );
 
 static int copymylist(struct namesOfDDS *tocopylist);
 static int copytomylist(struct namesOfDDS *tocopylist);
+static int synclist(struct namesOfDDS *listfrompeer);
 
 /* Gossip */
 static int __dds_do_gossip(char *peer_host_name, int peer_port, map_t *keymap);
-static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelist *mynames);
+static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namesOfDDS *mynames);
 
 /* Verb Handlers */
 static int __dds_handle_gen( hms_endpoint *endpoint, hms_msg *msg,  int verb_id );
@@ -118,6 +119,14 @@ static int __dds_handle_gavenames( hms_endpoint *endpoint, hms_msg *msg, int ver
 
 int main(int argc, char **argv) {
 
+	//initialize mylist
+	int i=0;
+	for (i=0; i <MAXNAMES; i++){
+		bzero(mylist.namelist[i], 200);
+		mylist.portlist[i] =0;
+	}
+	mylist.totalnames =0;
+	
 	//seed the random number generator
 	srand((unsigned)(time(0)));
 
@@ -136,8 +145,8 @@ int main(int argc, char **argv) {
     peer_port = atoi(argv[6]);
 
     //copy myself and this peer to mylist
-    strcpy(mylist.namelist[0],gethostname());
-    mylist.porlist[0] = port;
+    gethostname(mylist.namelist[0], 200);
+    mylist.portlist[0] = port;
     mylist.totalnames++;
 	//adding other peer
     strcpy(mylist.namelist[1],peer_dds);
@@ -150,8 +159,8 @@ int main(int argc, char **argv) {
     strncpy(stores_file, argv[2], 255);
     strncpy(keymap_file, argv[3], 255);
     // Lonely, I am so lonely, I must add my self to my own list of names
-    strcpy(mylist.namelist[0],gethostname());
-    mylist.porlist[0] = port;
+    gethostname(mylist.namelist[0], 200);
+    mylist.portlist[0] = port;
     mylist.totalnames++;
   } else {
     fprintf(stderr, "USAGE: %s <port> <stores_file> <keymap> <gossip-period-secs> <peer-dds-host> <peer-dds-port> (with peering)\n", argv[0] );
@@ -194,9 +203,7 @@ int main(int argc, char **argv) {
     /* HINT: Calling a peer from here would be good! */
     if(has_peer) {
     	//First we get a list of all DDSes on the network
-    	__dds_do_getnames(peer_dds, peer_port, mylist); //sends mylist to the other peer and has it updated
-    	
-    	//TODO how to check @ this point that we actually have the new list? maybe it doesnt matter...
+    	__dds_do_getnames(peer_dds, peer_port, &mylist); //sends mylist to the other peer and has it updated
 
     	//Randomly pick atleast one DDS from this list and connect, disclude myself from this randomization
     	int pickthisfromlist = 1+(int)((mylist.totalnames)*rand()/(RAND_MAX+1.0)); //generates a psuedo-random integer between 0 and mylist.totalnames
@@ -385,7 +392,7 @@ static int __dds_handle(  hms_endpoint *endpoint, hms_msg *msg ) {
 /* Get names of all DDS */
 /* ----------------------------------------------------------------- */
 
-static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelist *mynames) {
+static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namesOfDDS *mynames) {
 
   int ret = 0, erred = 0;
   
@@ -397,7 +404,7 @@ static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelis
   guid_t *id = NULL;
 
  /* Record event in abacus */
-  ret = abacus_event_add( ab, EVT_COORD_GETNAME_REQ, 0 );
+  ret = abacus_event_add( ab, EVT_COORD_GETNAME, 0 );
   DIE_IF_NOT_EQUAL( ret, 0, "Could not log event into abacus", err, &erred );
 
   /* Start task */
@@ -405,13 +412,13 @@ static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelis
   DIE_IF_EQUAL( (int) id, (int) NULL, "Could not create guid", err, &erred );
   ret = abacus_task_add( ab, id );
   DIE_IF_NOT_EQUAL( ret, 0, "Could not add task into abacus", err, &erred );
-  ret = abacus_task_start( ab, id, TSK_COORD_GETNAME_REQ, 0);
+  ret = abacus_task_start( ab, id, TSK_COORD_GETNAME, 0);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not start task in abacus", err, &erred );
   
   // Put into buffer
-  buffer = ( char * ) malloc(sizeof(struct namesofDDS));
+  buffer = ( char * ) malloc(sizeof(struct namesOfDDS));
   DIE_IF_EQUAL( (int) buffer, (int) NULL, "Could not make buffer", err, &erred );
-  memcpy( buffer, mynames, sizeof(struct namesofDDS));
+  memcpy( buffer, mynames, sizeof(struct namesOfDDS));
   
   /* Connect to peer */
   fprintf(stdout, "Exchanging name list with peer at %s:%d\n", peer_host_name, peer_port );
@@ -425,7 +432,7 @@ static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelis
   DIE_IF_EQUAL( (int) msg, (int) NULL, "Could not create msg", err, &erred);
   ret = hms_msg_set_verb( msg, dds_verbs[DDS_GETNAMES]);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not set header", err, &erred);
-  ret = hms_msg_set_body( msg, buffer, sizeof(namesofDDS) );
+  ret = hms_msg_set_body( msg, buffer, sizeof(struct namesOfDDS) );
   DIE_IF_NOT_EQUAL(  ret, 0, "Could not add msg body", err, &erred );
   ret = hms_endpoint_send_msg( conn, msg );
   DIE_IF_NOT_EQUAL(  ret, 0, "Could not forward msg to peer", err, &erred );
@@ -438,14 +445,13 @@ static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelis
  err:
   
   /* Record into abacus */
-  ret = abacus_task_end(ab, id, TSK_COORD_GETNAME_REQ, 0);
+  ret = abacus_task_end(ab, id, TSK_COORD_GETNAME, 0);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
   ret = abacus_task_delete(ab, id);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
   guid_destroy( id ); id = NULL;
 
  cleanup:
-  if(nodes) { free(nodes); nodes = NULL; }
   if(msg) { hms_msg_destroy(msg); msg = NULL; }
   if(buffer) { free(buffer); buffer = NULL; }
   if(conn) { free(conn); conn = NULL; }
@@ -1155,9 +1161,9 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
   ret = copymylist(listtosend);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not create a copy list", err, &erred );
 
-  buffer = ( char * ) malloc(sizeof(struct namesofDDS));
+  buffer = ( char * ) malloc(sizeof(struct namesOfDDS));
   DIE_IF_EQUAL( (int) buffer, (int) NULL, "Could not make buffer", err, &erred );
-  memcpy( buffer, listtosend, sizeof(struct namesofDDS));
+  memcpy( buffer, listtosend, sizeof(struct namesOfDDS));
 
   //send this new list to the requester
 	reply = hms_msg_create();
@@ -1192,17 +1198,6 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 
 }
 
-//copy from my DDSlist to the one passed in this function
-static int copymylist(struct namesofDDS *tocopylist) {
-	int i =0;
-	for	(i =0; i < MAXNAMES; i++){
-		strcpy(tocopylist.namelist[i], mylist.namelist[i]);
-		tocopylist.portlist[i] = mylist.portlist[i];
-	}
-	tocopylist.totalnames = mylist.totalnames;
-	return 0;
-}
-
 static int __dds_handle_gavenames( hms_endpoint *endpoint, hms_msg *msg, int verb_id ) {
 	unsigned i = 0;
 	int ret = 0, erred = 0;
@@ -1230,7 +1225,7 @@ static int __dds_handle_gavenames( hms_endpoint *endpoint, hms_msg *msg, int ver
 	DIE_IF_NOT_EQUAL( ret, 0, "Could not get body", err, &erred );
 
 	//make a copy of the list
-	listocopy = (struct namesOfDDS*) buffer;
+	listtocopy = (struct namesOfDDS*) buffer;
 	ret = copytomylist(listtocopy);
 	DIE_IF_NOT_EQUAL( ret, 0, "Could not create a copy list", err, &erred );
 
@@ -1249,22 +1244,53 @@ static int __dds_handle_gavenames( hms_endpoint *endpoint, hms_msg *msg, int ver
 		return erred;
 }
 
-//copy from the given DDS list to mylist
-static int copytomylist(struct namesOfDDS *tocopylist) {
+//copy from my DDSlist to the one passed in this function
+static int copymylist(struct namesOfDDS *tocopylist) {
 	int i =0;
 	for	(i =0; i < MAXNAMES; i++){
-		strcpy(mylist.namelist[i], tocopylist.namelist[i]);
-		mylist.portlist[i] = tocopylist.portlist[i];
+		strcpy(tocopylist->namelist[i], mylist.namelist[i]);
+		tocopylist->portlist[i] = mylist.portlist[i];
 	}
-	mylist.totalnames = tocopylist.totalnames;
+	tocopylist->totalnames = mylist.totalnames;
 	return 0;
 }
 
-static int synclist(struct namesofDDS *listfrompeer) {
+//copy from the given DDS list to mylist
+static int copytomylist(struct namesOfDDS *tocopylist) {
+	int i =1, j=0;
+	int tocopyflags[4] = {1,1,1,1};
+	
+	//mark the tocopyflags as required to prepare to for copying
+	for (i =0; i<MAXNAMES; i++){//check if the peers name is alredy in the list or not
+		for(j=0; j<MAXNAMES; j++) {
+			if(strcmp(mylist.namelist[i], tocopylist->namelist[j]) == 0){
+				tocopyflags[j] = 0;	
+			}
+		}
+	}
+	
+	//find the first NULL element in mylist and add the the elements i marked in tocopyflags[]
+	for	(i =1; i < MAXNAMES; i++){
+		if(mylist.namelist[i] == NULL) { //this element is empty, we can add it here
+			for(j =0; j<MAXNAMES; j++){
+				if(tocopyflags[j] == 1) {
+					strcpy(mylist.namelist[i], tocopylist->namelist[j]);
+					mylist.portlist[i] = tocopylist->portlist[i];
+					mylist.totalnames++;
+					tocopyflags[j] = 0;
+				}	
+			}
+		}
+	}
+	return 0;
+}
+
+//update my list
+static int synclist(struct namesOfDDS *listfrompeer) {
 	int i =0, j =0, inlist =0;
 	
 	for (i =1; i<MAXNAMES; i++){//check if the peers name is alredy in the list or not
-		if (strcmp(mylist.namelist[i], lisfrompeer.namelist[0]) ==0){
+		if (strcmp(mylist.namelist[i], listfrompeer->namelist[0]) ==0){
 			return 0;
 		}
 		else {
@@ -1276,7 +1302,7 @@ static int synclist(struct namesofDDS *listfrompeer) {
 	if(inlist ==0){
 		for (i =1; i<4; i++){
 			if (mylist.namelist[i] == NULL){
-				strcpy(mylist.namelist[i], listfrompeer.namelist[0]);
+				strcpy(mylist.namelist[i], listfrompeer->namelist[0]);
 				mylist.totalnames++;
 				break;
 			}
