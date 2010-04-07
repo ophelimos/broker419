@@ -1126,6 +1126,9 @@ static int __dds_handle_gossip( hms_endpoint *endpoint, hms_msg *msg, int verb_i
 //Handle the request for list of all DDS names
 static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb_id ) {
 
+    /* We now have a peer */
+    has_peer = 1;
+
   unsigned i = 0;
   int ret = 0, erred = 0;
   struct namesOfDDS *listtosend;
