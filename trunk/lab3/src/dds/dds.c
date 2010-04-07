@@ -11,9 +11,21 @@
 #include <dds.h>
 #include <sys/time.h>
 
+#define MAXNAMES 10;
+
 /* Global Variables */
 /* ----------------------------------------------------------------- */
-static int port; /* my port */
+//1001010
+struct namesOfDDS {
+	char namelist[MAXNAMES][200];
+	int portlist[MAXNAMES];
+};
+
+//This srtuct holds the whole list of all DDS peers and the total number of them 
+static namesofDDS mylist;
+//1001010
+
+/* my port */
 
 static char stores_file[256];
 static loc_db *loc_stores; /* storage locations */
@@ -22,6 +34,7 @@ static char keymap_file[256];
 static map_t *keymap; /* keeps meta-data */
 
 static int gossip_period_secs = 0;
+static int port; 
 static int has_peer = 0;
 static char peer_dds[256];
 static int peer_port;
@@ -38,6 +51,8 @@ enum dds_coord_events {
   EVT_COORD_LIST,
   EVT_COORD_GOSSIP_REQ,
   EVT_COORD_GOSSIP_RES,
+  EVT_COORD_GETNAME,
+  EVT_COORD_GAVENAME,
   EVT_COORD_MAX_EVENT /* keep this last */
 };
 
@@ -49,6 +64,8 @@ enum dds_coord_tasks {
   TSK_COORD_LIST,
   TSK_COORD_GOSSIP_REQ,
   TSK_COORD_GOSSIP_RES,
+  TSK_COORD_GETNAME,
+  TSK_COORD_GAVENAME,
   TSK_COORD_MAP_PUT, /* keymap operations */
   TSK_COORD_MAP_GET,
   TSK_COORD_MAP_LIST,
@@ -70,6 +87,7 @@ static int __dds_dump_stats( FILE *fd );
 
 /* Gossip */
 static int __dds_do_gossip(char *peer_host_name, int peer_port, map_t *keymap);
+static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelist *mynames);
 
 /* Verb Handlers */
 static int __dds_handle_gen( hms_endpoint *endpoint, hms_msg *msg,  int verb_id );
@@ -78,7 +96,7 @@ static int __dds_handle_put( hms_endpoint *endpoint, hms_msg *msg,  int verb_id 
 static int __dds_handle_delete( hms_endpoint *endpoint, hms_msg *msg, int verb_id );
 static int __dds_handle_list( hms_endpoint *endpoint, hms_msg *msg, int verb_id );
 static int __dds_handle_gossip( hms_endpoint *endpoint, hms_msg *msg, int verb_id );
-
+static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb_id );
 
 /* Main */
 /* ----------------------------------------------------------------- */
@@ -98,7 +116,7 @@ int main(int argc, char **argv) {
     gossip_period_secs = atoi(argv[4]);
     strncpy(peer_dds, argv[5], 255);
     peer_port = atoi(argv[6]);
-    has_peer = 1;
+    has_peer = 1;					//has_peer gets set to 1 here because we want to connect to a peer now
   } else if( argc == 4 ) {
     port = atoi( argv[1] );
     strncpy(stores_file, argv[2], 255);
@@ -138,19 +156,24 @@ int main(int argc, char **argv) {
   /* start-up hermes */
   hermes = hermes_init(1, port, ops );
 
-  //TODO: call the function to connect to a peer here
-//  has_peer = findNeighbours();
-
   /* do nothing */
   /* hermes runs on its own */
   while(1) { 
     /* HINT: Calling a peer from here would be good! */
     if(has_peer) {
-      double cur_time = abacus_time(ab);
-      if( (cur_time - last_gossip_time) > 1000 * gossip_period_secs ) {
-	__dds_do_gossip(peer_dds, peer_port, keymap);
-	last_gossip_time = cur_time;
-      }
+    	//First we get a list of all DDSes on the network
+    	__dds_do_getnames(peer_dds, peer_port, mylist); //sends mylist to the other peer and has it updated
+    	
+    	//TODO
+    	//Randomly pick atleast one DDS from this list and connect
+    	
+    	//Gossip business: BEGIN
+		double cur_time = abacus_time(ab);
+		if( (cur_time - last_gossip_time) > 1000 * gossip_period_secs ) { //timeout for the gossip
+			__dds_do_gossip(peer_dds, peer_port, keymap);
+			last_gossip_time = cur_time;
+		}
+		//Gossip business: END
     }
     /* dump stats */
     __dds_dump_stats( fd_stats );
@@ -294,6 +317,10 @@ static int __dds_handle(   hms_endpoint *endpoint, hms_msg *msg ) {
   case DDS_GOSSIP:
     ret = __dds_handle_gossip( endpoint, msg, vid );
     break;
+  case DDS_GETNAMES:
+  	ret = __dds_handle_getnames(endpoint, msg, vid);
+  	break;
+  	//TODO: another case to handle when a list is send as requested
   default:
     fprintf(stdout, "No verb handler for [%s]\n", verb );
     break;
@@ -314,6 +341,81 @@ static int __dds_handle(   hms_endpoint *endpoint, hms_msg *msg ) {
   return ret; /* everything ok */
 
 }
+
+//1001010
+/* Get names of all DDS */
+/* ----------------------------------------------------------------- */
+
+static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelist *mynames) {
+
+  int ret = 0, erred = 0;
+  
+  char *buffer = NULL;
+  
+  hms_ops ops;
+  hms_endpoint *conn = NULL;
+  hms_msg *msg = NULL;
+  guid_t *id = NULL;
+
+ /* Record event in abacus */
+  ret = abacus_event_add( ab, EVT_COORD_GETNAME_REQ, 0 );
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not log event into abacus", err, &erred );
+
+  /* Start task */
+  id = guid_create();
+  DIE_IF_EQUAL( (int) id, (int) NULL, "Could not create guid", err, &erred );
+  ret = abacus_task_add( ab, id );
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not add task into abacus", err, &erred );
+  ret = abacus_task_start( ab, id, TSK_COORD_GETNAME_REQ, 0);
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not start task in abacus", err, &erred );
+  
+  // Put into buffer
+  buffer = ( char * ) malloc(sizeof(struct namesofDDS));
+  DIE_IF_EQUAL( (int) buffer, (int) NULL, "Could not make buffer", err, &erred );
+  memcpy( buffer, mynames, sizeof(namesofDDS));
+  
+  /* Connect to peer */
+  fprintf(stdout, "Exchanging name list with peer at %s:%d\n", peer_host_name, peer_port );
+  int conn_fd = hms_endpoint_connect( peer_host_name, peer_port );
+  DIE_IF_EQUAL( conn_fd, -1, "Could not connect to dds peer", err, &erred );
+  /* Init Endpoint */
+  conn = hms_endpoint_init( conn_fd, ops );
+  DIE_IF_EQUAL( conn, NULL,"Could not initialize endpoint", err, &erred );
+  /* Send a message to peer */
+  msg = hms_msg_create();
+  DIE_IF_EQUAL( (int) msg, (int) NULL, "Could not create msg", err, &erred);
+  ret = hms_msg_set_verb( msg, dds_verbs[DDS_GETNAMES]);
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not set header", err, &erred);
+  ret = hms_msg_set_body( msg, buffer, sizeof(namesofDDS) );
+  DIE_IF_NOT_EQUAL(  ret, 0, "Could not add msg body", err, &erred );
+  ret = hms_endpoint_send_msg( conn, msg );
+  DIE_IF_NOT_EQUAL(  ret, 0, "Could not forward msg to peer", err, &erred );
+  /* Cleanup */
+  ret = hms_msg_destroy( msg ); msg = NULL;
+  DIE_IF_NOT_EQUAL(  ret, 0, "Could not destroy msg", err, &erred );
+  ret = hms_endpoint_destroy( conn ); conn = NULL;
+  DIE_IF_NOT_EQUAL(  ret, 0, "Could not destroy endpoint", err, &erred );
+
+ err:
+  
+  /* Record into abacus */
+  ret = abacus_task_end(ab, id, TSK_COORD_GETNAME_REQ, 0);
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
+  ret = abacus_task_delete(ab, id);
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
+  guid_destroy( id ); id = NULL;
+
+ cleanup:
+  if(nodes) { free(nodes); nodes = NULL; }
+  if(msg) { hms_msg_destroy(msg); msg = NULL; }
+  if(buffer) { free(buffer); buffer = NULL; }
+  if(conn) { free(conn); conn = NULL; }
+  if(id) { guid_destroy(id); id = NULL; }
+
+  return erred;
+
+}
+//1001010
 
 /* Gossip */
 /* ----------------------------------------------------------------- */
@@ -975,3 +1077,67 @@ static int __dds_handle_gossip( hms_endpoint *endpoint, hms_msg *msg, int verb_i
   return erred;
 
 }
+
+//1001010
+//Handle the request for list of all DDS names
+static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb_id ) {
+
+  unsigned i = 0;
+  int ret = 0, erred = 0;
+  struct namesOfDDS *listtosend;
+  char *buffer = NULL; int buffer_len = 0;
+
+  guid_t *id = NULL;
+
+  /* Record event in abacus */
+  ret = abacus_event_add( ab, EVT_COORD_GAVENAME_RES, 0 );
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not log event into abacus", err, &erred );
+
+  /* Start task */
+  id = guid_create();
+  DIE_IF_EQUAL( (int) id, (int) NULL, "Could not create guid", err, &erred );
+  ret = abacus_task_add( ab, id );
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not add task into abacus", err, &erred );
+  ret = abacus_task_start( ab, id, TSK_COORD_GAVENAME_RES, 0);
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not start task in abacus", err, &erred );
+
+  //read buffer from packet
+  buffer_len = hms_msg_get_body_size(msg);
+  ret = hms_msg_get_body( msg, &buffer, &buffer_len );
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not get body", err, &erred );
+
+  //make a copy of the list
+  listotsend = (struct namesOfDDS*) buffer;
+  ret = copymylist(listtosend);
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not merge data obtained from gossip", err, &erred );
+
+  //TODO: Send this new list
+  
+  
+ err:
+
+  /* Record into abacus */
+  ret = abacus_task_end(ab, id, TSK_COORD_GAVENAME_RES, 0);
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
+  ret = abacus_task_delete(ab, id);
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
+  guid_destroy( id ); id = NULL;
+  
+ cleanup:
+  if(buffer) { free(buffer); buffer = NULL; }
+  if(id) { guid_destroy(id); id = NULL; }
+
+  return erred;
+
+}
+
+//copy from my DDSlist to the one passed in this function
+static int copymylist(struct namesofDDS *tocopylist) {
+	int i =0;
+	for	(i =0; i < MAXNAMES; i++){
+		strcpy(tocopylist.namelist [i], mylist.namelist[1]);
+		tocopy.portlist[i] = mylist.portlist[i];
+	}
+	return 0;
+}
+//1001010
