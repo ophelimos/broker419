@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
     strcpy(mylist.namelist[0],gethostname());
     mylist.porlist[0] = port;
     mylist.totalnames++;
-
+	//adding other peer
     strcpy(mylist.namelist[1],peer_dds);
     mylist.portlist[1] = peer_port;
     mylist.totalnames++;
@@ -198,10 +198,8 @@ int main(int argc, char **argv) {
     	
     	//TODO how to check @ this point that we actually have the new list? maybe it doesnt matter...
 
-
-    	//Randomly pick atleast one DDS from this list and connect
-    	//generates a psuedo-random integer between 0 and mylist.totalnames
-    	int pickthisfromlist = (int)((mylist.totalnames)*rand()/(RAND_MAX+1.0));
+    	//Randomly pick atleast one DDS from this list and connect, disclude myself from this randomization
+    	int pickthisfromlist = 1+(int)((mylist.totalnames)*rand()/(RAND_MAX+1.0)); //generates a psuedo-random integer between 0 and mylist.totalnames
     	//Pick the random host from list to gossip with
     	strcpy(peer_dds, mylist.namelist[pickthisfromlist]);
     	peer_port = mylist.portlist[pickthisfromlist];
@@ -1149,9 +1147,11 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
   DIE_IF_NOT_EQUAL( ret, 0, "Could not get body", err, &erred );
 
   //make a copy of the list
-  //TODO must add the guy who messaged me to mylist before i send it back
-  //HOW do we get their hostname so that we can add to the list?
+ 
   listtosend = (struct namesOfDDS*) buffer;
+  //synchronize my list to this peers list (add the peers name to my list if not already there)
+  ret = synclist(listtosend);
+  //now i make a copy of my newly updated list and send it back to peer
   ret = copymylist(listtosend);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not create a copy list", err, &erred );
 
@@ -1195,10 +1195,11 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 //copy from my DDSlist to the one passed in this function
 static int copymylist(struct namesofDDS *tocopylist) {
 	int i =0;
-	for	(i =0; i < MAXNAMES; i++){
+	for	(i =0; i < mylist.totalnames; i++){
 		strcpy(tocopylist.namelist[i], mylist.namelist[i]);
-		tocopy.portlist[i] = mylist.portlist[i];
+		tocopylist.portlist[i] = mylist.portlist[i];
 	}
+	tocopylist.totalnames = mylist.totalnames;
 	return 0;
 }
 
@@ -1248,12 +1249,40 @@ static int __dds_handle_gavenames( hms_endpoint *endpoint, hms_msg *msg, int ver
 		return erred;
 }
 
+//copy from the given DDS list to mylist
 static int copytomylist(struct namesOfDDS *tocopylist) {
 	int i =0;
-	for	(i =0; i < MAXNAMES; i++){
+	for	(i =0; i < tocopylist.totalnames; i++){
 		strcpy(mylist.namelist[i], tocopylist.namelist[i]);
-		mylist.portlist[i] = tocopy.portlist[i];
+		mylist.portlist[i] = tocopylist.portlist[i];
 	}
+	mylist.totalnames = tocopylist.totalnames;
 	return 0;
 }
+
+static int synclist(struct namesofDDS *listfrompeer) {
+	int i =0, j =0, inlist =0;
+	
+	for (i =1; i<4; i++){//check if the peers name is alredy in the list or not
+		if (strcmp(mylist.namelist[i], lisfrompeer.namelist[0]) ==0){
+			return 0;
+		}
+		else {
+			inlist =0;
+		}
+	}
+	
+	//peers name is not in mylist, so i will add first
+	if(inlist ==0){
+		for (i =1; i<4; i++){
+			if (mylist.namelist[i] == NULL){
+				strcpy(mylist.namelist[i], listfrompeer.namelist[0]);
+				mylist.totalnames++;
+				break;
+			}
+		}	
+	}
+	return 0;
+}	
+
 //1001010
