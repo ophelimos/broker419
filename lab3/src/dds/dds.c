@@ -10,8 +10,10 @@
 
 #include <dds.h>
 #include <sys/time.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define MAXNAMES 10;
+#define MAXNAMES 4;
 
 /* Global Variables */
 /* ----------------------------------------------------------------- */
@@ -19,6 +21,7 @@
 struct namesOfDDS {
 	char namelist[MAXNAMES][200];
 	int portlist[MAXNAMES];
+	totalnames =0;
 };
 
 //This srtuct holds the whole list of all DDS peers and the total number of them 
@@ -53,6 +56,7 @@ enum dds_coord_events {
   EVT_COORD_GOSSIP_RES,
   EVT_COORD_GETNAME,
   EVT_COORD_GAVENAME,
+  EVT_COORD_GOTNAME,
   EVT_COORD_MAX_EVENT /* keep this last */
 };
 
@@ -66,6 +70,7 @@ enum dds_coord_tasks {
   TSK_COORD_GOSSIP_RES,
   TSK_COORD_GETNAME,
   TSK_COORD_GAVENAME,
+  TSK_COORD_GOTNAME,
   TSK_COORD_MAP_PUT, /* keymap operations */
   TSK_COORD_MAP_GET,
   TSK_COORD_MAP_LIST,
@@ -85,6 +90,9 @@ static int __dds_handle(   hms_endpoint *endpoint, hms_msg *msg );
 static int __dds_find_verb( char *verb );
 static int __dds_dump_stats( FILE *fd );
 
+static int copymylist(struct namesOfDDS *tocopylist);
+static int copytomylist(struct namesOfDDS *tocopylist);
+
 /* Gossip */
 static int __dds_do_gossip(char *peer_host_name, int peer_port, map_t *keymap);
 static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelist *mynames);
@@ -97,11 +105,15 @@ static int __dds_handle_delete( hms_endpoint *endpoint, hms_msg *msg, int verb_i
 static int __dds_handle_list( hms_endpoint *endpoint, hms_msg *msg, int verb_id );
 static int __dds_handle_gossip( hms_endpoint *endpoint, hms_msg *msg, int verb_id );
 static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb_id );
+static int __dds_handle_gavenames( hms_endpoint *endpoint, hms_msg *msg, int verb_id );
 
 /* Main */
 /* ----------------------------------------------------------------- */
 
 int main(int argc, char **argv) {
+
+	//seed the random number generator
+	srand((unsigned)(time(0)));
 
   int erred = 0, ret = 0;
   hms_ops ops;
@@ -121,6 +133,10 @@ int main(int argc, char **argv) {
     port = atoi( argv[1] );
     strncpy(stores_file, argv[2], 255);
     strncpy(keymap_file, argv[3], 255);
+    // Lonely, I am so lonely, I must add my self to my own list of names
+    gethostname(mylist.namelist[0], sizeof(mylist.namelist[0]));
+    mylist.porlist[0] = port;
+    mylist.totalnames++;
   } else {
     fprintf(stderr, "USAGE: %s <port> <stores_file> <keymap> <gossip-period-secs> <peer-dds-host> <peer-dds-port> (with peering)\n", argv[0] );
     fprintf(stderr, "USAGE: %s <port> <stores_file> <keymap> (without peering)\n", argv[0] );
@@ -164,9 +180,16 @@ int main(int argc, char **argv) {
     	//First we get a list of all DDSes on the network
     	__dds_do_getnames(peer_dds, peer_port, mylist); //sends mylist to the other peer and has it updated
     	
-    	//TODO
+    	//TODO how to check @ this point that we actually have the list?
+
+
     	//Randomly pick atleast one DDS from this list and connect
-    	
+    	//generates a psuedo-random integer between 0 and 10
+    	int pickthisfromlist = (int)((10)*rand()/(RAND_MAX+1.0));
+    	//Pick the random host from list to gossip with
+    	strcpy(peer_dds, mylist.namelist[pickthisfromlist]);
+    	peer_port = mylist.portlist[pickthisfromlist];
+
     	//Gossip business: BEGIN
 		double cur_time = abacus_time(ab);
 		if( (cur_time - last_gossip_time) > 1000 * gossip_period_secs ) { //timeout for the gossip
@@ -277,7 +300,7 @@ static int __dds_accepts(  hms_endpoint *endpoint, hms_msg *msg ) {
 } 
 
 
-static int __dds_handle(   hms_endpoint *endpoint, hms_msg *msg ) {
+static int __dds_handle(  hms_endpoint *endpoint, hms_msg *msg ) {
 
   int ret = 0, erred = 0;
   char *verb = NULL;
@@ -320,7 +343,9 @@ static int __dds_handle(   hms_endpoint *endpoint, hms_msg *msg ) {
   case DDS_GETNAMES:
   	ret = __dds_handle_getnames(endpoint, msg, vid);
   	break;
-  	//TODO: another case to handle when a list is send as requested
+  case DDS_GAVENAMES:
+	ret = __dds_handle_gavenames(endpoint, msg, vid);
+	break;
   default:
     fprintf(stdout, "No verb handler for [%s]\n", verb );
     break;
@@ -372,7 +397,7 @@ static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namelis
   // Put into buffer
   buffer = ( char * ) malloc(sizeof(struct namesofDDS));
   DIE_IF_EQUAL( (int) buffer, (int) NULL, "Could not make buffer", err, &erred );
-  memcpy( buffer, mynames, sizeof(namesofDDS));
+  memcpy( buffer, mynames, sizeof(struct namesofDDS));
   
   /* Connect to peer */
   fprintf(stdout, "Exchanging name list with peer at %s:%d\n", peer_host_name, peer_port );
@@ -1087,10 +1112,11 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
   struct namesOfDDS *listtosend;
   char *buffer = NULL; int buffer_len = 0;
 
+  hms_msg *reply = NULL;
   guid_t *id = NULL;
 
   /* Record event in abacus */
-  ret = abacus_event_add( ab, EVT_COORD_GAVENAME_RES, 0 );
+  ret = abacus_event_add( ab, EVT_COORD_GAVENAME, 0 );
   DIE_IF_NOT_EQUAL( ret, 0, "Could not log event into abacus", err, &erred );
 
   /* Start task */
@@ -1098,7 +1124,7 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
   DIE_IF_EQUAL( (int) id, (int) NULL, "Could not create guid", err, &erred );
   ret = abacus_task_add( ab, id );
   DIE_IF_NOT_EQUAL( ret, 0, "Could not add task into abacus", err, &erred );
-  ret = abacus_task_start( ab, id, TSK_COORD_GAVENAME_RES, 0);
+  ret = abacus_task_start( ab, id, TSK_COORD_GAVENAME, 0);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not start task in abacus", err, &erred );
 
   //read buffer from packet
@@ -1107,17 +1133,34 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
   DIE_IF_NOT_EQUAL( ret, 0, "Could not get body", err, &erred );
 
   //make a copy of the list
-  listotsend = (struct namesOfDDS*) buffer;
+  listtosend = (struct namesOfDDS*) buffer;
   ret = copymylist(listtosend);
-  DIE_IF_NOT_EQUAL( ret, 0, "Could not merge data obtained from gossip", err, &erred );
+  DIE_IF_NOT_EQUAL( ret, 0, "Could not create a copy list", err, &erred );
 
-  //TODO: Send this new list
-  
-  
+  buffer = ( char * ) malloc(sizeof(struct namesofDDS));
+  DIE_IF_EQUAL( (int) buffer, (int) NULL, "Could not make buffer", err, &erred );
+  memcpy( buffer, listtosend, sizeof(struct namesofDDS));
+
+  //send this new list to the requester
+	reply = hms_msg_create();
+    DIE_IF_EQUAL( (int) reply, (int) NULL, "Could not create reply", err, &erred);
+    ret = hms_msg_set_verb( reply, dds_verbs[DDS_GAVENAMES]);
+    DIE_IF_NOT_EQUAL( ret, 0, "Could not set header", err, &erred);
+
+    if( buffer ) { /* no list to send */
+      ret = hms_msg_set_body( reply, buffer, strlen(buffer) );
+      DIE_IF_NOT_EQUAL( ret, 0, "Could not add message body", err, &erred);
+    }
+
+    ret = hms_endpoint_send_msg( endpoint, reply );
+    DIE_IF_NOT_EQUAL(  ret, 0, "Could not forward reply to user", err, &erred );
+    ret = hms_msg_destroy( reply ); reply = NULL;
+    DIE_IF_NOT_EQUAL(  ret, 0, "Could not destroy reply", err, &erred );
+  //
  err:
 
   /* Record into abacus */
-  ret = abacus_task_end(ab, id, TSK_COORD_GAVENAME_RES, 0);
+  ret = abacus_task_end(ab, id, TSK_COORD_GAVENAME, 0);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
   ret = abacus_task_delete(ab, id);
   DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
@@ -1135,8 +1178,63 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 static int copymylist(struct namesofDDS *tocopylist) {
 	int i =0;
 	for	(i =0; i < MAXNAMES; i++){
-		strcpy(tocopylist.namelist [i], mylist.namelist[1]);
+		strcpy(tocopylist.namelist[i], mylist.namelist[i]);
 		tocopy.portlist[i] = mylist.portlist[i];
+	}
+	return 0;
+}
+
+static int __dds_handle_gavenames( hms_endpoint *endpoint, hms_msg *msg, int verb_id ) {
+	unsigned i = 0;
+	int ret = 0, erred = 0;
+	struct namesOfDDS *listtocopy;
+	char *buffer = NULL; int buffer_len = 0;
+
+	hms_msg *reply = NULL;
+	guid_t *id = NULL;
+
+	/* Record event in abacus */
+	ret = abacus_event_add( ab, EVT_COORD_GOTNAME, 0 );
+	DIE_IF_NOT_EQUAL( ret, 0, "Could not log event into abacus", err, &erred );
+
+	/* Start task */
+	id = guid_create();
+	DIE_IF_EQUAL( (int) id, (int) NULL, "Could not create guid", err, &erred );
+	ret = abacus_task_add( ab, id );
+	DIE_IF_NOT_EQUAL( ret, 0, "Could not add task into abacus", err, &erred );
+	ret = abacus_task_start( ab, id, TSK_COORD_GOTNAME, 0);
+	DIE_IF_NOT_EQUAL( ret, 0, "Could not start task in abacus", err, &erred );
+
+	//read buffer from packet
+	buffer_len = hms_msg_get_body_size(msg);
+	ret = hms_msg_get_body( msg, &buffer, &buffer_len );
+	DIE_IF_NOT_EQUAL( ret, 0, "Could not get body", err, &erred );
+
+	//make a copy of the list
+	listocopy = (struct namesOfDDS*) buffer;
+	ret = copytomylist(listtocopy);
+	DIE_IF_NOT_EQUAL( ret, 0, "Could not create a copy list", err, &erred );
+
+	err:
+		//record it in abacus
+		ret = abacus_task_end(ab, id, TSK_COORD_GOTNAME, 0);
+		DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
+		ret = abacus_task_delete(ab, id);
+		DIE_IF_NOT_EQUAL( ret, 0, "Could not delete task abacus", cleanup, &erred );
+		guid_destroy( id ); id = NULL;
+
+	cleanup:
+		if(buffer) { free(buffer); buffer = NULL; }
+		if(id) { guid_destroy(id); id = NULL; }
+
+		return erred;
+}
+
+static int copytomylist(struct namesOfDDS *tocopylist) {
+	int i =0;
+	for	(i =0; i < MAXNAMES; i++){
+		strcpy(mylist.namelist[i], tocopylist.namelist[i]);
+		mylist.portlist[i] = tocopy.portlist[i];
 	}
 	return 0;
 }
