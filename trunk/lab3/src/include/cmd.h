@@ -17,7 +17,8 @@ typedef enum dds_cmd {
   DDS_LISTBUCKET,
   DDS_KEYINFO,
   DDS_GOSSIP,
-  DD_GETNAMES,
+  DDS_GETNAMES,
+  DDS_GAVENAMES,
   DDS_MAX /* max command -- keep this here */
 } dds_cmd;
 
@@ -28,7 +29,8 @@ static char *dds_verbs [DDS_MAX] = {
   "LISTBUCKET",
   "KEYINFO",
   "GOSSIP",
-  "GETNAMES"
+  "GETNAMES",
+  "GAVENAMES"
 };
 
 #endif
