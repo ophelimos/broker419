@@ -9,6 +9,7 @@
 // **********************************************************************
 
 package hello;
+import hello.generated.hello.*;
 
 public class Hello_impl extends HelloPOA
 {
