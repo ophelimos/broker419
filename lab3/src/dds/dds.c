@@ -1218,7 +1218,7 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 	  if(buffer) { free(buffer); buffer = NULL; }
 	  if(id) { guid_destroy(id); id = NULL; }
 	
-	printf("...HANDLE getnames() complete!\n");
+//	printf("...HANDLE getnames() complete!\n");
 	if(mylist.totalnames > 1) {
 		/* We now have a peer */
 		//printf("Set has_peer =1\n");
@@ -1284,9 +1284,9 @@ static int synclist(struct namesOfDDS *listfrompeer) {
 		mylist.portlist[mylist.totalnames] = listfrompeer->portlist[0];
 		mylist.totalnames++;
 	}
-	else{
-		printf("synclist() | did not add peer, list is full!\n"); 
-	}
+/* 	else{ */
+/* 		printf("synclist() | did not add peer, list is full!\n");  */
+/* 	} */
 	/*
 	//print EVERYTHINGGGG
 	printf("synclist() | mylist consists of...%d peers = %s:%d | %s:%d | %s:%d | %s:%d\n", mylist.totalnames, mylist.namelist[0], mylist.portlist[0],

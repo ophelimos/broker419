@@ -15,11 +15,13 @@ DB_PREFIX=db
 
 GOSSIP_PERIOD=1
 
+HOSTNAME=`hostname`
+
 i=1
 rm -R $DB_PREFIX$i
 mkdir $DB_PREFIX$i
 echo $DDS_PROG $CUR_PORT "$STORES_FILE" $DB_PREFIX$i &
-$DDS_PROG $CUR_PORT "$STORES_FILE" $DB_PREFIX$i &
+#$DDS_PROG $CUR_PORT "$STORES_FILE" $DB_PREFIX$i &
 CUR_PORT=`expr $CUR_PORT + 1`
 
 for i in `seq 2 $NUM_DDS`
@@ -27,8 +29,8 @@ do
     # Remove the previous directory to get rid of old database files
     rm -R $DB_PREFIX$i
     mkdir $DB_PREFIX$i
-    echo    $DDS_PROG $CUR_PORT "$STORES_FILE" $DB_PREFIX$i $GOSSIP_PERIOD localhost `expr $CUR_PORT - 1`&
-    $DDS_PROG $CUR_PORT "$STORES_FILE" $DB_PREFIX$i $GOSSIP_PERIOD localhost `expr $CUR_PORT - 1`&
+    echo    $DDS_PROG $CUR_PORT "$STORES_FILE" $DB_PREFIX$i $GOSSIP_PERIOD $HOSTNAME `expr $CUR_PORT - 1`&
+#    $DDS_PROG $CUR_PORT "$STORES_FILE" $DB_PREFIX$i $GOSSIP_PERIOD $HOSTNAME `expr $CUR_PORT - 1`&
     CUR_PORT=`expr $CUR_PORT + 1`
 done
 
