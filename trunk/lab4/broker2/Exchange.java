@@ -21,12 +21,16 @@ import java.util.Scanner;
 import broker.Broker;
 import broker.BrokerHelper;
 import broker.BrokerPackage.BrokerErrorException;
+import broker.BrokerPackage.BrokerErrors;
 
 public class Exchange extends java.applet.Applet implements ActionListener {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	private static String symbol;
+	private static int quote;
 
 	static int run(org.omg.CORBA.ORB orb, String[] args)
 			throws org.omg.CORBA.UserException {
@@ -64,12 +68,18 @@ public class Exchange extends java.applet.Applet implements ActionListener {
 
 					// Check what does the user want to do: ADD, UPDATE, REMOVE
 					if (curword.equalsIgnoreCase("add")) {
-						broker.addSymbol(inputLine.next());
+						symbol = inputLine.next();
+						broker.addSymbol(symbol);
+						System.out.println(symbol + " added.");
 					} else if (curword.equalsIgnoreCase("update")) {
-						broker.updateQuote(inputLine.next(), inputLine
-								.nextInt());
+						symbol = inputLine.next();
+						quote = inputLine.nextInt();
+						broker.updateQuote(symbol, quote);
+						System.out.println(symbol + " updated to " + quote + ".");
 					} else if (curword.equalsIgnoreCase("remove")) {
-						broker.removeSymbol(inputLine.next());
+						symbol = inputLine.next();
+						broker.removeSymbol(symbol);
+						System.out.println(symbol + " removed.");
 					} else if (curword.equalsIgnoreCase("x")
 							|| curword.equalsIgnoreCase("q")
 							|| curword.equalsIgnoreCase("quit")) {
@@ -92,7 +102,28 @@ public class Exchange extends java.applet.Applet implements ActionListener {
 					System.out.print("> ");
 					continue;
 				} catch (BrokerErrorException e) {
-					System.out.println(e.getMessage());
+					if (e.type.value() == BrokerErrors._InvalidSymbol)
+					{
+						System.out.println(symbol + " invalid.");
+						/* re-print console prompt */
+						System.out.print("> ");
+					}
+					else if (e.type.value() == BrokerErrors._QuoteOutofRange) {
+						System.out.println(symbol + " out of range.");
+						/* re-print console prompt */
+						System.out.print("> ");
+					}
+					else if (e.type.value() == BrokerErrors._SymbolExists) {
+						System.out.println(symbol + " exists.");
+						/* re-print console prompt */
+						System.out.print("> ");
+					}
+					else
+					{
+						System.out.println(e.toString());
+						/* re-print console prompt */
+						System.out.print("> ");
+					}
 				}
 			}
 		} catch (IOException e) {
