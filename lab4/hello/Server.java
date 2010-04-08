@@ -1,16 +1,6 @@
-// **********************************************************************
-//
-// Copyright (c) 2002
-// IONA Technologies, Inc.
-// Waltham, MA, USA
-//
-// All Rights Reserved
-//
-// **********************************************************************
+import hello.Hello;
 
-package hello;
 
-import hello.generated.hello.Hello;
 
 public class Server
 {

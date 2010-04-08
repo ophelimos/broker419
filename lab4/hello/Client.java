@@ -8,11 +8,13 @@
 //
 // **********************************************************************
 
-package hello;
 
-import java.awt.*;
-import java.awt.event.*;
-import hello.generated.hello.*;
+import hello.Hello;
+import hello.HelloHelper;
+
+import java.awt.Button;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class Client extends java.applet.Applet implements ActionListener
 {
