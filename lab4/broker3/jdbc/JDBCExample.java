@@ -89,8 +89,8 @@ public class JDBCExample {
     	/* parse input arguments */
     	String databaseDriverName = "org.postgresql.Driver";
     	String databaseHostName = "localhost";
-    	int    databaseHostPort = 5432;
-    	String databaseName = "smaple";
+    	int    databaseHostPort = 6969;
+    	String databaseName = "jay";
     	String databaseUserName = "sutharja";
     	String databaseUserPassword = "";
     	

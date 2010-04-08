@@ -3,5 +3,6 @@
 	<classpathentry excluding="generated/" kind="src" path=""/>
 	<classpathentry kind="src" path="generated"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="jdbc/postgresql-8.2-504.jdbc2.jar"/>
 	<classpathentry kind="output" path=""/>
 </classpath>
