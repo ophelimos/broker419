@@ -1,0 +1,6 @@
+LOG:  database system was shut down at 2010-04-08 18:15:47 EDT
+LOG:  checkpoint record is at 0/42C424
+LOG:  redo record is at 0/42C424; undo record is at 0/0; shutdown TRUE
+LOG:  next transaction ID: 0/593; next OID: 10820
+LOG:  next MultiXactId: 1; next MultiXactOffset: 0
+LOG:  database system is ready
