@@ -13,6 +13,9 @@ public class Broker_impl extends BrokerPOA {
 
 	public int quote(String symbol) {
 		// Look up the given symbol in the hash table
+//		 Lower-case the symbol
+		symbol = symbol.toLowerCase();
+		
 		Long quote = Server.quoteDB.get(symbol);
 		if (quote == null) {
 			return 0;
