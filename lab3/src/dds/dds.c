@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
     
     if(has_peer) {
     	//Randomly pick atleast one DDS from this list and connect, disclude myself from this randomization
-    	pickthisfromlist = rand() % mylist.totalnames; //generates a psuedo-random integer between 0 and mylist.totalnames
+    	pickthisfromlist = randint(1, mylist.totalnames); //generates a psuedo-random integer between 1 and mylist.totalnames
     	//First we get a list of all DDSes on the network
     	__dds_do_getnames(mylist.namelist[pickthisfromlist], mylist.portlist[pickthisfromlist], &mylist); //sends mylist to the other peer and has it updated
 		/*
@@ -1219,6 +1219,7 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 	  if(id) { guid_destroy(id); id = NULL; }
 	
 //	printf("...HANDLE getnames() complete!\n");
+	
 	if(mylist.totalnames > 1) {
 		/* We now have a peer */
 		//printf("Set has_peer =1\n");
@@ -1294,5 +1295,18 @@ static int synclist(struct namesOfDDS *listfrompeer) {
     */
 	return 0;
 }	
+
+//generates a psuedo-random integer between min and max
+int randint(int min, int max)
+{
+    if (min>max)
+    {
+        return max+(int)((min-max+1)*rand()/(RAND_MAX+1.0));
+    }
+    else
+    {
+        return min+(int)((max-min+1)*rand()/(RAND_MAX+1.0));
+    }
+} 
 
 //1001010
