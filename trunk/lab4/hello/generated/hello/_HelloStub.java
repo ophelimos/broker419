@@ -12,7 +12,7 @@
 
 // Version: 4.3.3
 
-package hello.generated.hello;
+package hello;
 
 //
 // IDL:Hello:1.0
