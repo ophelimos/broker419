@@ -116,7 +116,7 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 int main(int argc, char **argv) {
 
 	//initialize mylist
-	int i=0;
+	int i=0, pickthisfromlist= 0;
 	for (i=0; i <MAXNAMES; i++){
 		bzero(mylist.namelist[i], 200);
 		mylist.portlist[i] =0;
@@ -204,19 +204,19 @@ int main(int argc, char **argv) {
     /* HINT: Calling a peer from here would be good! */
     
     if(has_peer) {
+    	//Randomly pick atleast one DDS from this list and connect, disclude myself from this randomization
+    	pickthisfromlist = rand() % mylist.totalnames; //generates a psuedo-random integer between 0 and mylist.totalnames
     	//First we get a list of all DDSes on the network
-    	__dds_do_getnames(mylist.namelist[1], mylist.portlist[1], &mylist); //sends mylist to the other peer and has it updated
+    	__dds_do_getnames(mylist.namelist[pickthisfromlist], mylist.portlist[pickthisfromlist], &mylist); //sends mylist to the other peer and has it updated
 		/*
 		//print EVERYTHINGGGG
 		printf("mylist consists of...%d peers:\n%s:%d | %s:%d | %s:%d | %s:%d\n", mylist.totalnames, mylist.namelist[0], mylist.portlist[0],
 		 mylist.namelist[1], mylist.portlist[1], mylist.namelist[2], mylist.portlist[2], mylist.namelist[3], mylist.portlist[3]);
     	*/
-    	//Randomly pick atleast one DDS from this list and connect, disclude myself from this randomization
-    	int pickthisfromlist = 1+(int)((mylist.totalnames)*rand()/(RAND_MAX+1.0)); //generates a psuedo-random integer between 0 and mylist.totalnames
     	//Pick the random host from list to gossip with
     	strcpy(randomdds_host, mylist.namelist[pickthisfromlist]);
     	randomdds_port = mylist.portlist[pickthisfromlist];
-		//printf("going to gossip with peer %s:%d...\n", randomdds_host, randomdds_port);
+		printf("going to gossip with peer %s:%d...\n", randomdds_host, randomdds_port);
 		
     	//Gossip business: BEGIN
 		double cur_time = abacus_time(ab);
@@ -451,11 +451,11 @@ static int __dds_do_getnames(char *peer_host_name, int peer_port, struct namesOf
   DIE_IF_NOT_EQUAL( ret, 0, "Could not get body", err, &erred );
   //got our reply with new list
   responselist = (struct namesOfDDS*) buffer;
-  
+  /*
   //printf for debug
 	printf("dds_dogetnames() | other guys returned this...%d peers: %s:%d | %s:%d | %s:%d | %s:%d\n", responselist->totalnames, responselist->namelist[0], responselist->portlist[0],
 	responselist->namelist[1], responselist->portlist[1], responselist->namelist[2], responselist->portlist[2],responselist->namelist[3], responselist->portlist[3]);
-     
+  */   
   ret = copytomylist(responselist);
   
   /* Cleanup */
@@ -1173,17 +1173,17 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 	
 	  //make a copy of the list
 	  listtosend = (struct namesOfDDS*) buffer;
-	 
+	 /*
 	  printf("handle_getnames() | freshly received list... %d peers:\n%s:%d | %s:%d | %s:%d | %s:%d\nsyncing now...", listtosend->totalnames, listtosend->namelist[0], listtosend->portlist[0],
 	listtosend->namelist[1], listtosend->portlist[1], listtosend->namelist[2], listtosend->portlist[2],listtosend->namelist[3], listtosend->portlist[3]);
-    
+    */
 	  //synchronize my list to this peers list (add the peers name to my list if not already there)
 	  ret = synclist(listtosend);
-	  //TODO for some odd reason once i update the mylist in synclist() .. it doesnt send that new stuff wen it returns to the requesting peer
 	  //if we have peers noe we should start gossiping both ways 
+	  /*
 	printf("handle_getnames() | will send mylist as...%d peers = %s:%d | %s:%d | %s:%d | %s:%d\n", mylist.totalnames, mylist.namelist[0], mylist.portlist[0],
 	mylist.namelist[1], mylist.portlist[1], mylist.namelist[2], mylist.portlist[2], mylist.namelist[3], mylist.portlist[3]);
-   
+   */
 	  buffer = ( char * ) malloc(sizeof(struct namesOfDDS));
 	  DIE_IF_EQUAL( (int) buffer, (int) NULL, "Could not make buffer", err, &erred );
 	  memcpy( buffer, &mylist, sizeof(struct namesOfDDS));
@@ -1196,7 +1196,7 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 	DIE_IF_NOT_EQUAL( ret, 0, "Could not set header", err, &erred);
 	
 	if( buffer ) { /* no list to send */
-	  ret = hms_msg_set_body( reply, buffer, strlen(buffer) );
+	  ret = hms_msg_set_body( reply, buffer, sizeof(struct namesOfDDS) );
 	  DIE_IF_NOT_EQUAL( ret, 0, "Could not add message body", err, &erred);
     }
 	    
@@ -1222,7 +1222,9 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 	if(mylist.totalnames > 1) {
 		/* We now have a peer */
 		//printf("Set has_peer =1\n");
-		gossip_period_secs = 5;
+		if (gossip_period_secs == 0){
+			gossip_period_secs = 10;
+		}
 		//has_peer = 0;
 		has_peer = 1;
 	}
@@ -1232,40 +1234,35 @@ static int __dds_handle_getnames( hms_endpoint *endpoint, hms_msg *msg, int verb
 
 //copy from the given DDS list to mylist
 static int copytomylist(struct namesOfDDS *tocopylist) {
-	int i =1, j=0;
+	int i =0, j=0;
 	int tocopyflags[4] = {1,1,1,1};
 	/*
-	//print EVERYTHINGGGG
 	printf("copytomylist() | copying from...%d peers = %s:%d | %s:%d | %s:%d | %s:%d\n", tocopylist->totalnames, tocopylist->namelist[0], tocopylist->portlist[0],
 	tocopylist->namelist[1], tocopylist->portlist[1], tocopylist->namelist[2], tocopylist->portlist[2],tocopylist->namelist[3], tocopylist->portlist[3]);
-    */
-	//mark the tocopyflags as required to prepare to for copying
-	for (i =0; i<MAXNAMES; i++){//check if the peers name is alredy in the list or not
+	*/
+	for (i =0; i<MAXNAMES; i++){
+		if(strcmp(tocopylist->namelist[i], "") == 0) {
+			//we have looked through all valid nodes now, return possibly
+			break;
+		}
 		for(j=0; j<MAXNAMES; j++) {
-			if(strcmp(mylist.namelist[i], tocopylist->namelist[j]) == 0){
-				tocopyflags[j] = 0;	
+			if(strcmp(mylist.namelist[j], "") == 0) {
+				strcpy(mylist.namelist[j], tocopylist->namelist[i]);
+				mylist.portlist[j] = tocopylist->portlist[i];
+				mylist.totalnames++;
+				break;
+			}
+			
+			if((strcmp(mylist.namelist[j], tocopylist->namelist[i]) == 0) && (mylist.portlist[j] == tocopylist->portlist[i])){
+				break;
 			}
 		}
 	}
-	
-	//find the first NULL element in mylist and add the the elements i marked in tocopyflags[]
-	for	(i =1; i < MAXNAMES; i++){
-		if(mylist.namelist[i] == NULL) { //this element is empty, we can add it here
-			for(j =0; j<MAXNAMES; j++){
-				if(tocopyflags[j] == 1) {
-					strcpy(mylist.namelist[i], tocopylist->namelist[j]);
-					mylist.portlist[i] = tocopylist->portlist[i];
-					mylist.totalnames++;
-					tocopyflags[j] = 0;
-				}	
-			}
-		}
-	}
-	
+	/*
 	//print EVERYTHINGGGG
 	printf("copytomylist() | mylist now is ...%d peers = %s:%d | %s:%d | %s:%d | %s:%d\n", mylist.totalnames, mylist.namelist[0], mylist.portlist[0],
 	mylist.namelist[1], mylist.portlist[1], mylist.namelist[2], mylist.portlist[2], mylist.namelist[3], mylist.portlist[3]);
-    
+    */
 	return 0;
 }
 
@@ -1290,11 +1287,11 @@ static int synclist(struct namesOfDDS *listfrompeer) {
 	else{
 		printf("synclist() | did not add peer, list is full!\n"); 
 	}
-	
+	/*
 	//print EVERYTHINGGGG
 	printf("synclist() | mylist consists of...%d peers = %s:%d | %s:%d | %s:%d | %s:%d\n", mylist.totalnames, mylist.namelist[0], mylist.portlist[0],
 	mylist.namelist[1], mylist.portlist[1], mylist.namelist[2], mylist.portlist[2], mylist.namelist[3], mylist.portlist[3]);
-    
+    */
 	return 0;
 }	
 
