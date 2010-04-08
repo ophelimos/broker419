@@ -348,9 +348,9 @@ int map_del( map_t *map, obj_t *object, unsigned long ts_delete) {
 /**
  * map_list()
  * ----------
- * Looks to me like this function is supposed to return all the nodes that
- * are in the given bucket, only showing the "deleted" ones if show_deleted
- * is asserted.
+ * Looks to me like this function looks through the database,
+ * based on the given bucket and key.  If the key is unspecified,
+ * returns everything in the entire bucket
  */
 int map_list( map_t *map, obj_t *object, inode_t **nodes, unsigned *n_nodes, int show_deleted ) {
     int error;
@@ -374,9 +374,7 @@ int map_list( map_t *map, obj_t *object, inode_t **nodes, unsigned *n_nodes, int
     DBT data;
     memset(&data, 0, sizeof(DBT));
 
-    /* Allocate memory to put the data into */
-//    data.ulen = sizeof(inode_t);
-//    data.flags = DB_DBT_USERMEM;
+    /* Do NOT set data.ulen */
 
     *n_nodes = 0;
 
@@ -384,18 +382,27 @@ int map_list( map_t *map, obj_t *object, inode_t **nodes, unsigned *n_nodes, int
     unsigned int cur_array_size = DEFAULT_ARRAY_SIZE;
     *nodes = malloc(cur_array_size*sizeof(inode_t));
 
-
     /* Iterate over the entire set, expanding the array as necessary to fit in new values */
     while ((error = cursorp->get(cursorp, &key, &data, DB_NEXT)) == 0)
     {
         /* Cast what we got out of the database properly */
         inode_t* gotten_data = data.data;
 
+        /* Only show deleted ones with show_deleted */
+        if (!show_deleted && gotten_data->ts_delete > gotten_data->ts_put)
+        {
+            continue;
+        }
+
         /* Check if it's the same bucket */
         if (!strcmp(object->bucket_name, gotten_data->object.bucket_name))
         {
-            /* Only show deleted ones with show_deleted */
-            if (!show_deleted && gotten_data->ts_delete > gotten_data->ts_put)
+            if (
+                /* If we care about the key */
+                (object->key_name[0] != '\0')
+                /* And it's not the same key */
+                && strcmp(object->key_name, gotten_data->object.key_name)
+                )
             {
                 continue;
             }
@@ -464,9 +471,7 @@ int map_listall( map_t *map, inode_t **nodes, unsigned *n_nodes ) {
     DBT data;
     memset(&data, 0, sizeof(data));
 
-    /* Allocate memory to put the data into */
-    data.ulen = sizeof(inode_t);
-    data.flags = DB_DBT_USERMEM;
+    /* Do NOT set data.ulen */
 
     *n_nodes = 0;
 
