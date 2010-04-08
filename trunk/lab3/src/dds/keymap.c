@@ -125,7 +125,11 @@ map_t* map_init(char *filename) {
     new_db->set_errcall(new_db, db_error_handler);
     new_db->set_errpfx(new_db, "DDS DB Error:");
 
-    error = new_db->open(new_db, NULL, filename, NULL, DB_BTREE, DB_CREATE | DB_AUTO_COMMIT, 0665);
+    /* Don't use absolute filenames for the database filenames - find relative filename */
+    char* filename_basename = strrchr(filename, '/');
+    filename_basename++;
+
+    error = new_db->open(new_db, NULL, filename_basename, NULL, DB_BTREE, DB_CREATE | DB_AUTO_COMMIT, 0665);
     if (error != 0)
     {
         new_db->err(new_db, error, "Database open failed: %s", filename);
