@@ -205,18 +205,18 @@ int main(int argc, char **argv) {
     
     if(has_peer) {
     	//Randomly pick atleast one DDS from this list and connect, disclude myself from this randomization
-    	pickthisfromlist = randint(1, mylist.totalnames); //generates a psuedo-random integer between 1 and mylist.totalnames
+    	pickthisfromlist = randint(0, mylist.totalnames); //generates a psuedo-random integer between 1 and mylist.totalnames
     	//First we get a list of all DDSes on the network
     	__dds_do_getnames(mylist.namelist[pickthisfromlist], mylist.portlist[pickthisfromlist], &mylist); //sends mylist to the other peer and has it updated
-		/*
+		
 		//print EVERYTHINGGGG
-		printf("mylist consists of...%d peers:\n%s:%d | %s:%d | %s:%d | %s:%d\n", mylist.totalnames, mylist.namelist[0], mylist.portlist[0],
-		 mylist.namelist[1], mylist.portlist[1], mylist.namelist[2], mylist.portlist[2], mylist.namelist[3], mylist.portlist[3]);
-    	*/
+//		printf("mylist consists of...%d peers:\n%s:%d | %s:%d | %s:%d | %s:%d\n", mylist.totalnames, mylist.namelist[0], mylist.portlist[0],
+//		 mylist.namelist[1], mylist.portlist[1], mylist.namelist[2], mylist.portlist[2], mylist.namelist[3], mylist.portlist[3]);
+    	
     	//Pick the random host from list to gossip with
     	strcpy(randomdds_host, mylist.namelist[pickthisfromlist]);
     	randomdds_port = mylist.portlist[pickthisfromlist];
-		printf("going to gossip with peer %s:%d...\n", randomdds_host, randomdds_port);
+//		printf("going to gossip with peer %s:%d...\n", randomdds_host, randomdds_port);
 		
     	//Gossip business: BEGIN
 		double cur_time = abacus_time(ab);
@@ -347,7 +347,7 @@ static int __dds_handle(  hms_endpoint *endpoint, hms_msg *msg ) {
   DIE_IF_NOT_EQUAL( ret, 0, "Could not add task into abacus", cleanup, &erred );
 
   hms_msg_get_verb( msg, &verb );
-  fprintf(stdout, "[NOTE]: Handling [%s]...\n", verb );
+//  fprintf(stdout, "[NOTE]: Handling [%s]...\n", verb );
 
   /* call different verb handler */
   int vid = __dds_find_verb( verb );
@@ -1007,6 +1007,7 @@ static int __dds_handle_list( hms_endpoint *endpoint, hms_msg *msg, int verb_id 
 
   /* List the objects that matched */
   ret = map_list( keymap, &object, &inodes, &n_inodes, show_deleted );
+  /* ret = map_listall( keymap, &inodes, &n_inodes );  */
   DIE_IF_NOT_EQUAL( ret, 0, "Listing map failed", err, &erred );
 
   /* Nothing in the list :( */
@@ -1299,14 +1300,15 @@ static int synclist(struct namesOfDDS *listfrompeer) {
 //generates a psuedo-random integer between min and max
 int randint(int min, int max)
 {
-    if (min>max)
+    /* So it's inclusive, rather than exclusive */
+    int random = rand() % max;
+    if (random == min)
     {
-        return max+(int)((min-max+1)*rand()/(RAND_MAX+1.0));
+        random++;
     }
-    else
-    {
-        return min+(int)((max-min+1)*rand()/(RAND_MAX+1.0));
-    }
+//    int random = min+(int)((max-min+1)*rand()/(RAND_MAX+1.0));
+//    printf("Random number between %d and %d = %d\n", min, max, random);
+    return random;
 } 
 
 //1001010
