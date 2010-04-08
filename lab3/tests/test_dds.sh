@@ -4,11 +4,11 @@
 NUM_DDS=4
 START_PORT=5000
 
-ITERATIONS=1000
+ITERATIONS=10000
 
 CUR_PORT=$START_PORT
 
-$SED_SCRIPT="sed s/foo.txt/foo$i.txt/g"
+#$SED_SCRIPT="sed s/foo.txt/foo$i.txt/g"
 
 for i in `seq 1 $ITERATIONS`
 do

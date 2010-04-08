@@ -6,3 +6,10 @@ distributed and scalable datastore. The API is
 similar to S3.
 
 At this point, the implementation is very basic.
+
+To run our implementation:
+
+1.  Use start_stores.sh in the src/store directory to start up the store servers
+2.  Use start_dds.sh in src/dds directory to start up 4 dds servers
+3.  Test using whatever scripts you want.
+
