@@ -12,11 +12,17 @@ public class Broker_impl extends BrokerPOA {
 		poa_ = poa;
 	}
 
-	public int quote(String symbol) {
+	public int quote(String symbol) throws BrokerErrorException {
 		// Look up the given symbol in the hash table
+		// Lower-case the symbol
+		symbol = symbol.toLowerCase();
+
 		Long quote = Server.quoteDB.get(symbol);
+//		 Check if the symbol exists
 		if (quote == null) {
-			return 0;
+			BrokerErrorException error = new BrokerErrorException(symbol
+					+ " invalid.", BrokerErrors.InvalidSymbol);
+			throw error;
 		}
 		return quote.intValue();
 	}
@@ -36,7 +42,7 @@ public class Broker_impl extends BrokerPOA {
 		// Check if the symbol exists
 		if (Server.quoteDB.containsKey(symbol)) {
 			BrokerErrorException error = new BrokerErrorException(symbol
-					+ " invalid.", BrokerErrors.InvalidSymbol);
+					+ " exists.", BrokerErrors.SymbolExists);
 			throw error;
 		}
 
@@ -57,6 +63,9 @@ public class Broker_impl extends BrokerPOA {
 					+ " invalid.", BrokerErrors.InvalidSymbol);
 			throw error;
 		}
+
+		// If so, delete it
+		Server.quoteDB.remove(symbol);
 	}
 
 	public void updateQuote(String symbol, int quote)

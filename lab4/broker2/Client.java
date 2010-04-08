@@ -15,12 +15,15 @@ import java.awt.event.ActionListener;
 import broker.Broker;
 import broker.BrokerHelper;
 import broker.BrokerPackage.BrokerErrorException;
+import broker.BrokerPackage.BrokerErrors;
 
 public class Client extends java.applet.Applet implements ActionListener {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	private static String symbol;
 
 	static int run(org.omg.CORBA.ORB orb, String[] args)
 			throws org.omg.CORBA.UserException {
@@ -42,24 +45,32 @@ public class Client extends java.applet.Applet implements ActionListener {
 		System.out.println("Enter queries or 'x' for exit:");
 
 		try {
-			String input;
 			java.io.BufferedReader in = new java.io.BufferedReader(
 					new java.io.InputStreamReader(System.in));
 			do {
 				System.out.print("> ");
-				input = in.readLine();
+				symbol = in.readLine();
 
-				if (input.equals("x"))
+				if (symbol.equals("x"))
 					System.exit(0);
 				else {
 					try {
-					System.out.println("Quote from broker: " + broker.quote(input));
+					System.out.println("Quote from broker: " + broker.quote(symbol));
 					} catch (BrokerErrorException e) {
-						System.out.println(e.getMessage());
+						if (e.type.value() == BrokerErrors._InvalidSymbol)
+						{
+							System.out.println(symbol + " invalid.");
+						}
+						else if (e.type.value() == BrokerErrors._QuoteOutofRange) {
+							System.out.println(symbol + " out of range.");
+						}
+						else if (e.type.value() == BrokerErrors._SymbolExists) {
+							System.out.println(symbol + " exists.");
+						}
 					}
 				}
 							
-			} while (!input.equals("x"));
+			} while (!symbol.equals("x"));
 		} catch (java.io.IOException ex) {
 			System.err.println("Can't read from `" + ex.getMessage() + "'");
 			return 1;

@@ -4,7 +4,7 @@ public class Server {
 	// Table of quotes file
 	public static final String quoteDBFileName = "nasdaq";
 	
-	public static QuoteDB quoteDB = null;
+	public static QuoteDB quoteDB = new QuoteDB(quoteDBFileName);
 
 	static int run(org.omg.CORBA.ORB orb, String[] args)
 			throws org.omg.CORBA.UserException {
@@ -77,7 +77,7 @@ public class Server {
 		//
 		
 //		 Open the local database
-		QuoteDB quoteDB = new QuoteDB(quoteDBFileName);
+//		QuoteDB quoteDB = new QuoteDB(quoteDBFileName);
 		
 		// Make things gets closed properly on exit
 		Runtime.getRuntime().addShutdownHook(new ShutdownThread(quoteDB));
