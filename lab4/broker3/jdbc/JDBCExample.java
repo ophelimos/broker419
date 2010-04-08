@@ -90,7 +90,7 @@ public class JDBCExample {
     	String databaseDriverName = "org.postgresql.Driver";
     	String databaseHostName = "localhost";
     	int    databaseHostPort = 5432;
-    	String databaseName = "sample";
+    	String databaseName = "smaple";
     	String databaseUserName = "user";
     	String databaseUserPassword = "";
     	
