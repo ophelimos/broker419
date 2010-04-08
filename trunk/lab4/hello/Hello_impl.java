@@ -1,3 +1,5 @@
+import hello.HelloPOA;
+
 // **********************************************************************
 //
 // Copyright (c) 2002
@@ -8,8 +10,6 @@
 //
 // **********************************************************************
 
-package hello;
-import hello.generated.hello.*;
 
 public class Hello_impl extends HelloPOA
 {
