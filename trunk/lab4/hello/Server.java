@@ -10,6 +10,8 @@
 
 package hello;
 
+import hello.generated.hello.Hello;
+
 public class Server
 {
     static int

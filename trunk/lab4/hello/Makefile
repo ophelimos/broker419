@@ -13,10 +13,11 @@ PACKAGE = hello
 
 ECE419_HOME=/cad2/ece419s
 JAVA_HOME=$(ECE419_HOME)/java/jdk1.6.0
-CORBA_DIR=${ECE419_HOME}/corba/
+CORBA_DIR=${ECE419_HOME}/corba
 #need change
 JOB_DIR=${CORBA_DIR}/JOB-4.3.3
 OB_DIR=${CORBA_DIR}/OB-4.3
+OB_LIB=$(OB_DIR)/lib
 JOB_LIB_DIR=${JOB_DIR}/lib
 JIDL_EXE=${OB_DIR}/bin/jidl
 
@@ -26,7 +27,7 @@ all:
 	mkdir -p generated/hello
 	mkdir -p classes/hello
 	
-	${JIDL_EXE} --package $(PACKAGE) --output-dir generated $(IDL_file)
+	LD_LIBRARY_PATH=$(OB_LIB) ${JIDL_EXE} --package $(PACKAGE) --output-dir generated $(IDL_file)
 	CLASSPATH=.:generated:/cad2/ece419s/corba/JOB-4.3/lib \
 	${JAVA_HOME}/bin/javac $(JAVACFLAGS) -d classes \
 	*.java \

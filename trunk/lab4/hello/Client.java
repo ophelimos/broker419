@@ -12,6 +12,7 @@ package hello;
 
 import java.awt.*;
 import java.awt.event.*;
+import hello.generated.hello.*;
 
 public class Client extends java.applet.Applet implements ActionListener
 {
