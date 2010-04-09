@@ -5,11 +5,18 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import jdbc.JDBCExample;
 
 /**
  * A synchronized reader-biased class to manage the flat file stock quote
@@ -20,12 +27,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class QuoteDB {
 
-	// Access lock
-	ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
-
-	// Actual database used to store key-value pairs
-	private Hashtable<String, Long> DB;
-
+	public final String URL_PREFIX = "jdbc:postgresql://";
+	private Connection db;
+	private String tableName = "quotes";
+	
 	private String persistentFileName;
 
 	// Platform independent newline
@@ -41,155 +46,78 @@ public class QuoteDB {
 
 	QuoteDB() {
 		// Don't open anything
-		persistentFileName = null;
-		DB = null;
 	}
 
 	/**
-	 * Open the flat file containing the key-value pairs createTempFi
+	 * Open PostgreSQL database
 	 * 
 	 * @param fileName
 	 */
 	public void open(String fileName) throws IOException {
-		// Lock it
-		lock.writeLock().lock();
-		try {
-			// Make sure it's not already open - if so, close it
-			if (DB != null) {
-				close();
-			}
+		/* parse input arguments */
+    	String databaseDriverName = "org.postgresql.Driver";
+    	String databaseHostName = "localhost";
+    	int    databaseHostPort = 6969;
+    	String databaseName = "jay";
+    	String databaseUserName = "robin162";
+    	String databaseUserPassword = "";
+    	
+    	try {
+    		/* load the driver */
+    		Class.forName(databaseDriverName);
+    		/* open a connection */
+    		String url = this.URL_PREFIX + databaseHostName + ":" + databaseHostPort + "/" + databaseName;
+    		/* format: DriverManager.getConnection(url, username, password); */
+    		System.out.println("DEBUG: Opening connection to " + url);
+    		db = DriverManager.getConnection(url, databaseUserName, databaseUserPassword);
+    		
+    		/* create table and insert values */
+    		String createString = "CREATE TABLE " + tableName + " ( symbol text , quote integer )";
+    		
+    		Statement st = db.createStatement();
+    		st.executeUpdate(createString);
+    		st.close();
+    		
+    		
 
-			// Now, make a new one
-			DB = new Hashtable<String, Long>();
-
-			// Set the persistent file name
-			persistentFileName = fileName;
-
-			// Read the quotes file into an internal hash table
-
-			Scanner quoteInput = new Scanner(new BufferedReader(new FileReader(
-					fileName)));
-
-			while (quoteInput.hasNext()) {
-
-				String symbol = quoteInput.next();
-				symbol = symbol.toLowerCase();
-				Long value = Long.parseLong(quoteInput.next());
-
-				DB.put(symbol, value);
-			}
-
-			quoteInput.close();
-
-		} catch (FileNotFoundException e) {
-			System.out.println("Can't find database file: " + e.getMessage()
-					+ " in directory " + System.getProperty("user.dir"));
-			System.exit(-1);
-		} catch (NoSuchElementException e) {
-			System.out.println("Error reading database file " + fileName);
-			System.out.println("Continuing");
-			/* quoteInput.close(); */
-		} finally {
-			lock.writeLock().unlock();
-		}
+    	} catch (ClassNotFoundException e) {
+    		System.err.println("ERROR: JDBC Driver class not found!!");
+    		System.exit(-1);
+    	} catch (SQLException e) {
+    		System.err.println("ERROR: SQL Exception!!");
+    		e.printStackTrace();
+    		System.exit(-1);	
+    	}
 	}
 
 	public void close() throws IOException {
-		// Acquire the lock
-		lock.writeLock().lock();
-
-		try {
-			// Flush database contents to disk
-			this.flush();
-			// Null out the pointer
-			DB = null;
-			// Clear the file name
-			persistentFileName = null;
-
-		} catch (IOException e) {
-			System.out.println("Failed to flush database!");
-			System.out.println("ERROR: " + e.getMessage());
-			throw e;
-		} finally {
-			lock.writeLock().unlock();
-		}
+		/* finally delete table */
+		dropTable(db, table);
+		db.close();
 	}
 
 	public void flush() throws IOException {
 
-		// Acquire the lock: I don't have to worry about trying to regrab a lock
-		// I hold, because the library will handle it for me.
-		lock.writeLock().lock();
-
-		// Write the DB to a temporary file first, and then overwrite, rather
-		// than accidentally truncating it
-		File cwd = new File(System.getProperty("user.dir"));
-		File tempFile = File.createTempFile("dbtemp", ".tmp", cwd);
-		BufferedWriter quoteOutput = new BufferedWriter(
-				new FileWriter(tempFile));
-
-		// Pull the key-value pairs out of the database
-		Enumeration<String> keys = DB.keys();
-
-		while (keys.hasMoreElements()) {
-			String curKey = keys.nextElement();
-			Long curValue = DB.get(curKey);
-			// Print it to the file
-			quoteOutput.write(curKey + " " + curValue + newline);
-		}
-
-		// Flush the temporary file
-		quoteOutput.flush();
-
-		// Now, move the old DB to a backup file
-		File dbFile = new File(persistentFileName);
-		String backupFileName = persistentFileName.concat(".bak");
-		File backupFile = new File(backupFileName);
-		boolean success = dbFile.renameTo(backupFile);
-		if (!success) {
-			IOException noRename = new IOException("Failed to rename file"
-					+ persistentFileName + " to " + backupFileName);
-			throw noRename;
-		}
-
-		// Rename the temporary file to the database file
-		success = tempFile.renameTo(dbFile);
-		if (!success) {
-			IOException noRename = new IOException(
-					"Failed to rename temp file to " + persistentFileName);
-			throw noRename;
-		}
-
-		// Unlock it
-		lock.writeLock().unlock();
-
 	}
 
 	public Long get(String key) {
-		lock.readLock().lock();
-		Long tmp = DB.get(key);
-		lock.readLock().unlock();
-		return tmp;
+
 	}
 
 	public void put(String key, Long value) {
-		lock.readLock().lock();
-		DB.put(key, value);
-		lock.readLock().unlock();
+		PreparedStatement ps = db.prepareStatement("INSERT INTO " + tableName + " VALUES ( ? , ? )");
+		for(int i=0; i < PROVINCES.length; i++) {
+			ps.setInt(1, i);
+			ps.setString(2, PROVINCES[i]);
+			rs = ps.executeUpdate();
+		}
+		ps.close();
 	}
 
 	public boolean containsKey(String key) {
-		lock.readLock().lock();
-		boolean tmp = DB.containsKey(key);
-		lock.readLock().unlock();
-		return tmp;
 	}
 
 	public Long remove(String key) {
-		lock.readLock().lock();
-		Long tmp = DB.remove(key);
-		lock.readLock().unlock();
-		return tmp;
 	}
 
 }

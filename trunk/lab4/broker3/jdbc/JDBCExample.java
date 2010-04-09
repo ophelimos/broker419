@@ -91,7 +91,7 @@ public class JDBCExample {
     	String databaseHostName = "localhost";
     	int    databaseHostPort = 6969;
     	String databaseName = "jay";
-    	String databaseUserName = "sutharja";
+    	String databaseUserName = "robin162";
     	String databaseUserPassword = "";
     	
     	/* open connection */
