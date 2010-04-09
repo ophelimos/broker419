@@ -4,3 +4,62 @@ LOG:  redo record is at 0/42C424; undo record is at 0/0; shutdown TRUE
 LOG:  next transaction ID: 0/593; next OID: 10820
 LOG:  next MultiXactId: 1; next MultiXactOffset: 0
 LOG:  database system is ready
+LOG:  database system was shut down at 2010-04-08 19:43:41 EDT
+LOG:  checkpoint record is at 0/42C424
+LOG:  redo record is at 0/42C424; undo record is at 0/0; shutdown TRUE
+LOG:  next transaction ID: 0/593; next OID: 10820
+LOG:  next MultiXactId: 1; next MultiXactOffset: 0
+LOG:  database system is ready
+ERROR:  column "msft" does not exist at character 29
+STATEMENT:  INSERT INTO quotes VALUES ( msft, 47)
+ERROR:  column "csco" does not exist at character 29
+STATEMENT:  INSERT INTO quotes VALUES ( csco, 13)
+ERROR:  column "orcl" does not exist at character 29
+STATEMENT:  INSERT INTO quotes VALUES ( orcl, 10)
+ERROR:  column "sunw" does not exist at character 29
+STATEMENT:  INSERT INTO quotes VALUES ( sunw, 3)
+ERROR:  column "intc" does not exist at character 29
+STATEMENT:  INSERT INTO quotes VALUES ( intc, 16)
+LOG:  received fast shutdown request
+LOG:  aborting any active transactions
+FATAL:  terminating connection due to administrator command
+LOG:  shutting down
+LOG:  database system is shut down
+LOG:  database system was shut down at 2010-04-08 20:34:50 EDT
+LOG:  checkpoint record is at 0/441990
+LOG:  redo record is at 0/441990; undo record is at 0/0; shutdown TRUE
+LOG:  next transaction ID: 0/602; next OID: 16390
+LOG:  next MultiXactId: 1; next MultiXactOffset: 0
+LOG:  database system is ready
+ERROR:  database "jay" already exists
+STATEMENT:  CREATE DATABASE jay;
+	
+FATAL:  lock file "postmaster.pid" already exists
+HINT:  Is another postmaster (PID 19273) running in data directory "/nfs/ug/homes-2/r/robin162/ece419/lab4/lab4-broker3/pg_data"?
+FATAL:  lock file "postmaster.pid" already exists
+HINT:  Is another postmaster (PID 19273) running in data directory "/nfs/ug/homes-2/r/robin162/ece419/lab4/lab4-broker3/pg_data"?
+FATAL:  lock file "postmaster.pid" already exists
+HINT:  Is another postmaster (PID 19273) running in data directory "/nfs/ug/homes-2/r/robin162/ece419/lab4/lab4-broker3/pg_data"?
+ERROR:  database "jay" does not exist
+STATEMENT:  DROP DATABASE jay;
+	
+ERROR:  could not open relation 1664/0/1262: No such file or directory
+CONTEXT:  writing block 0 of relation 1664/0/1262
+ERROR:  could not open relation 1664/0/2671: No such file or directory
+CONTEXT:  writing block 1 of relation 1664/0/2671
+ERROR:  could not open relation 1664/0/1262: No such file or directory
+CONTEXT:  writing block 0 of relation 1664/0/1262
+WARNING:  could not write block 0 of 1664/0/1262
+DETAIL:  Multiple failures --- write error may be permanent.
+ERROR:  could not open relation 1664/0/2671: No such file or directory
+CONTEXT:  writing block 1 of relation 1664/0/2671
+WARNING:  could not write block 1 of 1664/0/2671
+DETAIL:  Multiple failures --- write error may be permanent.
+LOG:  statistics collector process (PID 19276) was terminated by signal 9
+LOG:  could not open temporary statistics file "global/pgstat.tmp": No such file or directory
+LOG:  background writer process (PID 19275) was terminated by signal 9
+LOG:  terminating any other active server processes
+LOG:  all server processes terminated; reinitializing
+LOG:  could not open temporary statistics file "global/pgstat.tmp": No such file or directory
+LOG:  could not open file "postmaster.pid": No such file or directory
+PANIC:  could not open control file "global/pg_control": No such file or directory
