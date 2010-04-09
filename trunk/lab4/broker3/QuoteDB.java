@@ -30,6 +30,9 @@ public class QuoteDB {
 	private String tableName = "quotes";
 
 	private String persistentFileName;
+	
+	private String COL_1 = "symbol";
+	private String COL_2 = "quote";
 
 	// Platform independent newline
 	public static String newline = System.getProperty("line.separator");
@@ -71,13 +74,27 @@ public class QuoteDB {
 			db = DriverManager.getConnection(url, databaseUserName,
 					databaseUserPassword);
 
-			/* create table */
-			String createString = "CREATE TABLE " + tableName
-					+ " ( symbol text , quote integer )";
+			boolean haveTable = false;
 
-			Statement st = db.createStatement();
-			st.executeUpdate(createString);
-			st.close();
+			// Check if we have the table yet
+			try {
+				String checkTable = "SELECT relname FROM pg_class WHERE relname = "
+						+ tableName;
+				Statement srs = db.createStatement();
+				srs.executeQuery(checkTable);
+			} catch (SQLException e) {
+				haveTable = true;
+			}
+
+			/* create table */
+			if (!haveTable) {
+				String createString = "CREATE TABLE " + tableName
+						+ " ( " + COL_1 + " text , " + COL_2 + " integer )";
+
+				Statement st = db.createStatement();
+				st.executeUpdate(createString);
+				st.close();
+			}
 
 			/* Insert values from flat file */
 			try {
@@ -124,9 +141,9 @@ public class QuoteDB {
 	public void close() throws IOException {
 		// Flush table to disk
 		this.flush();
-//		 Clear the file name
+		// Clear the file name
 		persistentFileName = null;
-		
+
 		/* finally delete table */
 		String createString = "DROP TABLE " + tableName;
 
@@ -145,19 +162,18 @@ public class QuoteDB {
 
 	public Long get(String key) {
 
-		String query = "SELECT * FROM " + tableName + " WHERE symbol = " + key;
+		String query = "SELECT * FROM " + tableName + " WHERE " + COL_1 + " = " + key;
 		try {
-		PreparedStatement ps = db.prepareStatement(query);
-		ResultSet rs = ps.executeQuery();
-		if(rs != null) {
-			Long returnval = rs.getLong("quote");
-			rs.close();
-			return returnval;
-		}
+			PreparedStatement ps = db.prepareStatement(query);
+			ResultSet rs = ps.executeQuery();
+			if (rs != null) {
+				Long returnval = rs.getLong(COL_2);
+				rs.close();
+				return returnval;
+			}
 
-		ps.close();	
-		}
-		catch (SQLException e) {
+			ps.close();
+		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}
 		return null;
@@ -165,8 +181,9 @@ public class QuoteDB {
 
 	public void put(String key, Long value) {
 		try {
-			PreparedStatement ps = db.prepareStatement("INSERT INTO "
-					+ tableName + " VALUES ( " + key + ", " + value + ")");
+			String sqlCommand = "INSERT INTO "
+				+ tableName + " (" + COL_1 + ", " + COL_2 + ") VALUES (" + key + ", " + value + ")";
+			PreparedStatement ps = db.prepareStatement(sqlCommand);
 			ps.executeUpdate();
 			ps.close();
 		} catch (SQLException e) {
@@ -182,13 +199,13 @@ public class QuoteDB {
 	public Long remove(String key) {
 		try {
 			PreparedStatement ps = db.prepareStatement("DELETE FROM "
-					+ tableName + " WHERE ( symbol = " + key + " )");
+					+ tableName + " WHERE ( " + COL_1 +" = " + key + " )");
 			ps.executeUpdate();
 			ps.close();
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}
-		
+
 		Long returnval = (long) 0;
 		return returnval;
 	}
@@ -209,8 +226,8 @@ public class QuoteDB {
 							ResultSet.CONCUR_READ_ONLY);
 			ResultSet srs = stmt.executeQuery("SELECT * FROM " + tableName);
 			while (srs.next()) {
-				String name = srs.getString("symbol");
-				int value = srs.getInt("quote");
+				String name = srs.getString(COL_1);
+				int value = srs.getInt(COL_2);
 				quoteOutput.write(name + " " + value + newline);
 			}
 
