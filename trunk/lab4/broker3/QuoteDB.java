@@ -83,26 +83,19 @@ public class QuoteDB {
 
 			boolean haveTable = false;
 
-			// Check if we have the table yet
-			try {
-				String checkTable = "SELECT relname FROM pg_class WHERE relname = "
-						+ tableName;
-				Statement srs = db.createStatement();
-				srs.executeQuery(checkTable);
-			} catch (SQLException e) {
-				haveTable = true;
-			}
-
 			/* create table */
-			if (!haveTable) {
+			
+			try {
 				String createString = "CREATE TABLE " + tableName + " ( "
 						+ COL_1 + " text , " + COL_2 + " integer )";
 
 				Statement st = db.createStatement();
 				st.executeUpdate(createString);
 				st.close();
+			} catch (SQLException e) {
+				// Looks like we already have a table.  Just keep going
+				System.out.println("Table already exists");
 			}
-
 			// Make some prepared statements
 			insertStatement = db.prepareStatement("INSERT INTO " + tableName
 					+ " VALUES ( ? , ? )");
@@ -165,7 +158,6 @@ public class QuoteDB {
 		try {
 			Statement st = db.createStatement();
 			st.executeUpdate(createString);
-			st.close();
 
 			db.close();
 		} catch (SQLException e) {
@@ -180,13 +172,10 @@ public class QuoteDB {
 			getStatement.setString(1, key);
 			ResultSet rs = getStatement.executeQuery();
 			if (rs != null) {
-				rs.first();
+				rs.next();
 				Long returnval = rs.getLong(COL_2);
-				rs.close();
 				return returnval;
 			}
-
-			rs.close();
 		} catch (SQLException e) {
 			System.err.println("ERROR: SQL Exception during get");
 			System.out.println(e.getMessage());
@@ -199,7 +188,6 @@ public class QuoteDB {
 			insertStatement.setString(1, key);
 			insertStatement.setLong(2, value);
 			insertStatement.executeUpdate();
-			insertStatement.close();
 		} catch (SQLException e) {
 			System.err.println("ERROR: SQL Exception during put");
 			System.out.println(e.getMessage());
@@ -207,15 +195,25 @@ public class QuoteDB {
 	}
 
 	public boolean containsKey(String key) {
-
-		return true;
+		try {
+			getStatement.setString(1, key);
+			ResultSet rs = getStatement.executeQuery();
+			if (rs != null) {
+				rs.next();
+				Long returnval = rs.getLong(COL_2);
+				return true;
+			}
+		} catch (SQLException e) {
+			// Return false
+		}
+		
+		return false;
 	}
 
 	public Long remove(String key) {
 		try {
 			deleteStatement.setString(1, key);
 			deleteStatement.executeUpdate();
-			deleteStatement.close();
 		} catch (SQLException e) {
 			System.err.println("ERROR: SQL Exception during remove");
 			System.out.println(e.getMessage());
