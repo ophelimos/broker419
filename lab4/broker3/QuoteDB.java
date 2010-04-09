@@ -129,6 +129,7 @@ public class QuoteDB {
 		
 		/* finally delete table */
 		String createString = "DROP TABLE " + tableName;
+
 		try {
 			Statement st = db.createStatement();
 			st.executeUpdate(createString);
@@ -144,6 +145,22 @@ public class QuoteDB {
 
 	public Long get(String key) {
 
+		String query = "SELECT * FROM " + tableName + " WHERE symbol = " + key;
+		try {
+		PreparedStatement ps = db.prepareStatement(query);
+		ResultSet rs = ps.executeQuery();
+		if(rs != null) {
+			Long returnval = rs.getLong("quote");
+			rs.close();
+			return returnval;
+		}
+
+		ps.close();	
+		}
+		catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+		return null;
 	}
 
 	public void put(String key, Long value) {
