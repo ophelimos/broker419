@@ -28,9 +28,11 @@ import jdbc.JDBCExample;
 public class QuoteDB {
 
 	public final String URL_PREFIX = "jdbc:postgresql://";
+
 	private Connection db;
+
 	private String tableName = "quotes";
-	
+
 	private String persistentFileName;
 
 	// Platform independent newline
@@ -55,39 +57,71 @@ public class QuoteDB {
 	 */
 	public void open(String fileName) throws IOException {
 		/* parse input arguments */
-    	String databaseDriverName = "org.postgresql.Driver";
-    	String databaseHostName = "localhost";
-    	int    databaseHostPort = 6969;
-    	String databaseName = "jay";
-    	String databaseUserName = "robin162";
-    	String databaseUserPassword = "";
-    	
-    	try {
-    		/* load the driver */
-    		Class.forName(databaseDriverName);
-    		/* open a connection */
-    		String url = this.URL_PREFIX + databaseHostName + ":" + databaseHostPort + "/" + databaseName;
-    		/* format: DriverManager.getConnection(url, username, password); */
-    		System.out.println("DEBUG: Opening connection to " + url);
-    		db = DriverManager.getConnection(url, databaseUserName, databaseUserPassword);
-    		
-    		/* create table and insert values */
-    		String createString = "CREATE TABLE " + tableName + " ( symbol text , quote integer )";
-    		
-    		Statement st = db.createStatement();
-    		st.executeUpdate(createString);
-    		st.close();
-    		
-    		
+		String databaseDriverName = "org.postgresql.Driver";
+		String databaseHostName = "localhost";
+		int databaseHostPort = 6969;
+		String databaseName = "jay";
+		String databaseUserName = "robin162";
+		String databaseUserPassword = "";
 
-    	} catch (ClassNotFoundException e) {
-    		System.err.println("ERROR: JDBC Driver class not found!!");
-    		System.exit(-1);
-    	} catch (SQLException e) {
-    		System.err.println("ERROR: SQL Exception!!");
-    		e.printStackTrace();
-    		System.exit(-1);	
-    	}
+		try {
+			/* load the driver */
+			Class.forName(databaseDriverName);
+			/* open a connection */
+			String url = this.URL_PREFIX + databaseHostName + ":"
+					+ databaseHostPort + "/" + databaseName;
+			/* format: DriverManager.getConnection(url, username, password); */
+			System.out.println("DEBUG: Opening connection to " + url);
+			db = DriverManager.getConnection(url, databaseUserName,
+					databaseUserPassword);
+
+			/* create table */
+			String createString = "CREATE TABLE " + tableName
+					+ " ( symbol text , quote integer )";
+
+			Statement st = db.createStatement();
+			st.executeUpdate(createString);
+			st.close();
+			
+			/* Insert values from flat file */
+			try {
+
+				// Set the persistent file name
+				persistentFileName = fileName;
+
+				// Read the quotes file into an internal hash table
+				Scanner quoteInput = new Scanner(new BufferedReader(new FileReader(
+						fileName)));
+
+				while (quoteInput.hasNext()) {
+
+					String symbol = quoteInput.next();
+					symbol = symbol.toLowerCase();
+					Long value = Long.parseLong(quoteInput.next());
+
+					this.put(symbol, value);
+				}
+
+				quoteInput.close();
+
+			} catch (FileNotFoundException e) {
+				System.out.println("Can't find database file: " + e.getMessage()
+						+ " in directory " + System.getProperty("user.dir"));
+				System.exit(-1);
+			} catch (NoSuchElementException e) {
+				System.out.println("Error reading database file " + fileName);
+				System.out.println("Continuing");
+				/* quoteInput.close(); */
+			}
+
+		} catch (ClassNotFoundException e) {
+			System.err.println("ERROR: JDBC Driver class not found!!");
+			System.exit(-1);
+		} catch (SQLException e) {
+			System.err.println("ERROR: SQL Exception!!");
+			e.printStackTrace();
+			System.exit(-1);
+		}
 	}
 
 	public void close() throws IOException {
@@ -105,13 +139,14 @@ public class QuoteDB {
 	}
 
 	public void put(String key, Long value) {
-		PreparedStatement ps = db.prepareStatement("INSERT INTO " + tableName + " VALUES ( ? , ? )");
-		for(int i=0; i < PROVINCES.length; i++) {
-			ps.setInt(1, i);
-			ps.setString(2, PROVINCES[i]);
-			rs = ps.executeUpdate();
+		try {
+			PreparedStatement ps = db.prepareStatement("INSERT INTO "
+					+ tableName + " VALUES ( " + key + ", " + value + ")");
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
 		}
-		ps.close();
 	}
 
 	public boolean containsKey(String key) {
