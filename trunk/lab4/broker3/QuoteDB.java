@@ -30,9 +30,16 @@ public class QuoteDB {
 	private String tableName = "quotes";
 
 	private String persistentFileName;
-	
+
 	private String COL_1 = "symbol";
+
 	private String COL_2 = "quote";
+
+	PreparedStatement insertStatement;
+
+	PreparedStatement getStatement;
+
+	PreparedStatement deleteStatement;
 
 	// Platform independent newline
 	public static String newline = System.getProperty("line.separator");
@@ -88,13 +95,21 @@ public class QuoteDB {
 
 			/* create table */
 			if (!haveTable) {
-				String createString = "CREATE TABLE " + tableName
-						+ " ( " + COL_1 + " text , " + COL_2 + " integer )";
+				String createString = "CREATE TABLE " + tableName + " ( "
+						+ COL_1 + " text , " + COL_2 + " integer )";
 
 				Statement st = db.createStatement();
 				st.executeUpdate(createString);
 				st.close();
 			}
+
+			// Make some prepared statements
+			insertStatement = db.prepareStatement("INSERT INTO " + tableName
+					+ " VALUES ( ? , ? )");
+			getStatement = db.prepareStatement("SELECT * FROM " + tableName
+					+ " WHERE " + COL_1 + " = ?");
+			deleteStatement = db.prepareStatement("DELETE FROM " + tableName
+					+ " WHERE ( " + COL_1 + " = ?)");
 
 			/* Insert values from flat file */
 			try {
@@ -132,7 +147,7 @@ public class QuoteDB {
 			System.err.println("ERROR: JDBC Driver class not found!!");
 			System.exit(-1);
 		} catch (SQLException e) {
-			System.err.println("ERROR: SQL Exception!!");
+			System.err.println("ERROR: SQL Exception during open");
 			e.printStackTrace();
 			System.exit(-1);
 		}
@@ -154,26 +169,26 @@ public class QuoteDB {
 
 			db.close();
 		} catch (SQLException e) {
-			System.err.println("ERROR: SQL Exception!!");
+			System.err.println("ERROR: SQL Exception during close");
 			System.out.println(e.getMessage());
 		}
 
 	}
 
 	public Long get(String key) {
-
-		String query = "SELECT * FROM " + tableName + " WHERE " + COL_1 + " = " + key;
 		try {
-			PreparedStatement ps = db.prepareStatement(query);
-			ResultSet rs = ps.executeQuery();
+			getStatement.setString(1, key);
+			ResultSet rs = getStatement.executeQuery();
 			if (rs != null) {
+				rs.first();
 				Long returnval = rs.getLong(COL_2);
 				rs.close();
 				return returnval;
 			}
 
-			ps.close();
+			rs.close();
 		} catch (SQLException e) {
+			System.err.println("ERROR: SQL Exception during get");
 			System.out.println(e.getMessage());
 		}
 		return null;
@@ -181,12 +196,12 @@ public class QuoteDB {
 
 	public void put(String key, Long value) {
 		try {
-			String sqlCommand = "INSERT INTO "
-				+ tableName + " (" + COL_1 + ", " + COL_2 + ") VALUES (" + key + ", " + value + ")";
-			PreparedStatement ps = db.prepareStatement(sqlCommand);
-			ps.executeUpdate();
-			ps.close();
+			insertStatement.setString(1, key);
+			insertStatement.setLong(2, value);
+			insertStatement.executeUpdate();
+			insertStatement.close();
 		} catch (SQLException e) {
+			System.err.println("ERROR: SQL Exception during put");
 			System.out.println(e.getMessage());
 		}
 	}
@@ -198,11 +213,11 @@ public class QuoteDB {
 
 	public Long remove(String key) {
 		try {
-			PreparedStatement ps = db.prepareStatement("DELETE FROM "
-					+ tableName + " WHERE ( " + COL_1 +" = " + key + " )");
-			ps.executeUpdate();
-			ps.close();
+			deleteStatement.setString(1, key);
+			deleteStatement.executeUpdate();
+			deleteStatement.close();
 		} catch (SQLException e) {
+			System.err.println("ERROR: SQL Exception during remove");
 			System.out.println(e.getMessage());
 		}
 
@@ -253,6 +268,7 @@ public class QuoteDB {
 				throw noRename;
 			}
 		} catch (SQLException e) {
+			System.err.println("ERROR: SQL Exception during remove");
 			System.out.println(e.getMessage());
 		}
 	}
