@@ -126,16 +126,24 @@ public class QuoteDB {
 
 	public void close() throws IOException {
 		/* finally delete table */
-		dropTable(db, table);
+		String createString = "DROP TABLE " + tableName;
+		try{
+		Statement st = db.createStatement();
+		int rs = st.executeUpdate(createString);
+		st.close();		
+		
 		db.close();
-	}
-
-	public void flush() throws IOException {
-
+		}
+		catch (SQLException e) {
+    		System.err.println("ERROR: SQL Exception!!");
+    		e.printStackTrace();
+    		System.exit(-1);	
+    	}
+		
 	}
 
 	public Long get(String key) {
-
+		
 	}
 
 	public void put(String key, Long value) {
@@ -150,9 +158,12 @@ public class QuoteDB {
 	}
 
 	public boolean containsKey(String key) {
+		
+		return true;
 	}
 
 	public Long remove(String key) {
+		
 	}
 
 }
