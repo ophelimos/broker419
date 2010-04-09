@@ -10,17 +10,4 @@ PROG=Server
 
 echo "starting" ${PROG}
 
-# Start up the Postgresql server
-
-mkdir pg_data
-${ECE419_HOME}/pgsql/bin/initdb -D pg_data
-${ECE419_HOME}/pgsql/bin/pg_ctl -D pg_data -l logfile -o "-h localhost -p 6969" start
-
-${ECE419_HOME}/pgsql/bin/createdb -h localhost -p 6969 jay
-
-#${ECE419_HOME}/java/jdk1.6.0/bin/java -cp .:${ECE419_HOME}/jdbc/postgresql-8.2-504.jdbc2.jar jdbc/JDBCExample
-
 ${JAVA_HOME}/bin/java -Djava.endorsed.dirs=${JOB_LIB_DIR} -classpath ${JDBC_JAR}:${JOB_LIB}:classes:. ${PROG} $*
-
-# Shutdown after server shutdown
-${ECE419_HOME}/pgsql/bin/pg_ctl -D pg_data stop -m smart
